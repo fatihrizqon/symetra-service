@@ -3,7 +3,7 @@ package repository
 import (
 	"errors"
 
-	"github.com/fatihrizqon/go-fiber-service/internal/entity"
+	"github.com/fatihrizqon/symetra-service/internal/entity"
 	"gorm.io/gorm"
 )
 

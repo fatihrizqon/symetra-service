@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/fatihrizqon/go-fiber-service/internal/repository"
-	"github.com/fatihrizqon/go-fiber-service/internal/util"
+	"github.com/fatihrizqon/symetra-service/internal/repository"
+	"github.com/fatihrizqon/symetra-service/internal/util"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )

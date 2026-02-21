@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/fatihrizqon/go-fiber-service/internal/util"
+	"github.com/fatihrizqon/symetra-service/internal/util"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"gorm.io/driver/postgres"

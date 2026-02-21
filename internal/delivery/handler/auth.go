@@ -3,11 +3,11 @@ package handler
 import (
 	"time"
 
-	"github.com/fatihrizqon/go-fiber-service/internal/delivery/http/request"
-	"github.com/fatihrizqon/go-fiber-service/internal/delivery/http/response"
-	"github.com/fatihrizqon/go-fiber-service/internal/helper"
-	"github.com/fatihrizqon/go-fiber-service/internal/service"
-	"github.com/fatihrizqon/go-fiber-service/internal/util"
+	"github.com/fatihrizqon/symetra-service/internal/delivery/http/request"
+	"github.com/fatihrizqon/symetra-service/internal/delivery/http/response"
+	"github.com/fatihrizqon/symetra-service/internal/helper"
+	"github.com/fatihrizqon/symetra-service/internal/service"
+	"github.com/fatihrizqon/symetra-service/internal/util"
 	"github.com/gofiber/fiber/v2"
 )
 

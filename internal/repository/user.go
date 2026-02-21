@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fatihrizqon/go-fiber-service/internal/entity"
-	"github.com/fatihrizqon/go-fiber-service/internal/util"
+	"github.com/fatihrizqon/symetra-service/internal/entity"
+	"github.com/fatihrizqon/symetra-service/internal/util"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )

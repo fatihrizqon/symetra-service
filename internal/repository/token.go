@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/fatihrizqon/go-fiber-service/internal/entity"
+	"github.com/fatihrizqon/symetra-service/internal/entity"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )

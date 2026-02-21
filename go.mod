@@ -1,4 +1,4 @@
-module github.com/fatihrizqon/go-fiber-service
+module github.com/fatihrizqon/symetra-service
 
 go 1.24.0
 

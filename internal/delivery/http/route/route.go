@@ -1,8 +1,8 @@
 package route
 
 import (
-	_ "github.com/fatihrizqon/go-fiber-service/docs"
-	"github.com/fatihrizqon/go-fiber-service/internal/delivery/handler"
+	_ "github.com/fatihrizqon/symetra-service/docs"
+	"github.com/fatihrizqon/symetra-service/internal/delivery/handler"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/swagger"
 )

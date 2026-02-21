@@ -1,7 +1,7 @@
 package util
 
 import (
-	"github.com/fatihrizqon/go-fiber-service/internal/delivery/http/response"
+	"github.com/fatihrizqon/symetra-service/internal/delivery/http/response"
 	"github.com/gofiber/fiber/v2"
 )
 

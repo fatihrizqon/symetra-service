@@ -6,8 +6,8 @@ import (
 	"math"
 	"time"
 
-	"github.com/fatihrizqon/go-fiber-service/internal/delivery/http/response"
-	"github.com/fatihrizqon/go-fiber-service/internal/repository"
+	"github.com/fatihrizqon/symetra-service/internal/delivery/http/response"
+	"github.com/fatihrizqon/symetra-service/internal/repository"
 )
 
 type OverviewResults struct {

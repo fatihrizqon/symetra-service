@@ -1,7 +1,7 @@
 package database
 
 import (
-	"github.com/fatihrizqon/go-fiber-service/internal/entity"
+	"github.com/fatihrizqon/symetra-service/internal/entity"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )

@@ -3,7 +3,7 @@ package util
 import (
 	"fmt"
 
-	"github.com/fatihrizqon/go-fiber-service/internal/delivery/http/response"
+	"github.com/fatihrizqon/symetra-service/internal/delivery/http/response"
 )
 
 func GenerateMeta(baseURL, search string, page, pageSize, totalCount int, filters map[string]string) response.Meta {

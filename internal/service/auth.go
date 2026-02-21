@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/fatihrizqon/go-fiber-service/internal/delivery/http/request"
-	"github.com/fatihrizqon/go-fiber-service/internal/entity"
-	"github.com/fatihrizqon/go-fiber-service/internal/repository"
-	"github.com/fatihrizqon/go-fiber-service/internal/util"
+	"github.com/fatihrizqon/symetra-service/internal/delivery/http/request"
+	"github.com/fatihrizqon/symetra-service/internal/entity"
+	"github.com/fatihrizqon/symetra-service/internal/repository"
+	"github.com/fatihrizqon/symetra-service/internal/util"
 	"github.com/go-playground/validator/v10"
 	"golang.org/x/crypto/bcrypt"
 )

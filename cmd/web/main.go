@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/fatihrizqon/go-fiber-service/config"
-	"github.com/fatihrizqon/go-fiber-service/database"
+	"github.com/fatihrizqon/symetra-service/config"
+	"github.com/fatihrizqon/symetra-service/database"
 )
 
 // @title Go REST API with Fiber Framework

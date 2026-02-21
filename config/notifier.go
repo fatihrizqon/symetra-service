@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/fatihrizqon/go-fiber-service/internal/notifier"
+	"github.com/fatihrizqon/symetra-service/internal/notifier"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )

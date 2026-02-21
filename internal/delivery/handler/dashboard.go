@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"github.com/fatihrizqon/go-fiber-service/internal/delivery/http/response"
-	"github.com/fatihrizqon/go-fiber-service/internal/service"
+	"github.com/fatihrizqon/symetra-service/internal/delivery/http/response"
+	"github.com/fatihrizqon/symetra-service/internal/service"
 	"github.com/gofiber/fiber/v2"
 )
 

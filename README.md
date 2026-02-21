@@ -56,7 +56,7 @@ Cross-cutting concerns like logging and configuration are centralized (e.g. `log
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/fatihrizqon/go-fiber-service.git
+git clone https://github.com/fatihrizqon/symetra-service.git
 cd go-fiber-service
 ```
 

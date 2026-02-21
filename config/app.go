@@ -1,11 +1,11 @@
 package config
 
 import (
-	"github.com/fatihrizqon/go-fiber-service/internal/delivery/handler"
-	"github.com/fatihrizqon/go-fiber-service/internal/delivery/http/middleware"
-	"github.com/fatihrizqon/go-fiber-service/internal/delivery/http/route"
-	"github.com/fatihrizqon/go-fiber-service/internal/repository"
-	"github.com/fatihrizqon/go-fiber-service/internal/service"
+	"github.com/fatihrizqon/symetra-service/internal/delivery/handler"
+	"github.com/fatihrizqon/symetra-service/internal/delivery/http/middleware"
+	"github.com/fatihrizqon/symetra-service/internal/delivery/http/route"
+	"github.com/fatihrizqon/symetra-service/internal/repository"
+	"github.com/fatihrizqon/symetra-service/internal/service"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"

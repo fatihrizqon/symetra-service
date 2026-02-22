@@ -11,7 +11,7 @@ import (
 
 type ICOAGroupRepository interface {
 	Create(entity.COAGroup) (entity.COAGroup, error)
-	FindAll(page, pageSize int, search string, options util.SearchOptions, filters entity.COAGroupFilters) ([]entity.COAGroup, int, error)
+	FindAll(page, pageSize int, search string, options util.SearchOptions) ([]entity.COAGroup, int, error)
 	FindById(entityId uuid.UUID) (entity.COAGroup, error)
 	Update(entity.COAGroup) error
 	Delete(entityId uuid.UUID) error
@@ -39,7 +39,7 @@ func (e *COAGroupRepository) Create(entity entity.COAGroup) (entity.COAGroup, er
 }
 
 // FindAll implements ICOAGroupRepository with pagination.
-func (e *COAGroupRepository) FindAll(page, pageSize int, search string, options util.SearchOptions, filters entity.COAGroupFilters) ([]entity.COAGroup, int, error) {
+func (e *COAGroupRepository) FindAll(page, pageSize int, search string, options util.SearchOptions) ([]entity.COAGroup, int, error) {
 	var entities []entity.COAGroup
 	var totalCount int64
 

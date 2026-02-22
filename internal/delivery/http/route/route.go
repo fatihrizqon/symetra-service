@@ -34,12 +34,14 @@ func (rc *RouteConfig) SetupGuestRoute() {
 	rc.App.Get("/api/v1/coa_groups/:id", rc.COAGroupHandler.FindById)
 	rc.App.Put("/api/v1/coa_groups/:id", rc.COAGroupHandler.Update)
 	rc.App.Delete("/api/v1/coa_groups/:id", rc.COAGroupHandler.Delete)
+	rc.App.Get("/api/v1/dropdown/coa_groups", rc.COAGroupHandler.SelectDropdownList)
 
 	rc.App.Post("/api/v1/coa_subgroups", rc.COASubGroupHandler.Create)
 	rc.App.Get("/api/v1/coa_subgroups", rc.COASubGroupHandler.FindAll)
 	rc.App.Get("/api/v1/coa_subgroups/:id", rc.COASubGroupHandler.FindById)
 	rc.App.Put("/api/v1/coa_subgroups/:id", rc.COASubGroupHandler.Update)
 	rc.App.Delete("/api/v1/coa_subgroups/:id", rc.COASubGroupHandler.Delete)
+	rc.App.Get("/api/v1/dropdown/coa_subgroups", rc.COASubGroupHandler.SelectDropdownList)
 }
 
 func (rc *RouteConfig) SetupAuthRoute() {

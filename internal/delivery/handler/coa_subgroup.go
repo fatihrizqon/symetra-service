@@ -65,7 +65,6 @@ func (handler *COASubGroupHandler) Create(ctx *fiber.Ctx) error {
 // @Router /api/v1/coa_subgroups [get]
 func (handler *COASubGroupHandler) FindAll(ctx *fiber.Ctx) error {
 	page, pageSize, _ := util.ParsePaginationParams(ctx)
-	coaSubGroupFilters := handler.setCOASubGroupFilters(ctx)
 
 	search := ctx.Query("search")
 	entity := entity.COASubGroup{}
@@ -73,7 +72,7 @@ func (handler *COASubGroupHandler) FindAll(ctx *fiber.Ctx) error {
 		Fields: entity.SearchableFields(),
 	}
 
-	entities, totalCount, err := handler.ICOASubGroupService.FindAll(page, pageSize, search, options, coaSubGroupFilters)
+	entities, totalCount, err := handler.ICOASubGroupService.FindAll(page, pageSize, search, options)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
 			Status:  500,
@@ -216,12 +215,34 @@ func (handler *COASubGroupHandler) Delete(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusOK).JSON(resp)
 }
 
-func (handler *COASubGroupHandler) setCOASubGroupFilters(ctx *fiber.Ctx) entity.COASubGroupFilters {
-	filters := entity.COASubGroupFilters{}
+func (handler *COASubGroupHandler) SelectDropdownList(ctx *fiber.Ctx) error {
+	page, pageSize, _ := util.ParsePaginationParams(ctx)
 
-	if status := ctx.Query("status"); status != "" {
-		filters.Status = &status
+	search := ctx.Query("search")
+	entity := entity.COASubGroup{}
+	options := util.SearchOptions{
+		Fields: entity.SearchableFields(),
 	}
 
-	return filters
+	entities, totalCount, err := handler.ICOASubGroupService.SelectDropdownList(page, pageSize, search, options)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
+			Status:  500,
+			Message: "Failed to retrieve records",
+			Errors:  err.Error(),
+		})
+	}
+
+	if totalCount == 0 || (page-1)*pageSize >= totalCount {
+		return ctx.Status(fiber.StatusOK).JSON(response.JSON{
+			Status:  200,
+			Message: "No records found.",
+			Data:    []response.COAGroupResponse{},
+			Meta:    nil,
+		})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(response.SelectJSON{
+		Data: entities,
+	})
 }

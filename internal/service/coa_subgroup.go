@@ -12,10 +12,12 @@ import (
 
 type ICOASubGroupService interface {
 	Create(req request.COASubGroupCreateRequest) (entity.COASubGroup, error)
-	FindAll(page, pageSize int, search string, options util.SearchOptions, filters entity.COASubGroupFilters) ([]response.COASubGroupResponse, int, error)
+	FindAll(page, pageSize int, search string, options util.SearchOptions) ([]response.COASubGroupResponse, int, error)
 	FindById(reqId uuid.UUID) (response.COASubGroupResponse, error)
 	Update(req request.COASubGroupUpdateRequest) (entity.COASubGroup, error)
 	Delete(reqId uuid.UUID) (entity.COASubGroup, error)
+
+	SelectDropdownList(page, pageSize int, search string, options util.SearchOptions) ([]response.SelectDropdownListResponse, int, error)
 }
 
 type COASubGroupService struct {
@@ -51,9 +53,9 @@ func (e *COASubGroupService) Create(req request.COASubGroupCreateRequest) (entit
 }
 
 // FindAll implements ICOASubGroupService with pagination.
-func (e *COASubGroupService) FindAll(page, pageSize int, search string, options util.SearchOptions, filters entity.COASubGroupFilters) ([]response.COASubGroupResponse, int, error) {
+func (e *COASubGroupService) FindAll(page, pageSize int, search string, options util.SearchOptions) ([]response.COASubGroupResponse, int, error) {
 	var resps []response.COASubGroupResponse
-	entities, totalCount, err := e.ICOASubGroupRepository.FindAll(page, pageSize, search, options, filters)
+	entities, totalCount, err := e.ICOASubGroupRepository.FindAll(page, pageSize, search, options)
 
 	if err != nil {
 		return nil, 0, err
@@ -136,4 +138,33 @@ func (e *COASubGroupService) Delete(reqId uuid.UUID) (entity.COASubGroup, error)
 	}
 
 	return entity, nil
+}
+
+// SelectDropdownList implements ICOASubGroupService.
+func (e *COASubGroupService) SelectDropdownList(page int, pageSize int, search string, options util.SearchOptions) ([]response.SelectDropdownListResponse, int, error) {
+	var resps []response.SelectDropdownListResponse
+	entities, totalCount, err := e.ICOASubGroupRepository.FindAll(page, pageSize, search, options)
+
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if totalCount == 0 {
+		return resps, totalCount, nil
+	}
+
+	totalPages := (totalCount + pageSize - 1) / pageSize
+	if page > totalPages {
+		return nil, totalCount, nil
+	}
+
+	for _, value := range entities {
+		resp := response.SelectDropdownListResponse{
+			Value: value.Id,
+			Label: value.Name,
+		}
+		resps = append(resps, resp)
+	}
+
+	return resps, totalCount, nil
 }

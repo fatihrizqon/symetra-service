@@ -65,7 +65,6 @@ func (handler *COAGroupHandler) Create(ctx *fiber.Ctx) error {
 // @Router /api/v1/coa_groups [get]
 func (handler *COAGroupHandler) FindAll(ctx *fiber.Ctx) error {
 	page, pageSize, _ := util.ParsePaginationParams(ctx)
-	coaGroupFilters := handler.setCOAGroupFilters(ctx)
 
 	search := ctx.Query("search")
 	entity := entity.COAGroup{}
@@ -73,7 +72,7 @@ func (handler *COAGroupHandler) FindAll(ctx *fiber.Ctx) error {
 		Fields: entity.SearchableFields(),
 	}
 
-	entities, totalCount, err := handler.ICOAGroupService.FindAll(page, pageSize, search, options, coaGroupFilters)
+	entities, totalCount, err := handler.ICOAGroupService.FindAll(page, pageSize, search, options)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
 			Status:  500,
@@ -224,4 +223,36 @@ func (handler *COAGroupHandler) setCOAGroupFilters(ctx *fiber.Ctx) entity.COAGro
 	}
 
 	return filters
+}
+
+func (handler *COAGroupHandler) SelectDropdownList(ctx *fiber.Ctx) error {
+	page, pageSize, _ := util.ParsePaginationParams(ctx)
+
+	search := ctx.Query("search")
+	entity := entity.COAGroup{}
+	options := util.SearchOptions{
+		Fields: entity.SearchableFields(),
+	}
+
+	entities, totalCount, err := handler.ICOAGroupService.SelectDropdownList(page, pageSize, search, options)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
+			Status:  500,
+			Message: "Failed to retrieve records",
+			Errors:  err.Error(),
+		})
+	}
+
+	if totalCount == 0 || (page-1)*pageSize >= totalCount {
+		return ctx.Status(fiber.StatusOK).JSON(response.JSON{
+			Status:  200,
+			Message: "No records found.",
+			Data:    []response.COAGroupResponse{},
+			Meta:    nil,
+		})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(response.SelectJSON{
+		Data: entities,
+	})
 }

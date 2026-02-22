@@ -2,14 +2,22 @@ basePath: /
 definitions:
   request.COAGroupCreateRequest:
     properties:
+      code:
+        minLength: 1
+        type: string
       name:
         minLength: 1
         type: string
     required:
+    - code
     - name
     type: object
   request.COAGroupUpdateRequest:
     properties:
+      code:
+        maxLength: 20
+        minLength: 1
+        type: string
       id:
         type: string
       name:
@@ -17,6 +25,41 @@ definitions:
         minLength: 1
         type: string
     required:
+    - code
+    - name
+    type: object
+  request.COASubGroupCreateRequest:
+    properties:
+      code:
+        minLength: 1
+        type: string
+      group_id:
+        type: string
+      name:
+        minLength: 1
+        type: string
+    required:
+    - code
+    - group_id
+    - name
+    type: object
+  request.COASubGroupUpdateRequest:
+    properties:
+      code:
+        maxLength: 20
+        minLength: 1
+        type: string
+      group_id:
+        type: string
+      id:
+        type: string
+      name:
+        maxLength: 20
+        minLength: 1
+        type: string
+    required:
+    - code
+    - group_id
     - name
     type: object
   request.LoginRequest:
@@ -366,6 +409,142 @@ paths:
       summary: Update chart of account group
       tags:
       - COAGroups
+  /api/v1/coa_subgroups:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all chart of account subgroup records with pagination
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved all records.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Get all chart of account subgroups
+      tags:
+      - COASubGroups
+    post:
+      consumes:
+      - application/json
+      description: Store a new chart of account subgroup record
+      parameters:
+      - description: COASubGroup Create Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.COASubGroupCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: A new record has been stored.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Create chart of account subgroup
+      tags:
+      - COASubGroups
+  /api/v1/coa_subgroups/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a chart of account subgroup record by ID
+      parameters:
+      - description: COASubGroup ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been deleted.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: COASubGroup not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Delete chart of account subgroup
+      tags:
+      - COASubGroups
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single chart of account subgroup by its ID
+      parameters:
+      - description: COASubGroup ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved selected record.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: COASubGroup not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Get chart of account subgroup by ID
+      tags:
+      - COASubGroups
+    put:
+      consumes:
+      - application/json
+      description: Update chart of account subgroup data by ID
+      parameters:
+      - description: COA SubGroup ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: COA SubGroup Update Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.COASubGroupUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been updated.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: COA SubGroup not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Update chart of account subgroup
+      tags:
+      - COASubGroups
   /api/v1/users:
     get:
       consumes:

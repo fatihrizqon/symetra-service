@@ -8,13 +8,13 @@ import (
 )
 
 type RouteConfig struct {
-	App              *fiber.App
-	UserHandler      *handler.UserHandler
-	AuthHandler      *handler.AuthHandler
-	AuthMiddleware   fiber.Handler
-	DashboardHandler *handler.DashboardHandler
-	COAGroupHandler  *handler.COAGroupHandler
-	// COASubGroupHandler *handler.COASubGroupHandler
+	App                *fiber.App
+	UserHandler        *handler.UserHandler
+	AuthHandler        *handler.AuthHandler
+	AuthMiddleware     fiber.Handler
+	DashboardHandler   *handler.DashboardHandler
+	COAGroupHandler    *handler.COAGroupHandler
+	COASubGroupHandler *handler.COASubGroupHandler
 	// COAHandler         *handler.COAHandler
 }
 
@@ -34,6 +34,12 @@ func (rc *RouteConfig) SetupGuestRoute() {
 	rc.App.Get("/api/v1/coa_groups/:id", rc.COAGroupHandler.FindById)
 	rc.App.Put("/api/v1/coa_groups/:id", rc.COAGroupHandler.Update)
 	rc.App.Delete("/api/v1/coa_groups/:id", rc.COAGroupHandler.Delete)
+
+	rc.App.Post("/api/v1/coa_subgroups", rc.COASubGroupHandler.Create)
+	rc.App.Get("/api/v1/coa_subgroups", rc.COASubGroupHandler.FindAll)
+	rc.App.Get("/api/v1/coa_subgroups/:id", rc.COASubGroupHandler.FindById)
+	rc.App.Put("/api/v1/coa_subgroups/:id", rc.COASubGroupHandler.Update)
+	rc.App.Delete("/api/v1/coa_subgroups/:id", rc.COASubGroupHandler.Delete)
 }
 
 func (rc *RouteConfig) SetupAuthRoute() {

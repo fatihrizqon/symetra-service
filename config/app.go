@@ -32,29 +32,33 @@ func Bootstrap(config *BootstrapConfig) {
 	authRepository := repository.NewAuthRepository(config.DB)
 	tokenRepository := repository.NewTokenRepository(config.DB)
 	coaGroupRepository := repository.NewCOAGroupRepository(config.DB)
+	coaSubGroupRepository := repository.NewCOASubGroupRepository(config.DB)
 
 	// Initialize services
 	userService := service.NewUserService(userRepository, config.Validate)
 	authService := service.NewAuthService(authRepository, tokenRepository, config.Validate)
 	dashboardService := service.NewDashboardService(userRepository)
 	coaGroupService := service.NewCOAGroupService(coaGroupRepository, config.Validate)
+	coaSubGroupService := service.NewCOASubGroupService(coaSubGroupRepository, config.Validate)
 
 	// Initialize handlers
 	userHandler := handler.NewUserHandler(userService)
 	authHandler := handler.NewAuthHandler(authService)
 	dashboardHandler := handler.NewDashboardHandler(dashboardService)
 	coaGroupHandler := handler.NewCOAGroupHandler(coaGroupService)
+	coaSubGroupHandler := handler.NewCOASubGroupHandler(coaSubGroupService)
 
 	// Setup middleware
 	authMiddleware := middleware.NewAuth(tokenRepository)
 
 	routeConfig := route.RouteConfig{
-		App:              config.App,
-		UserHandler:      userHandler,
-		AuthHandler:      authHandler,
-		AuthMiddleware:   authMiddleware,
-		DashboardHandler: dashboardHandler,
-		COAGroupHandler:  coaGroupHandler,
+		App:                config.App,
+		UserHandler:        userHandler,
+		AuthHandler:        authHandler,
+		AuthMiddleware:     authMiddleware,
+		DashboardHandler:   dashboardHandler,
+		COAGroupHandler:    coaGroupHandler,
+		COASubGroupHandler: coaSubGroupHandler,
 	}
 
 	routeConfig.Setup()

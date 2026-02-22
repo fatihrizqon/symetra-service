@@ -11,6 +11,7 @@ func Migrate(db *gorm.DB) {
 		&entity.Session{},
 		&entity.Credential{},
 		&entity.COAGroup{},
+		&entity.COASubGroup{},
 	)
 	seedDefaultUser(db)
 }

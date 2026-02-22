@@ -35,8 +35,9 @@ func NewCOAGroupService(repo repository.ICOAGroupRepository, validate *validator
 // Create implements ICOAGroupService.
 func (e *COAGroupService) Create(req request.COAGroupCreateRequest) (entity.COAGroup, error) {
 	entity := entity.COAGroup{
-		Code: req.Code,
-		Name: req.Name,
+		Code:          req.Code,
+		Name:          req.Name,
+		NormalBalance: req.NormalBalance,
 	}
 
 	if err := e.validate.Struct(req); err != nil {
@@ -71,12 +72,13 @@ func (e *COAGroupService) FindAll(page, pageSize int, search string, options uti
 
 	for _, value := range entities {
 		resp := response.COAGroupResponse{
-			Id:        value.Id,
-			Code:      value.Code,
-			Name:      value.Name,
-			Status:    value.Status,
-			CreatedAt: value.CreatedAt,
-			UpdatedAt: value.UpdatedAt,
+			Id:            value.Id,
+			Code:          value.Code,
+			Name:          value.Name,
+			NormalBalance: value.NormalBalance,
+			Status:        value.Status,
+			CreatedAt:     value.CreatedAt,
+			UpdatedAt:     value.UpdatedAt,
 		}
 		resps = append(resps, resp)
 	}
@@ -94,12 +96,13 @@ func (e *COAGroupService) FindById(reqId uuid.UUID) (response.COAGroupResponse, 
 	}
 
 	return response.COAGroupResponse{
-		Id:        result.Id,
-		Name:      result.Name,
-		Code:      result.Code,
-		Status:    result.Status,
-		CreatedAt: result.CreatedAt,
-		UpdatedAt: result.UpdatedAt,
+		Id:            result.Id,
+		Name:          result.Name,
+		NormalBalance: result.NormalBalance,
+		Code:          result.Code,
+		Status:        result.Status,
+		CreatedAt:     result.CreatedAt,
+		UpdatedAt:     result.UpdatedAt,
 	}, nil
 }
 
@@ -112,6 +115,7 @@ func (e *COAGroupService) Update(req request.COAGroupUpdateRequest) (entity.COAG
 
 	entity.Name = req.Name
 	entity.Code = req.Code
+	entity.NormalBalance = req.NormalBalance
 
 	err = e.ICOAGroupRepository.Update(entity)
 	if err != nil {

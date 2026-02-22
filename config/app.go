@@ -33,6 +33,7 @@ func Bootstrap(config *BootstrapConfig) {
 	tokenRepository := repository.NewTokenRepository(config.DB)
 	coaGroupRepository := repository.NewCOAGroupRepository(config.DB)
 	coaSubGroupRepository := repository.NewCOASubGroupRepository(config.DB)
+	coaRepository := repository.NewCOARepository(config.DB)
 
 	// Initialize services
 	userService := service.NewUserService(userRepository, config.Validate)
@@ -40,6 +41,7 @@ func Bootstrap(config *BootstrapConfig) {
 	dashboardService := service.NewDashboardService(userRepository)
 	coaGroupService := service.NewCOAGroupService(coaGroupRepository, config.Validate)
 	coaSubGroupService := service.NewCOASubGroupService(coaSubGroupRepository, config.Validate)
+	coaService := service.NewCOAService(coaRepository, config.Validate)
 
 	// Initialize handlers
 	userHandler := handler.NewUserHandler(userService)
@@ -47,6 +49,7 @@ func Bootstrap(config *BootstrapConfig) {
 	dashboardHandler := handler.NewDashboardHandler(dashboardService)
 	coaGroupHandler := handler.NewCOAGroupHandler(coaGroupService)
 	coaSubGroupHandler := handler.NewCOASubGroupHandler(coaSubGroupService)
+	coaHandler := handler.NewCOAHandler(coaService)
 
 	// Setup middleware
 	authMiddleware := middleware.NewAuth(tokenRepository)
@@ -59,6 +62,7 @@ func Bootstrap(config *BootstrapConfig) {
 		DashboardHandler:   dashboardHandler,
 		COAGroupHandler:    coaGroupHandler,
 		COASubGroupHandler: coaSubGroupHandler,
+		COAHandler:         coaHandler,
 	}
 
 	routeConfig.Setup()

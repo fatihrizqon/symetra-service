@@ -76,12 +76,13 @@ func (e *COASubGroupService) FindAll(page, pageSize int, search string, options 
 
 		if value.Group.Id != uuid.Nil {
 			groupResp = &response.COAGroupResponse{
-				Id:        value.Group.Id,
-				Code:      value.Group.Code,
-				Name:      value.Group.Name,
-				Status:    value.Group.Status,
-				CreatedAt: value.Group.CreatedAt,
-				UpdatedAt: value.Group.UpdatedAt,
+				Id:            value.Group.Id,
+				Code:          value.Group.Code,
+				Name:          value.Group.Name,
+				NormalBalance: value.Group.NormalBalance,
+				Status:        value.Group.Status,
+				CreatedAt:     value.Group.CreatedAt,
+				UpdatedAt:     value.Group.UpdatedAt,
 			}
 		}
 

@@ -15,7 +15,7 @@ type RouteConfig struct {
 	DashboardHandler   *handler.DashboardHandler
 	COAGroupHandler    *handler.COAGroupHandler
 	COASubGroupHandler *handler.COASubGroupHandler
-	// COAHandler         *handler.COAHandler
+	COAHandler         *handler.COAHandler
 }
 
 func (rc *RouteConfig) Setup() {
@@ -42,6 +42,13 @@ func (rc *RouteConfig) SetupGuestRoute() {
 	rc.App.Put("/api/v1/coa_subgroups/:id", rc.COASubGroupHandler.Update)
 	rc.App.Delete("/api/v1/coa_subgroups/:id", rc.COASubGroupHandler.Delete)
 	rc.App.Get("/api/v1/dropdown/coa_subgroups", rc.COASubGroupHandler.SelectDropdownList)
+
+	rc.App.Post("/api/v1/coa", rc.COAHandler.Create)
+	rc.App.Get("/api/v1/coa", rc.COAHandler.FindAll)
+	rc.App.Get("/api/v1/coa/:id", rc.COAHandler.FindById)
+	rc.App.Put("/api/v1/coa/:id", rc.COAHandler.Update)
+	rc.App.Delete("/api/v1/coa/:id", rc.COAHandler.Delete)
+	rc.App.Get("/api/v1/dropdown/coa", rc.COAHandler.SelectDropdownList)
 }
 
 func (rc *RouteConfig) SetupAuthRoute() {

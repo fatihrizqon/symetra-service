@@ -118,6 +118,212 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/coa": {
+            "get": {
+                "description": "Retrieve all chart of account  records with pagination",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "COAs"
+                ],
+                "summary": "Get all chart of account s",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search keyword",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved all records.",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Store a new chart of account  record",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "COAs"
+                ],
+                "summary": "Create chart of account",
+                "parameters": [
+                    {
+                        "description": "COA Create Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.COACreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "A new record has been stored.",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/coa/{id}": {
+            "get": {
+                "description": "Retrieve a single chart of account  by its ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "COAs"
+                ],
+                "summary": "Get chart of account  by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "COA ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved selected record.",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    },
+                    "404": {
+                        "description": "COA not found",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update chart of account  data by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "COAs"
+                ],
+                "summary": "Update chart of account",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "COA  ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "COA  Update Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.COAUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Selected record has been updated.",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    },
+                    "404": {
+                        "description": "COA  not found",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Remove a chart of account  record by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "COAs"
+                ],
+                "summary": "Delete chart of account",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "COA ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Selected record has been deleted.",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    },
+                    "404": {
+                        "description": "COA not found",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/coa_groups": {
             "get": {
                 "description": "Retrieve all chart of account group records with pagination",
@@ -530,6 +736,43 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/dropdown/coa": {
+            "get": {
+                "description": "Retrieve a paginated list of chart of account s for dropdown selection. Supports optional search query.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Dropdowns"
+                ],
+                "summary": "Get COA dropdown options",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search keyword for filtering s",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved dropdown options",
+                        "schema": {
+                            "$ref": "#/definitions/response.SelectJSON"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to retrieve records",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/dropdown/coa_groups": {
             "get": {
                 "description": "Retrieve a paginated list of chart of account groups for dropdown selection. Supports optional search query.",
@@ -812,11 +1055,12 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "request.COAGroupCreateRequest": {
+        "request.COACreateRequest": {
             "type": "object",
             "required": [
                 "code",
-                "name"
+                "name",
+                "subgroup_id"
             ],
             "properties": {
                 "code": {
@@ -826,6 +1070,31 @@ const docTemplate = `{
                 "name": {
                     "type": "string",
                     "minLength": 1
+                },
+                "subgroup_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "request.COAGroupCreateRequest": {
+            "type": "object",
+            "required": [
+                "code",
+                "name",
+                "normal_balance"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "name": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "normal_balance": {
+                    "type": "string",
+                    "minLength": 1
                 }
             }
         },
@@ -833,7 +1102,8 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "code",
-                "name"
+                "name",
+                "normal_balance"
             ],
             "properties": {
                 "code": {
@@ -847,6 +1117,10 @@ const docTemplate = `{
                 "name": {
                     "type": "string",
                     "maxLength": 20,
+                    "minLength": 1
+                },
+                "normal_balance": {
+                    "type": "string",
                     "minLength": 1
                 }
             }
@@ -895,6 +1169,32 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 20,
                     "minLength": 1
+                }
+            }
+        },
+        "request.COAUpdateRequest": {
+            "type": "object",
+            "required": [
+                "code",
+                "name",
+                "subgroup_id"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "maxLength": 20,
+                    "minLength": 1
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 20,
+                    "minLength": 1
+                },
+                "subgroup_id": {
+                    "type": "string"
                 }
             }
         },

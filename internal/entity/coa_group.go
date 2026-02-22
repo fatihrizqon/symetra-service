@@ -11,13 +11,14 @@ func (COAGroup) TableName() string {
 }
 
 type COAGroup struct {
-	Id        uuid.UUID     `gorm:"type:uuid; primaryKey; default:gen_random_uuid();" json:"id"`
-	Code      string        `gorm:"type:character varying; not null; unique;" json:"code"`
-	Name      string        `gorm:"type:character varying; not null;" json:"name"`
-	Status    int           `gorm:"type:int; not null; default:1;" json:"status"`
-	SubGroups []COASubGroup `gorm:"foreignKey:GroupId"`
-	CreatedAt time.Time     `gorm:"autoCreateTime;" json:"created_at"`
-	UpdatedAt time.Time     `gorm:"autoUpdateTime;" json:"updated_at"`
+	Id            uuid.UUID     `gorm:"type:uuid; primaryKey; default:gen_random_uuid();" json:"id"`
+	Code          string        `gorm:"type:character varying; not null; unique;" json:"code"`
+	Name          string        `gorm:"type:character varying; not null;" json:"name"`
+	NormalBalance string        `gorm:"type:character varying; not null;" json:"normal_balance"`
+	Status        int           `gorm:"type:int; not null; default:1;" json:"status"`
+	SubGroups     []COASubGroup `gorm:"foreignKey:GroupId"`
+	CreatedAt     time.Time     `gorm:"autoCreateTime;" json:"created_at"`
+	UpdatedAt     time.Time     `gorm:"autoUpdateTime;" json:"updated_at"`
 }
 
 func (COAGroup) SearchableFields() []string {

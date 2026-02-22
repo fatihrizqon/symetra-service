@@ -1,5 +1,20 @@
 basePath: /
 definitions:
+  request.COACreateRequest:
+    properties:
+      code:
+        minLength: 1
+        type: string
+      name:
+        minLength: 1
+        type: string
+      subgroup_id:
+        type: string
+    required:
+    - code
+    - name
+    - subgroup_id
+    type: object
   request.COAGroupCreateRequest:
     properties:
       code:
@@ -8,9 +23,13 @@ definitions:
       name:
         minLength: 1
         type: string
+      normal_balance:
+        minLength: 1
+        type: string
     required:
     - code
     - name
+    - normal_balance
     type: object
   request.COAGroupUpdateRequest:
     properties:
@@ -24,9 +43,13 @@ definitions:
         maxLength: 20
         minLength: 1
         type: string
+      normal_balance:
+        minLength: 1
+        type: string
     required:
     - code
     - name
+    - normal_balance
     type: object
   request.COASubGroupCreateRequest:
     properties:
@@ -61,6 +84,25 @@ definitions:
     - code
     - group_id
     - name
+    type: object
+  request.COAUpdateRequest:
+    properties:
+      code:
+        maxLength: 20
+        minLength: 1
+        type: string
+      id:
+        type: string
+      name:
+        maxLength: 20
+        minLength: 1
+        type: string
+      subgroup_id:
+        type: string
+    required:
+    - code
+    - name
+    - subgroup_id
     type: object
   request.LoginRequest:
     properties:
@@ -277,6 +319,142 @@ paths:
       summary: Refresh access token
       tags:
       - Auth
+  /api/v1/coa:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all chart of account  records with pagination
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved all records.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Get all chart of account s
+      tags:
+      - COAs
+    post:
+      consumes:
+      - application/json
+      description: Store a new chart of account  record
+      parameters:
+      - description: COA Create Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.COACreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: A new record has been stored.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Create chart of account
+      tags:
+      - COAs
+  /api/v1/coa/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a chart of account  record by ID
+      parameters:
+      - description: COA ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been deleted.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: COA not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Delete chart of account
+      tags:
+      - COAs
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single chart of account  by its ID
+      parameters:
+      - description: COA ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved selected record.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: COA not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Get chart of account  by ID
+      tags:
+      - COAs
+    put:
+      consumes:
+      - application/json
+      description: Update chart of account  data by ID
+      parameters:
+      - description: COA  ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: COA  Update Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.COAUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been updated.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: COA  not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Update chart of account
+      tags:
+      - COAs
   /api/v1/coa_groups:
     get:
       consumes:
@@ -549,6 +727,31 @@ paths:
       summary: Update chart of account subgroup
       tags:
       - COASubGroups
+  /api/v1/dropdown/coa:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a paginated list of chart of account s for dropdown selection.
+        Supports optional search query.
+      parameters:
+      - description: Search keyword for filtering s
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved dropdown options
+          schema:
+            $ref: '#/definitions/response.SelectJSON'
+        "500":
+          description: Failed to retrieve records
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Get COA dropdown options
+      tags:
+      - Dropdowns
   /api/v1/dropdown/coa_groups:
     get:
       consumes:

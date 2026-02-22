@@ -215,6 +215,16 @@ func (handler *COASubGroupHandler) Delete(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusOK).JSON(resp)
 }
 
+// Select COASubGroup Dropdown List
+// @Summary Get COASubGroup dropdown options
+// @Description Retrieve a paginated list of chart of account subgroups for dropdown selection. Supports optional search query.
+// @Tags Dropdowns
+// @Accept json
+// @Produce json
+// @Param search query string false "Search keyword for filtering subgroups"
+// @Success 200 {object} response.SelectJSON "Successfully retrieved dropdown options"
+// @Failure 500 {object} response.JSON "Failed to retrieve records"
+// @Router /api/v1/dropdown/coa_subgroups/ [get]
 func (handler *COASubGroupHandler) SelectDropdownList(ctx *fiber.Ctx) error {
 	page, pageSize, _ := util.ParsePaginationParams(ctx)
 

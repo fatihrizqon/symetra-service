@@ -530,6 +530,80 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/dropdown/coa_groups": {
+            "get": {
+                "description": "Retrieve a paginated list of chart of account groups for dropdown selection. Supports optional search query.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Dropdowns"
+                ],
+                "summary": "Get COAGroup dropdown options",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search keyword for filtering groups",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved dropdown options",
+                        "schema": {
+                            "$ref": "#/definitions/response.SelectJSON"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to retrieve records",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/dropdown/coa_subgroups/": {
+            "get": {
+                "description": "Retrieve a paginated list of chart of account subgroups for dropdown selection. Supports optional search query.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Dropdowns"
+                ],
+                "summary": "Get COASubGroup dropdown options",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search keyword for filtering subgroups",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved dropdown options",
+                        "schema": {
+                            "$ref": "#/definitions/response.SelectJSON"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to retrieve records",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/users": {
             "get": {
                 "description": "Retrieve all user records with pagination",
@@ -980,6 +1054,12 @@ const docTemplate = `{
                 "total_pages": {
                     "type": "integer"
                 }
+            }
+        },
+        "response.SelectJSON": {
+            "type": "object",
+            "properties": {
+                "data": {}
             }
         },
         "response.UserInfo": {

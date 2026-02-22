@@ -225,6 +225,16 @@ func (handler *COAGroupHandler) setCOAGroupFilters(ctx *fiber.Ctx) entity.COAGro
 	return filters
 }
 
+// Select COAGroup Dropdown List
+// @Summary Get COAGroup dropdown options
+// @Description Retrieve a paginated list of chart of account groups for dropdown selection. Supports optional search query.
+// @Tags Dropdowns
+// @Accept json
+// @Produce json
+// @Param search query string false "Search keyword for filtering groups"
+// @Success 200 {object} response.SelectJSON "Successfully retrieved dropdown options"
+// @Failure 500 {object} response.JSON "Failed to retrieve records"
+// @Router /api/v1/dropdown/coa_groups [get]
 func (handler *COAGroupHandler) SelectDropdownList(ctx *fiber.Ctx) error {
 	page, pageSize, _ := util.ParsePaginationParams(ctx)
 

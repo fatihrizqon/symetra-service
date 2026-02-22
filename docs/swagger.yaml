@@ -173,6 +173,10 @@ definitions:
       total_pages:
         type: integer
     type: object
+  response.SelectJSON:
+    properties:
+      data: {}
+    type: object
   response.UserInfo:
     properties:
       email:
@@ -545,6 +549,56 @@ paths:
       summary: Update chart of account subgroup
       tags:
       - COASubGroups
+  /api/v1/dropdown/coa_groups:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a paginated list of chart of account groups for dropdown
+        selection. Supports optional search query.
+      parameters:
+      - description: Search keyword for filtering groups
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved dropdown options
+          schema:
+            $ref: '#/definitions/response.SelectJSON'
+        "500":
+          description: Failed to retrieve records
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Get COAGroup dropdown options
+      tags:
+      - Dropdowns
+  /api/v1/dropdown/coa_subgroups/:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a paginated list of chart of account subgroups for dropdown
+        selection. Supports optional search query.
+      parameters:
+      - description: Search keyword for filtering subgroups
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved dropdown options
+          schema:
+            $ref: '#/definitions/response.SelectJSON'
+        "500":
+          description: Failed to retrieve records
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Get COASubGroup dropdown options
+      tags:
+      - Dropdowns
   /api/v1/users:
     get:
       consumes:

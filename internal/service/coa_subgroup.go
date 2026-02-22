@@ -71,15 +71,31 @@ func (e *COASubGroupService) FindAll(page, pageSize int, search string, options 
 	}
 
 	for _, value := range entities {
+
+		var groupResp *response.COAGroupResponse
+
+		if value.Group.Id != uuid.Nil {
+			groupResp = &response.COAGroupResponse{
+				Id:        value.Group.Id,
+				Code:      value.Group.Code,
+				Name:      value.Group.Name,
+				Status:    value.Group.Status,
+				CreatedAt: value.Group.CreatedAt,
+				UpdatedAt: value.Group.UpdatedAt,
+			}
+		}
+
 		resp := response.COASubGroupResponse{
 			Id:        value.Id,
 			GroupId:   value.GroupId,
+			Group:     groupResp,
 			Code:      value.Code,
 			Name:      value.Name,
 			Status:    value.Status,
 			CreatedAt: value.CreatedAt,
 			UpdatedAt: value.UpdatedAt,
 		}
+
 		resps = append(resps, resp)
 	}
 

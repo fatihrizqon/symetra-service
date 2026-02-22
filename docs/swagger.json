@@ -730,6 +730,218 @@
                 }
             }
         },
+        "/api/v1/customers": {
+            "get": {
+                "description": "Retrieve all customer records with pagination",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Customers"
+                ],
+                "summary": "Get all customers",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search keyword",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by status",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved all records.",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Store a new customer record",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Customers"
+                ],
+                "summary": "Create customer",
+                "parameters": [
+                    {
+                        "description": "Customer Create Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.CustomerCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "A new record has been stored.",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/customers/{id}": {
+            "get": {
+                "description": "Retrieve a single customer by its ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Customers"
+                ],
+                "summary": "Get customer by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Customer ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved selected record.",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    },
+                    "404": {
+                        "description": "Customer not found",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update customer data by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Customers"
+                ],
+                "summary": "Update customer",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Customer ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Customer Update Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.CustomerUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Selected record has been updated.",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    },
+                    "404": {
+                        "description": "Customer not found",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Remove a customer record by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Customers"
+                ],
+                "summary": "Delete customer",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Customer ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Selected record has been deleted.",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    },
+                    "404": {
+                        "description": "Customer not found",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/dropdown/coa": {
             "get": {
                 "description": "Retrieve a paginated list of chart of account s for dropdown selection. Supports optional search query.",
@@ -834,6 +1046,362 @@
                     },
                     "500": {
                         "description": "Failed to retrieve records",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/dropdown/customers": {
+            "get": {
+                "description": "Retrieve customers for dropdown selection",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Dropdowns"
+                ],
+                "summary": "Get customer dropdown options",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search keyword",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved dropdown options",
+                        "schema": {
+                            "$ref": "#/definitions/response.SelectJSON"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/dropdown/vendors": {
+            "get": {
+                "description": "Retrieve vendors for dropdown selection",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Dropdowns"
+                ],
+                "summary": "Get vendor dropdown options",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search keyword",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved dropdown options",
+                        "schema": {
+                            "$ref": "#/definitions/response.SelectJSON"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/journal_entries": {
+            "get": {
+                "description": "Retrieve all journal entries with pagination and optional status filter",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "JournalEntries"
+                ],
+                "summary": "Get all journal entries",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search keyword",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by status (draft, posted, void)",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved all records.",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Store a new journal entry. Total debit must equal total credit.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "JournalEntries"
+                ],
+                "summary": "Create journal entry",
+                "parameters": [
+                    {
+                        "description": "Journal Entry Create Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.JournalEntryCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "A new record has been stored.",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request or unbalanced entry",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/journal_entries/{id}": {
+            "get": {
+                "description": "Retrieve a single journal entry by its ID including all lines",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "JournalEntries"
+                ],
+                "summary": "Get journal entry by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Journal Entry ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved selected record.",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    },
+                    "404": {
+                        "description": "Journal entry not found",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update a draft journal entry. Posted entries cannot be updated.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "JournalEntries"
+                ],
+                "summary": "Update journal entry",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Journal Entry ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Journal Entry Update Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.JournalEntryUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Selected record has been updated.",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request or business rule violation",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete a draft journal entry. Posted or void entries cannot be deleted.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "JournalEntries"
+                ],
+                "summary": "Delete journal entry",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Journal Entry ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Selected record has been deleted.",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    },
+                    "400": {
+                        "description": "Business rule violation",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    },
+                    "404": {
+                        "description": "Journal entry not found",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/journal_entries/{id}/post": {
+            "patch": {
+                "description": "Transition a draft journal entry to posted status. Entry must be balanced.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "JournalEntries"
+                ],
+                "summary": "Post journal entry",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Journal Entry ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Journal entry has been posted.",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    },
+                    "400": {
+                        "description": "Business rule violation",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/journal_entries/{id}/void": {
+            "patch": {
+                "description": "Transition a posted journal entry to void status.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "JournalEntries"
+                ],
+                "summary": "Void journal entry",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Journal Entry ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Journal entry has been voided.",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    },
+                    "400": {
+                        "description": "Business rule violation",
                         "schema": {
                             "$ref": "#/definitions/response.JSON"
                         }
@@ -1046,6 +1614,218 @@
                     }
                 }
             }
+        },
+        "/api/v1/vendors": {
+            "get": {
+                "description": "Retrieve all vendor records with pagination",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Vendors"
+                ],
+                "summary": "Get all vendors",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search keyword",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by status",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved all records.",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Store a new vendor record",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Vendors"
+                ],
+                "summary": "Create vendor",
+                "parameters": [
+                    {
+                        "description": "Vendor Create Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.VendorCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "A new record has been stored.",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/vendors/{id}": {
+            "get": {
+                "description": "Retrieve a single vendor by its ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Vendors"
+                ],
+                "summary": "Get vendor by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Vendor ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved selected record.",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    },
+                    "404": {
+                        "description": "Vendor not found",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update vendor data by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Vendors"
+                ],
+                "summary": "Update vendor",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Vendor ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Vendor Update Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.VendorUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Selected record has been updated.",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    },
+                    "404": {
+                        "description": "Vendor not found",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Remove a vendor record by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Vendors"
+                ],
+                "summary": "Delete vendor",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Vendor ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Selected record has been deleted.",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    },
+                    "404": {
+                        "description": "Vendor not found",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -1192,6 +1972,138 @@
                 }
             }
         },
+        "request.CustomerCreateRequest": {
+            "type": "object",
+            "required": [
+                "code",
+                "name"
+            ],
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "coa_id": {
+                    "type": "string"
+                },
+                "code": {
+                    "type": "string",
+                    "maxLength": 20,
+                    "minLength": 1
+                },
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "phone": {
+                    "type": "string"
+                }
+            }
+        },
+        "request.CustomerUpdateRequest": {
+            "type": "object",
+            "required": [
+                "code",
+                "name"
+            ],
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "coa_id": {
+                    "type": "string"
+                },
+                "code": {
+                    "type": "string",
+                    "maxLength": 20,
+                    "minLength": 1
+                },
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "phone": {
+                    "type": "string"
+                }
+            }
+        },
+        "request.JournalEntryCreateRequest": {
+            "type": "object",
+            "required": [
+                "date",
+                "description",
+                "lines"
+            ],
+            "properties": {
+                "date": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "lines": {
+                    "type": "array",
+                    "minItems": 2,
+                    "items": {
+                        "$ref": "#/definitions/request.JournalLineRequest"
+                    }
+                }
+            }
+        },
+        "request.JournalEntryUpdateRequest": {
+            "type": "object",
+            "required": [
+                "date",
+                "description",
+                "lines"
+            ],
+            "properties": {
+                "date": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "lines": {
+                    "type": "array",
+                    "minItems": 2,
+                    "items": {
+                        "$ref": "#/definitions/request.JournalLineRequest"
+                    }
+                }
+            }
+        },
+        "request.JournalLineRequest": {
+            "type": "object",
+            "required": [
+                "coa_id",
+                "description"
+            ],
+            "properties": {
+                "coa_id": {
+                    "type": "string"
+                },
+                "credit": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "debit": {
+                    "type": "number",
+                    "minimum": 0
+                },
+                "description": {
+                    "type": "string",
+                    "minLength": 1
+                }
+            }
+        },
         "request.LoginRequest": {
             "type": "object",
             "required": [
@@ -1268,6 +2180,66 @@
                     "type": "string",
                     "maxLength": 20,
                     "minLength": 1
+                }
+            }
+        },
+        "request.VendorCreateRequest": {
+            "type": "object",
+            "required": [
+                "code",
+                "name"
+            ],
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "coa_id": {
+                    "type": "string"
+                },
+                "code": {
+                    "type": "string",
+                    "maxLength": 20,
+                    "minLength": 1
+                },
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "phone": {
+                    "type": "string"
+                }
+            }
+        },
+        "request.VendorUpdateRequest": {
+            "type": "object",
+            "required": [
+                "code",
+                "name"
+            ],
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "coa_id": {
+                    "type": "string"
+                },
+                "code": {
+                    "type": "string",
+                    "maxLength": 20,
+                    "minLength": 1
+                },
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "phone": {
+                    "type": "string"
                 }
             }
         },

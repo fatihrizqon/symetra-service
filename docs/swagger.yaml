@@ -104,6 +104,99 @@ definitions:
     - name
     - subgroup_id
     type: object
+  request.CustomerCreateRequest:
+    properties:
+      address:
+        type: string
+      coa_id:
+        type: string
+      code:
+        maxLength: 20
+        minLength: 1
+        type: string
+      email:
+        type: string
+      name:
+        minLength: 1
+        type: string
+      phone:
+        type: string
+    required:
+    - code
+    - name
+    type: object
+  request.CustomerUpdateRequest:
+    properties:
+      address:
+        type: string
+      coa_id:
+        type: string
+      code:
+        maxLength: 20
+        minLength: 1
+        type: string
+      email:
+        type: string
+      name:
+        minLength: 1
+        type: string
+      phone:
+        type: string
+    required:
+    - code
+    - name
+    type: object
+  request.JournalEntryCreateRequest:
+    properties:
+      date:
+        type: string
+      description:
+        minLength: 1
+        type: string
+      lines:
+        items:
+          $ref: '#/definitions/request.JournalLineRequest'
+        minItems: 2
+        type: array
+    required:
+    - date
+    - description
+    - lines
+    type: object
+  request.JournalEntryUpdateRequest:
+    properties:
+      date:
+        type: string
+      description:
+        minLength: 1
+        type: string
+      lines:
+        items:
+          $ref: '#/definitions/request.JournalLineRequest'
+        minItems: 2
+        type: array
+    required:
+    - date
+    - description
+    - lines
+    type: object
+  request.JournalLineRequest:
+    properties:
+      coa_id:
+        type: string
+      credit:
+        minimum: 0
+        type: number
+      debit:
+        minimum: 0
+        type: number
+      description:
+        minLength: 1
+        type: string
+    required:
+    - coa_id
+    - description
+    type: object
   request.LoginRequest:
     properties:
       email:
@@ -162,6 +255,48 @@ definitions:
     - email
     - name
     - username
+    type: object
+  request.VendorCreateRequest:
+    properties:
+      address:
+        type: string
+      coa_id:
+        type: string
+      code:
+        maxLength: 20
+        minLength: 1
+        type: string
+      email:
+        type: string
+      name:
+        minLength: 1
+        type: string
+      phone:
+        type: string
+    required:
+    - code
+    - name
+    type: object
+  request.VendorUpdateRequest:
+    properties:
+      address:
+        type: string
+      coa_id:
+        type: string
+      code:
+        maxLength: 20
+        minLength: 1
+        type: string
+      email:
+        type: string
+      name:
+        minLength: 1
+        type: string
+      phone:
+        type: string
+    required:
+    - code
+    - name
     type: object
   response.AuthJSON:
     properties:
@@ -727,6 +862,146 @@ paths:
       summary: Update chart of account subgroup
       tags:
       - COASubGroups
+  /api/v1/customers:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all customer records with pagination
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved all records.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Get all customers
+      tags:
+      - Customers
+    post:
+      consumes:
+      - application/json
+      description: Store a new customer record
+      parameters:
+      - description: Customer Create Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CustomerCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: A new record has been stored.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Create customer
+      tags:
+      - Customers
+  /api/v1/customers/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a customer record by ID
+      parameters:
+      - description: Customer ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been deleted.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Customer not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Delete customer
+      tags:
+      - Customers
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single customer by its ID
+      parameters:
+      - description: Customer ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved selected record.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Customer not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Get customer by ID
+      tags:
+      - Customers
+    put:
+      consumes:
+      - application/json
+      description: Update customer data by ID
+      parameters:
+      - description: Customer ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Customer Update Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CustomerUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been updated.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Customer not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Update customer
+      tags:
+      - Customers
   /api/v1/dropdown/coa:
     get:
       consumes:
@@ -802,6 +1077,243 @@ paths:
       summary: Get COASubGroup dropdown options
       tags:
       - Dropdowns
+  /api/v1/dropdown/customers:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve customers for dropdown selection
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved dropdown options
+          schema:
+            $ref: '#/definitions/response.SelectJSON'
+      summary: Get customer dropdown options
+      tags:
+      - Dropdowns
+  /api/v1/dropdown/vendors:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve vendors for dropdown selection
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved dropdown options
+          schema:
+            $ref: '#/definitions/response.SelectJSON'
+      summary: Get vendor dropdown options
+      tags:
+      - Dropdowns
+  /api/v1/journal_entries:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all journal entries with pagination and optional status
+        filter
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Filter by status (draft, posted, void)
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved all records.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Get all journal entries
+      tags:
+      - JournalEntries
+    post:
+      consumes:
+      - application/json
+      description: Store a new journal entry. Total debit must equal total credit.
+      parameters:
+      - description: Journal Entry Create Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.JournalEntryCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: A new record has been stored.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request or unbalanced entry
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Create journal entry
+      tags:
+      - JournalEntries
+  /api/v1/journal_entries/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a draft journal entry. Posted or void entries cannot be
+        deleted.
+      parameters:
+      - description: Journal Entry ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been deleted.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Business rule violation
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Journal entry not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Delete journal entry
+      tags:
+      - JournalEntries
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single journal entry by its ID including all lines
+      parameters:
+      - description: Journal Entry ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved selected record.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Journal entry not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Get journal entry by ID
+      tags:
+      - JournalEntries
+    put:
+      consumes:
+      - application/json
+      description: Update a draft journal entry. Posted entries cannot be updated.
+      parameters:
+      - description: Journal Entry ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Journal Entry Update Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.JournalEntryUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been updated.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request or business rule violation
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Update journal entry
+      tags:
+      - JournalEntries
+  /api/v1/journal_entries/{id}/post:
+    patch:
+      consumes:
+      - application/json
+      description: Transition a draft journal entry to posted status. Entry must be
+        balanced.
+      parameters:
+      - description: Journal Entry ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Journal entry has been posted.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Business rule violation
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Post journal entry
+      tags:
+      - JournalEntries
+  /api/v1/journal_entries/{id}/void:
+    patch:
+      consumes:
+      - application/json
+      description: Transition a posted journal entry to void status.
+      parameters:
+      - description: Journal Entry ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Journal entry has been voided.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Business rule violation
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Void journal entry
+      tags:
+      - JournalEntries
   /api/v1/users:
     get:
       consumes:
@@ -938,4 +1450,144 @@ paths:
       summary: Update user
       tags:
       - Users
+  /api/v1/vendors:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all vendor records with pagination
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved all records.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Get all vendors
+      tags:
+      - Vendors
+    post:
+      consumes:
+      - application/json
+      description: Store a new vendor record
+      parameters:
+      - description: Vendor Create Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.VendorCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: A new record has been stored.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Create vendor
+      tags:
+      - Vendors
+  /api/v1/vendors/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a vendor record by ID
+      parameters:
+      - description: Vendor ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been deleted.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Vendor not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Delete vendor
+      tags:
+      - Vendors
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single vendor by its ID
+      parameters:
+      - description: Vendor ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved selected record.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Vendor not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Get vendor by ID
+      tags:
+      - Vendors
+    put:
+      consumes:
+      - application/json
+      description: Update vendor data by ID
+      parameters:
+      - description: Vendor ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Vendor Update Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.VendorUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been updated.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Vendor not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Update vendor
+      tags:
+      - Vendors
 swagger: "2.0"

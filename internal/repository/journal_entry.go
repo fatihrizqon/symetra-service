@@ -1,0 +1,244 @@
+package repository
+
+import (
+	"errors"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/fatihrizqon/symetra-service/internal/entity"
+	"github.com/fatihrizqon/symetra-service/internal/util"
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+)
+
+type IJournalEntryRepository interface {
+	Create(entry entity.JournalEntry, lines []entity.JournalLine) (entity.JournalEntry, error)
+	FindAll(page, pageSize int, search string, options util.SearchOptions, filters entity.JournalEntryFilters) ([]entity.JournalEntry, int, error)
+	FindById(id uuid.UUID) (entity.JournalEntry, error)
+	Update(entry entity.JournalEntry, lines []entity.JournalLine) (entity.JournalEntry, error)
+	Delete(id uuid.UUID) error
+	Post(id uuid.UUID) error
+	Void(id uuid.UUID) error
+	GenerateJournalNumber() (string, error)
+	HasTransactions(coaId uuid.UUID) (bool, error)
+}
+
+type JournalEntryRepository struct {
+	Db *gorm.DB
+}
+
+func NewJournalEntryRepository(db *gorm.DB) IJournalEntryRepository {
+	return &JournalEntryRepository{Db: db}
+}
+
+// GenerateJournalNumber creates a sequential journal number like JE-202502-0001.
+func (r *JournalEntryRepository) GenerateJournalNumber() (string, error) {
+	now := time.Now()
+	prefix := fmt.Sprintf("JE-%d%02d", now.Year(), now.Month())
+
+	var count int64
+	if err := r.Db.Model(&entity.JournalEntry{}).
+		Where("journal_number LIKE ?", prefix+"%").
+		Count(&count).Error; err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%s-%04d", prefix, count+1), nil
+}
+
+// HasTransactions checks if a COA account has been used in any journal line.
+func (r *JournalEntryRepository) HasTransactions(coaId uuid.UUID) (bool, error) {
+	var count int64
+	if err := r.Db.Model(&entity.JournalLine{}).
+		Where("coa_id = ?", coaId).
+		Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+// Create persists a journal entry + its lines atomically in a single transaction.
+func (r *JournalEntryRepository) Create(entry entity.JournalEntry, lines []entity.JournalLine) (entity.JournalEntry, error) {
+	tx := r.Db.Begin()
+
+	if err := tx.Create(&entry).Error; err != nil {
+		tx.Rollback()
+		return entry, err
+	}
+
+	for i := range lines {
+		lines[i].JournalEntryId = entry.Id
+	}
+
+	if err := tx.Create(&lines).Error; err != nil {
+		tx.Rollback()
+		return entry, err
+	}
+
+	tx.Commit()
+
+	// Reload with associations
+	if err := r.Db.
+		Preload("Lines.COA").
+		First(&entry, "id = ?", entry.Id).Error; err != nil {
+		return entry, err
+	}
+
+	return entry, nil
+}
+
+// FindAll retrieves paginated journal entries with optional search and status filter.
+func (r *JournalEntryRepository) FindAll(page, pageSize int, search string, options util.SearchOptions, filters entity.JournalEntryFilters) ([]entity.JournalEntry, int, error) {
+	var entries []entity.JournalEntry
+	var totalCount int64
+
+	query := r.Db.Model(&entity.JournalEntry{})
+
+	if search != "" && len(options.Fields) > 0 {
+		var conditions []string
+		var values []interface{}
+		for _, term := range strings.Split(search, ";") {
+			term = strings.TrimSpace(term)
+			for _, field := range options.Fields {
+				conditions = append(conditions, "LOWER("+field+") LIKE LOWER(?)")
+				values = append(values, "%"+term+"%")
+			}
+		}
+		query = query.Where(strings.Join(conditions, " OR "), values...)
+	}
+
+	if filters.Status != nil {
+		query = query.Where("status = ?", *filters.Status)
+	}
+
+	if err := query.Count(&totalCount).Error; err != nil {
+		return nil, 0, err
+	}
+
+	if totalCount == 0 {
+		return entries, 0, nil
+	}
+
+	offset := (page - 1) * pageSize
+	if err := query.
+		Preload("Lines.COA").
+		Order("created_at DESC").
+		Limit(pageSize).
+		Offset(offset).
+		Find(&entries).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return entries, int(totalCount), nil
+}
+
+// FindById retrieves a single journal entry with all lines preloaded.
+func (r *JournalEntryRepository) FindById(id uuid.UUID) (entity.JournalEntry, error) {
+	var entry entity.JournalEntry
+	if err := r.Db.
+		Preload("Lines.COA").
+		First(&entry, "id = ?", id).Error; err != nil {
+		return entry, err
+	}
+	return entry, nil
+}
+
+// Update replaces journal entry header + deletes old lines + inserts new lines atomically.
+func (r *JournalEntryRepository) Update(entry entity.JournalEntry, lines []entity.JournalLine) (entity.JournalEntry, error) {
+	tx := r.Db.Begin()
+
+	if err := tx.Model(&entry).Updates(map[string]interface{}{
+		"date":         entry.Date,
+		"description":  entry.Description,
+		"total_debit":  entry.TotalDebit,
+		"total_credit": entry.TotalCredit,
+		"updated_at":   time.Now(),
+	}).Error; err != nil {
+		tx.Rollback()
+		return entry, err
+	}
+
+	// Replace lines: delete existing, insert new
+	if err := tx.Where("journal_entry_id = ?", entry.Id).Delete(&entity.JournalLine{}).Error; err != nil {
+		tx.Rollback()
+		return entry, err
+	}
+
+	for i := range lines {
+		lines[i].Id = uuid.New()
+		lines[i].JournalEntryId = entry.Id
+	}
+
+	if err := tx.Create(&lines).Error; err != nil {
+		tx.Rollback()
+		return entry, err
+	}
+
+	tx.Commit()
+
+	// Reload
+	if err := r.Db.Preload("Lines.COA").First(&entry, "id = ?", entry.Id).Error; err != nil {
+		return entry, err
+	}
+
+	return entry, nil
+}
+
+// Delete removes a draft journal entry and its lines.
+func (r *JournalEntryRepository) Delete(id uuid.UUID) error {
+	tx := r.Db.Begin()
+
+	if err := tx.Where("journal_entry_id = ?", id).Delete(&entity.JournalLine{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Where("id = ?", id).Delete(&entity.JournalEntry{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
+// Post transitions a draft journal entry to posted status.
+func (r *JournalEntryRepository) Post(id uuid.UUID) error {
+	result := r.Db.Model(&entity.JournalEntry{}).
+		Where("id = ? AND status = ?", id, entity.JournalStatusDraft).
+		Updates(map[string]interface{}{
+			"status":     entity.JournalStatusPosted,
+			"updated_at": time.Now(),
+		})
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return errors.New("journal entry not found or is not in draft status")
+	}
+
+	return nil
+}
+
+// Void transitions a posted journal entry to void status.
+func (r *JournalEntryRepository) Void(id uuid.UUID) error {
+	result := r.Db.Model(&entity.JournalEntry{}).
+		Where("id = ? AND status = ?", id, entity.JournalStatusPosted).
+		Updates(map[string]interface{}{
+			"status":     entity.JournalStatusVoid,
+			"updated_at": time.Now(),
+		})
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected == 0 {
+		return errors.New("journal entry not found or is not in posted status")
+	}
+
+	return nil
+}

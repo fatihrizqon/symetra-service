@@ -27,42 +27,55 @@ func Bootstrap(config *BootstrapConfig) {
 	// Register CORS middleware
 	config.App.Use(config.Cors.Handler())
 
-	// Initialize repositories
-	userRepository := repository.NewUserRepository(config.DB)
-	authRepository := repository.NewAuthRepository(config.DB)
-	tokenRepository := repository.NewTokenRepository(config.DB)
-	coaGroupRepository := repository.NewCOAGroupRepository(config.DB)
-	coaSubGroupRepository := repository.NewCOASubGroupRepository(config.DB)
-	coaRepository := repository.NewCOARepository(config.DB)
+	// ── Repositories ──────────────────────────────────────────────────────────
+	userRepository         := repository.NewUserRepository(config.DB)
+	authRepository         := repository.NewAuthRepository(config.DB)
+	tokenRepository        := repository.NewTokenRepository(config.DB)
+	coaGroupRepository     := repository.NewCOAGroupRepository(config.DB)
+	coaSubGroupRepository  := repository.NewCOASubGroupRepository(config.DB)
+	coaRepository          := repository.NewCOARepository(config.DB)
+	journalEntryRepository := repository.NewJournalEntryRepository(config.DB)
+	customerRepository     := repository.NewCustomerRepository(config.DB)
+	vendorRepository       := repository.NewVendorRepository(config.DB)
 
-	// Initialize services
-	userService := service.NewUserService(userRepository, config.Validate)
-	authService := service.NewAuthService(authRepository, tokenRepository, config.Validate)
-	dashboardService := service.NewDashboardService(userRepository)
-	coaGroupService := service.NewCOAGroupService(coaGroupRepository, config.Validate)
-	coaSubGroupService := service.NewCOASubGroupService(coaSubGroupRepository, config.Validate)
-	coaService := service.NewCOAService(coaRepository, config.Validate)
+	// ── Services ──────────────────────────────────────────────────────────────
+	userService          := service.NewUserService(userRepository, config.Validate)
+	authService          := service.NewAuthService(authRepository, tokenRepository, config.Validate)
+	dashboardService     := service.NewDashboardService(userRepository)
+	coaGroupService      := service.NewCOAGroupService(coaGroupRepository, config.Validate)
+	coaSubGroupService   := service.NewCOASubGroupService(coaSubGroupRepository, config.Validate)
+	coaService           := service.NewCOAService(coaRepository, config.Validate)
+	journalEntryService  := service.NewJournalEntryService(journalEntryRepository, config.Validate)
+	customerService      := service.NewCustomerService(customerRepository, config.Validate)
+	vendorService        := service.NewVendorService(vendorRepository, config.Validate)
 
-	// Initialize handlers
-	userHandler := handler.NewUserHandler(userService)
-	authHandler := handler.NewAuthHandler(authService)
-	dashboardHandler := handler.NewDashboardHandler(dashboardService)
-	coaGroupHandler := handler.NewCOAGroupHandler(coaGroupService)
-	coaSubGroupHandler := handler.NewCOASubGroupHandler(coaSubGroupService)
-	coaHandler := handler.NewCOAHandler(coaService)
+	// ── Handlers ──────────────────────────────────────────────────────────────
+	userHandler          := handler.NewUserHandler(userService)
+	authHandler          := handler.NewAuthHandler(authService)
+	dashboardHandler     := handler.NewDashboardHandler(dashboardService)
+	coaGroupHandler      := handler.NewCOAGroupHandler(coaGroupService)
+	coaSubGroupHandler   := handler.NewCOASubGroupHandler(coaSubGroupService)
+	coaHandler           := handler.NewCOAHandler(coaService)
+	journalEntryHandler  := handler.NewJournalEntryHandler(journalEntryService)
+	customerHandler      := handler.NewCustomerHandler(customerService)
+	vendorHandler        := handler.NewVendorHandler(vendorService)
 
-	// Setup middleware
+	// ── Middleware ─────────────────────────────────────────────────────────────
 	authMiddleware := middleware.NewAuth(tokenRepository)
 
+	// ── Routes ────────────────────────────────────────────────────────────────
 	routeConfig := route.RouteConfig{
-		App:                config.App,
-		UserHandler:        userHandler,
-		AuthHandler:        authHandler,
-		AuthMiddleware:     authMiddleware,
-		DashboardHandler:   dashboardHandler,
-		COAGroupHandler:    coaGroupHandler,
-		COASubGroupHandler: coaSubGroupHandler,
-		COAHandler:         coaHandler,
+		App:                 config.App,
+		UserHandler:         userHandler,
+		AuthHandler:         authHandler,
+		AuthMiddleware:      authMiddleware,
+		DashboardHandler:    dashboardHandler,
+		COAGroupHandler:     coaGroupHandler,
+		COASubGroupHandler:  coaSubGroupHandler,
+		COAHandler:          coaHandler,
+		JournalEntryHandler: journalEntryHandler,
+		CustomerHandler:     customerHandler,
+		VendorHandler:       vendorHandler,
 	}
 
 	routeConfig.Setup()

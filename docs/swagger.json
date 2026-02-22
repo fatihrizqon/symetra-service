@@ -112,6 +112,212 @@
                 }
             }
         },
+        "/api/v1/coa_groups": {
+            "get": {
+                "description": "Retrieve all chart of account group records with pagination",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "COAGroups"
+                ],
+                "summary": "Get all chart of account groups",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search keyword",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size",
+                        "name": "pageSize",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved all records.",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Store a new chart of account group record",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "COAGroups"
+                ],
+                "summary": "Create chart of account group",
+                "parameters": [
+                    {
+                        "description": "COAGroup Create Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.COAGroupCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "A new record has been stored.",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/coa_groups/{id}": {
+            "get": {
+                "description": "Retrieve a single chart of account group by its ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "COAGroups"
+                ],
+                "summary": "Get chart of account group by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "COAGroup ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved selected record.",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    },
+                    "404": {
+                        "description": "COAGroup not found",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update chart of account group data by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "COAGroups"
+                ],
+                "summary": "Update chart of account group",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "COA Group ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "COA Group Update Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.COAGroupUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Selected record has been updated.",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    },
+                    "404": {
+                        "description": "COA Group not found",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Remove a chart of account group record by ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "COAGroups"
+                ],
+                "summary": "Delete chart of account group",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "COAGroup ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Selected record has been deleted.",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    },
+                    "404": {
+                        "description": "COAGroup not found",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/users": {
             "get": {
                 "description": "Retrieve all user records with pagination",
@@ -320,6 +526,34 @@
         }
     },
     "definitions": {
+        "request.COAGroupCreateRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "minLength": 1
+                }
+            }
+        },
+        "request.COAGroupUpdateRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 20,
+                    "minLength": 1
+                }
+            }
+        },
         "request.LoginRequest": {
             "type": "object",
             "required": [

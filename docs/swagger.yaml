@@ -1,5 +1,24 @@
 basePath: /
 definitions:
+  request.COAGroupCreateRequest:
+    properties:
+      name:
+        minLength: 1
+        type: string
+    required:
+    - name
+    type: object
+  request.COAGroupUpdateRequest:
+    properties:
+      id:
+        type: string
+      name:
+        maxLength: 20
+        minLength: 1
+        type: string
+    required:
+    - name
+    type: object
   request.LoginRequest:
     properties:
       email:
@@ -211,6 +230,142 @@ paths:
       summary: Refresh access token
       tags:
       - Auth
+  /api/v1/coa_groups:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all chart of account group records with pagination
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved all records.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Get all chart of account groups
+      tags:
+      - COAGroups
+    post:
+      consumes:
+      - application/json
+      description: Store a new chart of account group record
+      parameters:
+      - description: COAGroup Create Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.COAGroupCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: A new record has been stored.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Create chart of account group
+      tags:
+      - COAGroups
+  /api/v1/coa_groups/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a chart of account group record by ID
+      parameters:
+      - description: COAGroup ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been deleted.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: COAGroup not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Delete chart of account group
+      tags:
+      - COAGroups
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single chart of account group by its ID
+      parameters:
+      - description: COAGroup ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved selected record.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: COAGroup not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Get chart of account group by ID
+      tags:
+      - COAGroups
+    put:
+      consumes:
+      - application/json
+      description: Update chart of account group data by ID
+      parameters:
+      - description: COA Group ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: COA Group Update Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.COAGroupUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been updated.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: COA Group not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Update chart of account group
+      tags:
+      - COAGroups
   /api/v1/users:
     get:
       consumes:

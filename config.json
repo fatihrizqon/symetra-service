@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "Go Fiber Service"
+    "name": "Symetra Web Service"
   },
   "web": {
     "prefork": false,
@@ -33,7 +33,7 @@
     "password": "password",
     "host": "localhost",
     "port": 5432,
-    "name": "go-fiber-service",
+    "name": "symetra-dev",
     "pool": {
       "idle": 25,
       "max": 50,

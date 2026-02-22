@@ -24,7 +24,6 @@ type BootstrapConfig struct {
 }
 
 func Bootstrap(config *BootstrapConfig) {
-	// Register CORS middleware
 	config.App.Use(config.Cors.Handler())
 
 	// ── Repositories ──────────────────────────────────────────────────────────
@@ -37,28 +36,31 @@ func Bootstrap(config *BootstrapConfig) {
 	journalEntryRepository := repository.NewJournalEntryRepository(config.DB)
 	customerRepository     := repository.NewCustomerRepository(config.DB)
 	vendorRepository       := repository.NewVendorRepository(config.DB)
+	reportRepository       := repository.NewReportRepository(config.DB)
 
 	// ── Services ──────────────────────────────────────────────────────────────
-	userService          := service.NewUserService(userRepository, config.Validate)
-	authService          := service.NewAuthService(authRepository, tokenRepository, config.Validate)
-	dashboardService     := service.NewDashboardService(userRepository)
-	coaGroupService      := service.NewCOAGroupService(coaGroupRepository, config.Validate)
-	coaSubGroupService   := service.NewCOASubGroupService(coaSubGroupRepository, config.Validate)
-	coaService           := service.NewCOAService(coaRepository, config.Validate)
-	journalEntryService  := service.NewJournalEntryService(journalEntryRepository, config.Validate)
-	customerService      := service.NewCustomerService(customerRepository, config.Validate)
-	vendorService        := service.NewVendorService(vendorRepository, config.Validate)
+	userService         := service.NewUserService(userRepository, config.Validate)
+	authService         := service.NewAuthService(authRepository, tokenRepository, config.Validate)
+	dashboardService    := service.NewDashboardService(userRepository)
+	coaGroupService     := service.NewCOAGroupService(coaGroupRepository, config.Validate)
+	coaSubGroupService  := service.NewCOASubGroupService(coaSubGroupRepository, config.Validate)
+	coaService          := service.NewCOAService(coaRepository, config.Validate)
+	journalEntryService := service.NewJournalEntryService(journalEntryRepository, config.Validate)
+	customerService     := service.NewCustomerService(customerRepository, config.Validate)
+	vendorService       := service.NewVendorService(vendorRepository, config.Validate)
+	reportService       := service.NewReportService(reportRepository)
 
 	// ── Handlers ──────────────────────────────────────────────────────────────
-	userHandler          := handler.NewUserHandler(userService)
-	authHandler          := handler.NewAuthHandler(authService)
-	dashboardHandler     := handler.NewDashboardHandler(dashboardService)
-	coaGroupHandler      := handler.NewCOAGroupHandler(coaGroupService)
-	coaSubGroupHandler   := handler.NewCOASubGroupHandler(coaSubGroupService)
-	coaHandler           := handler.NewCOAHandler(coaService)
-	journalEntryHandler  := handler.NewJournalEntryHandler(journalEntryService)
-	customerHandler      := handler.NewCustomerHandler(customerService)
-	vendorHandler        := handler.NewVendorHandler(vendorService)
+	userHandler         := handler.NewUserHandler(userService)
+	authHandler         := handler.NewAuthHandler(authService)
+	dashboardHandler    := handler.NewDashboardHandler(dashboardService)
+	coaGroupHandler     := handler.NewCOAGroupHandler(coaGroupService)
+	coaSubGroupHandler  := handler.NewCOASubGroupHandler(coaSubGroupService)
+	coaHandler          := handler.NewCOAHandler(coaService)
+	journalEntryHandler := handler.NewJournalEntryHandler(journalEntryService)
+	customerHandler     := handler.NewCustomerHandler(customerService)
+	vendorHandler       := handler.NewVendorHandler(vendorService)
+	reportHandler       := handler.NewReportHandler(reportService)
 
 	// ── Middleware ─────────────────────────────────────────────────────────────
 	authMiddleware := middleware.NewAuth(tokenRepository)
@@ -76,6 +78,7 @@ func Bootstrap(config *BootstrapConfig) {
 		JournalEntryHandler: journalEntryHandler,
 		CustomerHandler:     customerHandler,
 		VendorHandler:       vendorHandler,
+		ReportHandler:       reportHandler,
 	}
 
 	routeConfig.Setup()

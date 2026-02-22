@@ -1314,6 +1314,107 @@ paths:
       summary: Void journal entry
       tags:
       - JournalEntries
+  /api/v1/reports/balance-sheet:
+    get:
+      parameters:
+      - description: As of date (YYYY-MM-DD), defaults to today
+        in: query
+        name: as_of_date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Balance Sheet
+      tags:
+      - Reports
+  /api/v1/reports/cash-flow:
+    get:
+      parameters:
+      - description: Start date (YYYY-MM-DD)
+        in: query
+        name: start_date
+        type: string
+      - description: End date (YYYY-MM-DD)
+        in: query
+        name: end_date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Cash Flow Statement
+      tags:
+      - Reports
+  /api/v1/reports/equity-statement:
+    get:
+      parameters:
+      - description: Start date (YYYY-MM-DD)
+        in: query
+        name: start_date
+        type: string
+      - description: End date (YYYY-MM-DD)
+        in: query
+        name: end_date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Equity Statement
+      tags:
+      - Reports
+  /api/v1/reports/profit-loss:
+    get:
+      parameters:
+      - description: Start date (YYYY-MM-DD)
+        in: query
+        name: start_date
+        type: string
+      - description: End date (YYYY-MM-DD)
+        in: query
+        name: end_date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Profit & Loss Statement
+      tags:
+      - Reports
+  /api/v1/reports/trial-balance:
+    get:
+      parameters:
+      - description: Start date (YYYY-MM-DD)
+        in: query
+        name: start_date
+        type: string
+      - description: End date (YYYY-MM-DD)
+        in: query
+        name: end_date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Trial Balance
+      tags:
+      - Reports
   /api/v1/users:
     get:
       consumes:

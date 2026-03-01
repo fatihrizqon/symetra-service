@@ -10,23 +10,26 @@ import (
 	"github.com/google/uuid"
 )
 
-type JournalEntryHandler struct {
+// RevenueHandler is a dedicated handler for revenue journal entries.
+// It reuses IJournalEntryService and scopes all operations to type=revenue.
+type RevenueHandler struct {
 	IJournalEntryService service.IJournalEntryService
 }
 
-func NewJournalEntryHandler(svc service.IJournalEntryService) *JournalEntryHandler {
-	return &JournalEntryHandler{IJournalEntryService: svc}
+func NewRevenueHandler(svc service.IJournalEntryService) *RevenueHandler {
+	return &RevenueHandler{IJournalEntryService: svc}
 }
 
-// Create a New General Journal Entry
-// @Summary Create general journal entry
-// @Tags JournalEntries
+// Create a New Revenue Entry
+// @Summary Create revenue entry
+// @Description Store a new revenue journal entry (type=revenue, prefix RV-).
+// @Tags Revenue
 // @Accept json
 // @Produce json
-// @Param request body request.JournalEntryCreateRequest true "Journal Entry Create Request"
+// @Param request body request.JournalEntryCreateRequest true "Revenue Create Request"
 // @Success 201 {object} response.JSON
-// @Router /api/v1/journal_entries [post]
-func (h *JournalEntryHandler) Create(ctx *fiber.Ctx) error {
+// @Router /api/v1/revenues [post]
+func (h *RevenueHandler) Create(ctx *fiber.Ctx) error {
 	req := request.JournalEntryCreateRequest{}
 	if err := ctx.BodyParser(&req); err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
@@ -38,7 +41,7 @@ func (h *JournalEntryHandler) Create(ctx *fiber.Ctx) error {
 		createdBy = claims.UserID
 	}
 
-	result, err := h.IJournalEntryService.Create(req, createdBy, entity.JournalTypeGeneral)
+	result, err := h.IJournalEntryService.Create(req, createdBy, entity.JournalTypeRevenue)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{
 			Status:  400,
@@ -48,25 +51,25 @@ func (h *JournalEntryHandler) Create(ctx *fiber.Ctx) error {
 
 	return ctx.Status(fiber.StatusCreated).JSON(response.JSON{
 		Status:  201,
-		Message: "A new record has been stored.",
+		Message: "A new revenue entry has been stored.",
 		Data:    result,
 	})
 }
 
-// Find All General Journal Entries
-// @Summary Get all general journal entries
-// @Tags JournalEntries
+// Find All Revenue Entries
+// @Summary Get all revenue entries
+// @Tags Revenue
 // @Produce json
 // @Param search query string false "Search keyword"
 // @Param page query int false "Page number"
 // @Param page_size query int false "Page size"
-// @Param status query string false "Filter by status (draft, posted, void)"
+// @Param status query string false "Filter by status"
 // @Success 200 {object} response.JSON
-// @Router /api/v1/journal_entries [get]
-func (h *JournalEntryHandler) FindAll(ctx *fiber.Ctx) error {
+// @Router /api/v1/revenues [get]
+func (h *RevenueHandler) FindAll(ctx *fiber.Ctx) error {
 	qp := util.ParseQueryParams(ctx, entity.JournalEntry{}.SearchableFields())
-	// Scope to general type only
-	qp.Filters["type"] = []string{string(entity.JournalTypeGeneral)}
+	// Scope to revenue type only — override any client-supplied type filter
+	qp.Filters["type"] = []string{string(entity.JournalTypeRevenue)}
 
 	entities, totalCount, err := h.IJournalEntryService.FindAll(qp)
 	if err != nil {
@@ -97,16 +100,14 @@ func (h *JournalEntryHandler) FindAll(ctx *fiber.Ctx) error {
 	})
 }
 
-// Find Journal Entry by Id
-// @Summary Get journal entry by ID
-// @Tags JournalEntries
-// @Produce json
-// @Param id path string true "Journal Entry ID"
+// Find Revenue Entry by Id
+// @Summary Get revenue entry by ID
+// @Tags Revenue
+// @Param id path string true "Entry ID"
 // @Success 200 {object} response.JSON
-// @Router /api/v1/journal_entries/{id} [get]
-func (h *JournalEntryHandler) FindById(ctx *fiber.Ctx) error {
-	id := ctx.Params("id")
-	parsedId, err := uuid.Parse(id)
+// @Router /api/v1/revenues/{id} [get]
+func (h *RevenueHandler) FindById(ctx *fiber.Ctx) error {
+	parsedId, err := uuid.Parse(ctx.Params("id"))
 	if err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
@@ -127,16 +128,15 @@ func (h *JournalEntryHandler) FindById(ctx *fiber.Ctx) error {
 	})
 }
 
-// Update Journal Entry by Id
-// @Summary Update journal entry
-// @Tags JournalEntries
+// Update Revenue Entry by Id
+// @Summary Update revenue entry
+// @Tags Revenue
 // @Accept json
-// @Produce json
-// @Param id path string true "Journal Entry ID"
-// @Param request body request.JournalEntryUpdateRequest true "Journal Entry Update Request"
+// @Param id path string true "Entry ID"
+// @Param request body request.JournalEntryUpdateRequest true "Revenue Update Request"
 // @Success 200 {object} response.JSON
-// @Router /api/v1/journal_entries/{id} [put]
-func (h *JournalEntryHandler) Update(ctx *fiber.Ctx) error {
+// @Router /api/v1/revenues/{id} [put]
+func (h *RevenueHandler) Update(ctx *fiber.Ctx) error {
 	req := request.JournalEntryUpdateRequest{}
 	if err := ctx.BodyParser(&req); err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
@@ -165,13 +165,13 @@ func (h *JournalEntryHandler) Update(ctx *fiber.Ctx) error {
 	})
 }
 
-// Delete Journal Entry by Id
-// @Summary Delete journal entry
-// @Tags JournalEntries
-// @Param id path string true "Journal Entry ID"
+// Delete Revenue Entry by Id
+// @Summary Delete revenue entry
+// @Tags Revenue
+// @Param id path string true "Entry ID"
 // @Success 200 {object} response.JSON
-// @Router /api/v1/journal_entries/{id} [delete]
-func (h *JournalEntryHandler) Delete(ctx *fiber.Ctx) error {
+// @Router /api/v1/revenues/{id} [delete]
+func (h *RevenueHandler) Delete(ctx *fiber.Ctx) error {
 	parsedId, err := uuid.Parse(ctx.Params("id"))
 	if err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
@@ -191,13 +191,13 @@ func (h *JournalEntryHandler) Delete(ctx *fiber.Ctx) error {
 	})
 }
 
-// Post Journal Entry
-// @Summary Post journal entry
-// @Tags JournalEntries
-// @Param id path string true "Journal Entry ID"
+// Post Revenue Entry
+// @Summary Post revenue entry
+// @Tags Revenue
+// @Param id path string true "Entry ID"
 // @Success 200 {object} response.JSON
-// @Router /api/v1/journal_entries/{id}/post [put]
-func (h *JournalEntryHandler) Post(ctx *fiber.Ctx) error {
+// @Router /api/v1/revenues/{id}/post [put]
+func (h *RevenueHandler) Post(ctx *fiber.Ctx) error {
 	parsedId, err := uuid.Parse(ctx.Params("id"))
 	if err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
@@ -213,17 +213,17 @@ func (h *JournalEntryHandler) Post(ctx *fiber.Ctx) error {
 
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
 		Status:  200,
-		Message: "Journal entry has been posted.",
+		Message: "Revenue entry has been posted.",
 	})
 }
 
-// Void Journal Entry
-// @Summary Void journal entry
-// @Tags JournalEntries
-// @Param id path string true "Journal Entry ID"
+// Void Revenue Entry
+// @Summary Void revenue entry
+// @Tags Revenue
+// @Param id path string true "Entry ID"
 // @Success 200 {object} response.JSON
-// @Router /api/v1/journal_entries/{id}/void [put]
-func (h *JournalEntryHandler) Void(ctx *fiber.Ctx) error {
+// @Router /api/v1/revenues/{id}/void [put]
+func (h *RevenueHandler) Void(ctx *fiber.Ctx) error {
 	parsedId, err := uuid.Parse(ctx.Params("id"))
 	if err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
@@ -239,6 +239,6 @@ func (h *JournalEntryHandler) Void(ctx *fiber.Ctx) error {
 
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
 		Status:  200,
-		Message: "Journal entry has been voided.",
+		Message: "Revenue entry has been voided.",
 	})
 }

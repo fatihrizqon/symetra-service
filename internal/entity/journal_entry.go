@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 func (JournalEntry) TableName() string {
@@ -20,9 +21,29 @@ const (
 	JournalStatusVoid   JournalStatus = "void"
 )
 
+// JournalType classifies the business context of a journal entry.
+// general  → Jurnal Umum  (prefix: JE-)
+// revenue  → Pendapatan   (prefix: RV-)
+// expense  → Pengeluaran  (prefix: EX-)
+type JournalType string
+
+const (
+	JournalTypeGeneral JournalType = "general"
+	JournalTypeRevenue JournalType = "revenue"
+	JournalTypeExpense JournalType = "expense"
+)
+
+// JournalNumberPrefix maps a JournalType to its journal number prefix.
+var JournalNumberPrefix = map[JournalType]string{
+	JournalTypeGeneral: "JE",
+	JournalTypeRevenue: "RV",
+	JournalTypeExpense: "EX",
+}
+
 type JournalEntry struct {
 	Id            uuid.UUID     `gorm:"type:uuid;primaryKey;default:gen_random_uuid();" json:"id"`
 	JournalNumber string        `gorm:"type:character varying;not null;unique;" json:"journal_number"`
+	Type          JournalType   `gorm:"type:character varying;not null;default:'general';" json:"type"`
 	Date          time.Time     `gorm:"type:date;not null;" json:"date"`
 	Description   string        `gorm:"type:text;not null;" json:"description"`
 	Status        JournalStatus `gorm:"type:character varying;not null;default:'draft';" json:"status"`
@@ -38,6 +59,13 @@ func (JournalEntry) SearchableFields() []string {
 	return []string{"journal_number", "description"}
 }
 
-type JournalEntryFilters struct {
-	Status *string
+// ApplyFilters applies JournalEntry-specific filter logic to the given GORM query.
+func (JournalEntry) ApplyFilters(db *gorm.DB, filters map[string][]string) *gorm.DB {
+	if values, ok := filters["status"]; ok {
+		db = db.Where("status IN ?", values)
+	}
+	if values, ok := filters["type"]; ok {
+		db = db.Where("type IN ?", values)
+	}
+	return db
 }

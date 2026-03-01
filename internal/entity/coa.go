@@ -23,14 +23,23 @@ type COA struct {
 }
 
 func (COA) SearchableFields() []string {
-	return []string{"name", "code"}
+	return []string{"chart_of_accounts.name", "chart_of_accounts.code"}
 }
 
 // ApplyFilters applies COA-specific filter logic to the given GORM query.
-// Supports multi-value filters via repeated params (e.g. ?status=1&status=2).
+// group_type filter performs a JOIN to coa_groups to filter by group type
+// (e.g. ?group_type=revenue returns only COAs belonging to revenue groups).
 func (COA) ApplyFilters(db *gorm.DB, filters map[string][]string) *gorm.DB {
 	if values, ok := filters["status"]; ok {
-		db = db.Where("status IN ?", values)
+		db = db.Where("chart_of_accounts.status IN ?", values)
 	}
+
+	if values, ok := filters["group_type"]; ok {
+		db = db.
+			Joins("JOIN coa_subgroups ON coa_subgroups.id = chart_of_accounts.subgroup_id").
+			Joins("JOIN coa_groups ON coa_groups.id = coa_subgroups.group_id").
+			Where("coa_groups.type IN ?", values)
+	}
+
 	return db
 }

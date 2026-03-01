@@ -17,6 +17,8 @@ type RouteConfig struct {
 	COASubGroupHandler  *handler.COASubGroupHandler
 	COAHandler          *handler.COAHandler
 	JournalEntryHandler *handler.JournalEntryHandler
+	RevenueHandler      *handler.RevenueHandler
+	ExpenseHandler      *handler.ExpenseHandler
 	CustomerHandler     *handler.CustomerHandler
 	VendorHandler       *handler.VendorHandler
 	ReportHandler       *handler.ReportHandler
@@ -48,7 +50,7 @@ func (rc *RouteConfig) SetupGuestRoute() {
 	rc.App.Delete("/api/v1/coa_subgroups/:id", rc.COASubGroupHandler.Delete)
 	rc.App.Get("/api/v1/dropdown/coa_subgroups", rc.COASubGroupHandler.SelectDropdownList)
 
-	// COA
+	// COA Accounts — dropdown now supports ?group_type=revenue|expense|asset etc.
 	rc.App.Post("/api/v1/coa", rc.COAHandler.Create)
 	rc.App.Get("/api/v1/coa", rc.COAHandler.FindAll)
 	rc.App.Get("/api/v1/coa/:id", rc.COAHandler.FindById)
@@ -71,7 +73,7 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Put("/api/v1/users/:id", rc.UserHandler.Update)
 	rc.App.Delete("/api/v1/users/:id", rc.UserHandler.Delete)
 
-	// Journal Entries
+	// Journal Entries (General Journal — Jurnal Umum)
 	rc.App.Post("/api/v1/journal_entries", rc.JournalEntryHandler.Create)
 	rc.App.Get("/api/v1/journal_entries", rc.JournalEntryHandler.FindAll)
 	rc.App.Get("/api/v1/journal_entries/:id", rc.JournalEntryHandler.FindById)
@@ -79,6 +81,24 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Delete("/api/v1/journal_entries/:id", rc.JournalEntryHandler.Delete)
 	rc.App.Put("/api/v1/journal_entries/:id/post", rc.JournalEntryHandler.Post)
 	rc.App.Put("/api/v1/journal_entries/:id/void", rc.JournalEntryHandler.Void)
+
+	// Revenue Entries (Jurnal Pendapatan)
+	rc.App.Post("/api/v1/revenues", rc.RevenueHandler.Create)
+	rc.App.Get("/api/v1/revenues", rc.RevenueHandler.FindAll)
+	rc.App.Get("/api/v1/revenues/:id", rc.RevenueHandler.FindById)
+	rc.App.Put("/api/v1/revenues/:id", rc.RevenueHandler.Update)
+	rc.App.Delete("/api/v1/revenues/:id", rc.RevenueHandler.Delete)
+	rc.App.Put("/api/v1/revenues/:id/post", rc.RevenueHandler.Post)
+	rc.App.Put("/api/v1/revenues/:id/void", rc.RevenueHandler.Void)
+
+	// Expense Entries (Jurnal Pengeluaran)
+	rc.App.Post("/api/v1/expenses", rc.ExpenseHandler.Create)
+	rc.App.Get("/api/v1/expenses", rc.ExpenseHandler.FindAll)
+	rc.App.Get("/api/v1/expenses/:id", rc.ExpenseHandler.FindById)
+	rc.App.Put("/api/v1/expenses/:id", rc.ExpenseHandler.Update)
+	rc.App.Delete("/api/v1/expenses/:id", rc.ExpenseHandler.Delete)
+	rc.App.Put("/api/v1/expenses/:id/post", rc.ExpenseHandler.Post)
+	rc.App.Put("/api/v1/expenses/:id/void", rc.ExpenseHandler.Void)
 
 	// Customers
 	rc.App.Post("/api/v1/customers", rc.CustomerHandler.Create)

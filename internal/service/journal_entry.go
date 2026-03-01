@@ -15,7 +15,7 @@ import (
 )
 
 type IJournalEntryService interface {
-	Create(req request.JournalEntryCreateRequest, createdBy uuid.UUID) (response.JournalEntryResponse, error)
+	Create(req request.JournalEntryCreateRequest, createdBy uuid.UUID, journalType entity.JournalType) (response.JournalEntryResponse, error)
 	FindAll(qp *util.QueryParams) ([]response.JournalEntryResponse, int, error)
 	FindById(id uuid.UUID) (response.JournalEntryResponse, error)
 	Update(req request.JournalEntryUpdateRequest) (response.JournalEntryResponse, error)
@@ -36,7 +36,7 @@ func NewJournalEntryService(repo repository.IJournalEntryRepository, validate *v
 	}
 }
 
-// toResponse maps a JournalEntry entity to its response DTO.
+// toJournalResponse maps a JournalEntry entity to its response DTO.
 func toJournalResponse(e entity.JournalEntry) response.JournalEntryResponse {
 	lines := make([]response.JournalLineResponse, 0, len(e.Lines))
 	for _, l := range e.Lines {
@@ -58,6 +58,7 @@ func toJournalResponse(e entity.JournalEntry) response.JournalEntryResponse {
 	return response.JournalEntryResponse{
 		Id:            e.Id,
 		JournalNumber: e.JournalNumber,
+		Type:          string(e.Type),
 		Date:          e.Date,
 		Description:   e.Description,
 		Status:        string(e.Status),
@@ -80,12 +81,10 @@ func validateBalance(lines []request.JournalLineRequest) error {
 		totalDebit += l.Debit
 		totalCredit += l.Credit
 	}
-
 	diff := math.Abs(totalDebit - totalCredit)
 	if diff > 0.001 {
 		return errors.New("journal entry is not balanced: total debit must equal total credit")
 	}
-
 	return nil
 }
 
@@ -118,8 +117,9 @@ func buildLines(reqLines []request.JournalLineRequest) ([]entity.JournalLine, fl
 	return lines, totalDebit, totalCredit
 }
 
-// Create creates a new draft journal entry after validating balance.
-func (s *JournalEntryService) Create(req request.JournalEntryCreateRequest, createdBy uuid.UUID) (response.JournalEntryResponse, error) {
+// Create creates a new draft journal entry with the given type.
+// journalType controls the journal number prefix (JE/RV/EX) and is stored on the entry.
+func (s *JournalEntryService) Create(req request.JournalEntryCreateRequest, createdBy uuid.UUID, journalType entity.JournalType) (response.JournalEntryResponse, error) {
 	if err := s.validate.Struct(req); err != nil {
 		return response.JournalEntryResponse{}, err
 	}
@@ -133,7 +133,14 @@ func (s *JournalEntryService) Create(req request.JournalEntryCreateRequest, crea
 		return response.JournalEntryResponse{}, err
 	}
 
-	journalNumber, err := s.IJournalEntryRepository.GenerateJournalNumber()
+	// Validate journalType — default to general if unrecognised
+	if journalType != entity.JournalTypeGeneral &&
+		journalType != entity.JournalTypeRevenue &&
+		journalType != entity.JournalTypeExpense {
+		journalType = entity.JournalTypeGeneral
+	}
+
+	journalNumber, err := s.IJournalEntryRepository.GenerateJournalNumber(journalType)
 	if err != nil {
 		return response.JournalEntryResponse{}, err
 	}
@@ -142,6 +149,7 @@ func (s *JournalEntryService) Create(req request.JournalEntryCreateRequest, crea
 
 	entry := entity.JournalEntry{
 		JournalNumber: journalNumber,
+		Type:          journalType,
 		Date:          date,
 		Description:   req.Description,
 		Status:        entity.JournalStatusDraft,
@@ -175,7 +183,6 @@ func (s *JournalEntryService) FindAll(qp *util.QueryParams) ([]response.JournalE
 	}
 
 	resps := make([]response.JournalEntryResponse, 0, len(entities))
-
 	for _, e := range entities {
 		resps = append(resps, toJournalResponse(e))
 	}
@@ -231,17 +238,15 @@ func (s *JournalEntryService) Update(req request.JournalEntryUpdateRequest) (res
 	return toJournalResponse(updated), nil
 }
 
-// Delete removes a draft journal entry. Posted/void entries cannot be deleted.
+// Delete removes a draft journal entry.
 func (s *JournalEntryService) Delete(id uuid.UUID) error {
 	existing, err := s.IJournalEntryRepository.FindById(id)
 	if err != nil {
 		return err
 	}
-
 	if existing.Status != entity.JournalStatusDraft {
 		return errors.New("only draft journal entries can be deleted")
 	}
-
 	return s.IJournalEntryRepository.Delete(id)
 }
 
@@ -251,16 +256,13 @@ func (s *JournalEntryService) Post(id uuid.UUID) error {
 	if err != nil {
 		return err
 	}
-
 	if existing.Status != entity.JournalStatusDraft {
 		return errors.New("only draft journal entries can be posted")
 	}
-
 	diff := math.Abs(existing.TotalDebit - existing.TotalCredit)
 	if diff > 0.001 {
 		return errors.New("cannot post an unbalanced journal entry")
 	}
-
 	return s.IJournalEntryRepository.Post(id)
 }
 
@@ -270,10 +272,8 @@ func (s *JournalEntryService) Void(id uuid.UUID) error {
 	if err != nil {
 		return err
 	}
-
 	if existing.Status != entity.JournalStatusPosted {
 		return errors.New("only posted journal entries can be voided")
 	}
-
 	return s.IJournalEntryRepository.Void(id)
 }

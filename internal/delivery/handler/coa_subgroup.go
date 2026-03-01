@@ -20,7 +20,6 @@ func NewCOASubGroupHandler(serv service.ICOASubGroupService) *COASubGroupHandler
 
 // Create a New COASubGroup
 // @Summary Create chart of account subgroup
-// @Description Store a new chart of account subgroup record
 // @Tags COASubGroups
 // @Accept json
 // @Produce json
@@ -28,15 +27,14 @@ func NewCOASubGroupHandler(serv service.ICOASubGroupService) *COASubGroupHandler
 // @Success 201 {object} response.JSON "A new record has been stored."
 // @Failure 400 {object} response.JSON "Bad request"
 // @Router /api/v1/coa_subgroups [post]
-func (handler *COASubGroupHandler) Create(ctx *fiber.Ctx) error {
+func (h *COASubGroupHandler) Create(ctx *fiber.Ctx) error {
 	req := request.COASubGroupCreateRequest{}
-	err := ctx.BodyParser(&req)
-	if err != nil {
+	if err := ctx.BodyParser(&req); err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}
 
-	entity, err := handler.ICOASubGroupService.Create(req)
+	result, err := h.ICOASubGroupService.Create(req)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{
 			Status:  400,
@@ -47,32 +45,28 @@ func (handler *COASubGroupHandler) Create(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusCreated).JSON(response.JSON{
 		Status:  201,
 		Message: "A new record has been stored.",
-		Data:    entity,
+		Data:    result,
 	})
 }
 
 // Find All COASubGroups
 // @Summary Get all chart of account subgroups
-// @Description Retrieve all chart of account subgroup records with pagination
 // @Tags COASubGroups
 // @Accept json
 // @Produce json
 // @Param search query string false "Search keyword"
 // @Param page query int false "Page number"
-// @Param pageSize query int false "Page size"
+// @Param page_size query int false "Page size"
+// @Param sort query string false "Sort column (code, name, status, created_at, updated_at)"
+// @Param order query string false "Sort direction (asc, desc)"
+// @Param status query string false "Filter by status"
 // @Success 200 {object} response.JSON "Successfully retrieved all records."
 // @Failure 500 {object} response.JSON "Internal Server Error"
 // @Router /api/v1/coa_subgroups [get]
-func (handler *COASubGroupHandler) FindAll(ctx *fiber.Ctx) error {
-	page, pageSize, _ := util.ParsePaginationParams(ctx)
+func (h *COASubGroupHandler) FindAll(ctx *fiber.Ctx) error {
+	qp := util.ParseQueryParams(ctx, entity.COASubGroup{}.SearchableFields())
 
-	search := ctx.Query("search")
-	entity := entity.COASubGroup{}
-	options := util.SearchOptions{
-		Fields: entity.SearchableFields(),
-	}
-
-	entities, totalCount, err := handler.ICOASubGroupService.FindAll(page, pageSize, search, options)
+	entities, totalCount, err := h.ICOASubGroupService.FindAll(qp)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
 			Status:  500,
@@ -81,7 +75,7 @@ func (handler *COASubGroupHandler) FindAll(ctx *fiber.Ctx) error {
 		})
 	}
 
-	if totalCount == 0 || (page-1)*pageSize >= totalCount {
+	if totalCount == 0 || (qp.Page-1)*qp.PageSize >= totalCount {
 		return ctx.Status(fiber.StatusOK).JSON(response.JSON{
 			Status:  200,
 			Message: "No records found.",
@@ -91,7 +85,7 @@ func (handler *COASubGroupHandler) FindAll(ctx *fiber.Ctx) error {
 	}
 
 	baseURL := ctx.Protocol() + "://" + ctx.Hostname() + ctx.Path()
-	meta := util.GenerateMeta(baseURL, search, page, pageSize, totalCount, nil)
+	meta := util.GenerateMeta(baseURL, qp, totalCount)
 
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
 		Status:  200,
@@ -103,7 +97,6 @@ func (handler *COASubGroupHandler) FindAll(ctx *fiber.Ctx) error {
 
 // Find COASubGroup by Id
 // @Summary Get chart of account subgroup by ID
-// @Description Retrieve a single chart of account subgroup by its ID
 // @Tags COASubGroups
 // @Accept json
 // @Produce json
@@ -111,15 +104,14 @@ func (handler *COASubGroupHandler) FindAll(ctx *fiber.Ctx) error {
 // @Success 200 {object} response.JSON "Successfully retrieved selected record."
 // @Failure 404 {object} response.JSON "COASubGroup not found"
 // @Router /api/v1/coa_subgroups/{id} [get]
-func (handler *COASubGroupHandler) FindById(ctx *fiber.Ctx) error {
-	id := ctx.Params("id")
-	parsedId, err := uuid.Parse(id)
+func (h *COASubGroupHandler) FindById(ctx *fiber.Ctx) error {
+	parsedId, err := uuid.Parse(ctx.Params("id"))
 	if err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}
 
-	entity, err := handler.ICOASubGroupService.FindById(parsedId)
+	result, err := h.ICOASubGroupService.FindById(parsedId)
 	if err != nil {
 		return ctx.Status(fiber.StatusNotFound).JSON(response.JSON{
 			Status:  404,
@@ -130,31 +122,28 @@ func (handler *COASubGroupHandler) FindById(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
 		Status:  200,
 		Message: "Successfully retrieved selected record.",
-		Data:    entity,
+		Data:    result,
 	})
 }
 
-// Update COA SubGroup by Id
+// Update COASubGroup by Id
 // @Summary Update chart of account subgroup
-// @Description Update chart of account subgroup data by ID
 // @Tags COASubGroups
 // @Accept json
 // @Produce json
-// @Param id path string true "COA SubGroup ID"
-// @Param request body request.COASubGroupUpdateRequest true "COA SubGroup Update Request"
+// @Param id path string true "COASubGroup ID"
+// @Param request body request.COASubGroupUpdateRequest true "COASubGroup Update Request"
 // @Success 200 {object} response.JSON "Selected record has been updated."
-// @Failure 404 {object} response.JSON "COA SubGroup not found"
+// @Failure 404 {object} response.JSON "COASubGroup not found"
 // @Router /api/v1/coa_subgroups/{id} [put]
-func (handler *COASubGroupHandler) Update(ctx *fiber.Ctx) error {
+func (h *COASubGroupHandler) Update(ctx *fiber.Ctx) error {
 	req := request.COASubGroupUpdateRequest{}
-	err := ctx.BodyParser(&req)
-	if err != nil {
+	if err := ctx.BodyParser(&req); err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}
 
-	id := ctx.Params("id")
-	parsedId, err := uuid.Parse(id)
+	parsedId, err := uuid.Parse(ctx.Params("id"))
 	if err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
@@ -162,7 +151,7 @@ func (handler *COASubGroupHandler) Update(ctx *fiber.Ctx) error {
 
 	req.Id = parsedId
 
-	entity, err := handler.ICOASubGroupService.Update(req)
+	result, err := h.ICOASubGroupService.Update(req)
 	if err != nil {
 		return ctx.Status(fiber.StatusNotFound).JSON(response.JSON{
 			Status:  404,
@@ -173,13 +162,12 @@ func (handler *COASubGroupHandler) Update(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
 		Status:  200,
 		Message: "Selected record has been updated.",
-		Data:    entity,
+		Data:    result,
 	})
 }
 
 // Delete COASubGroup by Id
 // @Summary Delete chart of account subgroup
-// @Description Remove a chart of account subgroup record by ID
 // @Tags COASubGroups
 // @Accept json
 // @Produce json
@@ -187,54 +175,40 @@ func (handler *COASubGroupHandler) Update(ctx *fiber.Ctx) error {
 // @Success 200 {object} response.JSON "Selected record has been deleted."
 // @Failure 404 {object} response.JSON "COASubGroup not found"
 // @Router /api/v1/coa_subgroups/{id} [delete]
-func (handler *COASubGroupHandler) Delete(ctx *fiber.Ctx) error {
-	id := ctx.Params("id")
-	parsedId, err := uuid.Parse(id)
+func (h *COASubGroupHandler) Delete(ctx *fiber.Ctx) error {
+	parsedId, err := uuid.Parse(ctx.Params("id"))
 	if err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}
 
-	entity, err := handler.ICOASubGroupService.Delete(parsedId)
+	result, err := h.ICOASubGroupService.Delete(parsedId)
 	if err != nil {
-		resp := response.JSON{
+		return ctx.Status(fiber.StatusNotFound).JSON(response.JSON{
 			Status:  404,
 			Message: err.Error(),
-		}
-		if entity.Id == uuid.Nil {
-			return ctx.Status(fiber.StatusNotFound).JSON(resp)
-		}
-		return ctx.Status(fiber.StatusNotFound).JSON(resp)
+		})
 	}
 
-	resp := response.JSON{
+	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
 		Status:  200,
 		Message: "Selected record has been deleted.",
-		Data:    nil,
-	}
-	return ctx.Status(fiber.StatusOK).JSON(resp)
+		Data:    result,
+	})
 }
 
 // Select COASubGroup Dropdown List
 // @Summary Get COASubGroup dropdown options
-// @Description Retrieve a paginated list of chart of account subgroups for dropdown selection. Supports optional search query.
 // @Tags Dropdowns
 // @Accept json
 // @Produce json
-// @Param search query string false "Search keyword for filtering subgroups"
+// @Param search query string false "Search keyword"
 // @Success 200 {object} response.SelectJSON "Successfully retrieved dropdown options"
-// @Failure 500 {object} response.JSON "Failed to retrieve records"
-// @Router /api/v1/dropdown/coa_subgroups/ [get]
-func (handler *COASubGroupHandler) SelectDropdownList(ctx *fiber.Ctx) error {
-	page, pageSize, _ := util.ParsePaginationParams(ctx)
+// @Router /api/v1/dropdown/coa_subgroups [get]
+func (h *COASubGroupHandler) SelectDropdownList(ctx *fiber.Ctx) error {
+	qp := util.ParseQueryParams(ctx, entity.COASubGroup{}.SearchableFields())
 
-	search := ctx.Query("search")
-	entity := entity.COASubGroup{}
-	options := util.SearchOptions{
-		Fields: entity.SearchableFields(),
-	}
-
-	entities, totalCount, err := handler.ICOASubGroupService.SelectDropdownList(page, pageSize, search, options)
+	entities, totalCount, err := h.ICOASubGroupService.SelectDropdownList(qp)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
 			Status:  500,
@@ -243,16 +217,11 @@ func (handler *COASubGroupHandler) SelectDropdownList(ctx *fiber.Ctx) error {
 		})
 	}
 
-	if totalCount == 0 || (page-1)*pageSize >= totalCount {
-		return ctx.Status(fiber.StatusOK).JSON(response.JSON{
-			Status:  200,
-			Message: "No records found.",
-			Data:    []response.COAGroupResponse{},
-			Meta:    nil,
+	if totalCount == 0 || (qp.Page-1)*qp.PageSize >= totalCount {
+		return ctx.Status(fiber.StatusOK).JSON(response.SelectJSON{
+			Data: []response.SelectDropdownListResponse{},
 		})
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(response.SelectJSON{
-		Data: entities,
-	})
+	return ctx.Status(fiber.StatusOK).JSON(response.SelectJSON{Data: entities})
 }

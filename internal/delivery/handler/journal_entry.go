@@ -70,17 +70,9 @@ func (h *JournalEntryHandler) Create(ctx *fiber.Ctx) error {
 // @Failure 500 {object} response.JSON "Internal Server Error"
 // @Router /api/v1/journal_entries [get]
 func (h *JournalEntryHandler) FindAll(ctx *fiber.Ctx) error {
-	page, pageSize, _ := util.ParsePaginationParams(ctx)
-	search := ctx.Query("search")
+	qp := util.ParseQueryParams(ctx, entity.User{}.SearchableFields())
 
-	options := util.SearchOptions{Fields: entity.JournalEntry{}.SearchableFields()}
-
-	filters := entity.JournalEntryFilters{}
-	if status := ctx.Query("status"); status != "" {
-		filters.Status = &status
-	}
-
-	entries, totalCount, err := h.IJournalEntryService.FindAll(page, pageSize, search, options, filters)
+	entities, totalCount, err := h.IJournalEntryService.FindAll(qp)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
 			Status:  500,
@@ -89,22 +81,22 @@ func (h *JournalEntryHandler) FindAll(ctx *fiber.Ctx) error {
 		})
 	}
 
-	if totalCount == 0 || (page-1)*pageSize >= totalCount {
+	if totalCount == 0 || (qp.Page-1)*qp.PageSize >= totalCount {
 		return ctx.Status(fiber.StatusOK).JSON(response.JSON{
 			Status:  200,
 			Message: "No records found.",
-			Data:    []response.JournalEntryResponse{},
+			Data:    []response.UserResponse{},
 			Meta:    nil,
 		})
 	}
 
 	baseURL := ctx.Protocol() + "://" + ctx.Hostname() + ctx.Path()
-	meta := util.GenerateMeta(baseURL, search, page, pageSize, totalCount, nil)
+	meta := util.GenerateMeta(baseURL, qp, totalCount)
 
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
 		Status:  200,
 		Message: "Successfully retrieved all records.",
-		Data:    entries,
+		Data:    entities,
 		Meta:    &meta,
 	})
 }

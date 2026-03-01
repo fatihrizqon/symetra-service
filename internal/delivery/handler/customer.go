@@ -59,21 +59,16 @@ func (h *CustomerHandler) Create(ctx *fiber.Ctx) error {
 // @Param search query string false "Search keyword"
 // @Param page query int false "Page number"
 // @Param page_size query int false "Page size"
+// @Param sort query string false "Sort column (code, name, email, status, created_at, updated_at)"
+// @Param order query string false "Sort direction (asc, desc)"
 // @Param status query string false "Filter by status"
 // @Success 200 {object} response.JSON "Successfully retrieved all records."
 // @Failure 500 {object} response.JSON "Internal Server Error"
 // @Router /api/v1/customers [get]
 func (h *CustomerHandler) FindAll(ctx *fiber.Ctx) error {
-	page, pageSize, _ := util.ParsePaginationParams(ctx)
-	search := ctx.Query("search")
-	options := util.SearchOptions{Fields: entity.Customer{}.SearchableFields()}
+	qp := util.ParseQueryParams(ctx, entity.Customer{}.SearchableFields())
 
-	filters := entity.CustomerFilters{}
-	if status := ctx.Query("status"); status != "" {
-		filters.Status = &status
-	}
-
-	items, totalCount, err := h.ICustomerService.FindAll(page, pageSize, search, options, filters)
+	items, totalCount, err := h.ICustomerService.FindAll(qp)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
 			Status:  500,
@@ -82,7 +77,7 @@ func (h *CustomerHandler) FindAll(ctx *fiber.Ctx) error {
 		})
 	}
 
-	if totalCount == 0 || (page-1)*pageSize >= totalCount {
+	if totalCount == 0 || (qp.Page-1)*qp.PageSize >= totalCount {
 		return ctx.Status(fiber.StatusOK).JSON(response.JSON{
 			Status:  200,
 			Message: "No records found.",
@@ -91,7 +86,7 @@ func (h *CustomerHandler) FindAll(ctx *fiber.Ctx) error {
 	}
 
 	baseURL := ctx.Protocol() + "://" + ctx.Hostname() + ctx.Path()
-	meta := util.GenerateMeta(baseURL, search, page, pageSize, totalCount, nil)
+	meta := util.GenerateMeta(baseURL, qp, totalCount)
 
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
 		Status:  200,
@@ -112,8 +107,7 @@ func (h *CustomerHandler) FindAll(ctx *fiber.Ctx) error {
 // @Failure 404 {object} response.JSON "Customer not found"
 // @Router /api/v1/customers/{id} [get]
 func (h *CustomerHandler) FindById(ctx *fiber.Ctx) error {
-	id := ctx.Params("id")
-	parsedId, err := uuid.Parse(id)
+	parsedId, err := uuid.Parse(ctx.Params("id"))
 	if err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
@@ -152,8 +146,7 @@ func (h *CustomerHandler) Update(ctx *fiber.Ctx) error {
 		return nil
 	}
 
-	id := ctx.Params("id")
-	parsedId, err := uuid.Parse(id)
+	parsedId, err := uuid.Parse(ctx.Params("id"))
 	if err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
@@ -187,8 +180,7 @@ func (h *CustomerHandler) Update(ctx *fiber.Ctx) error {
 // @Failure 404 {object} response.JSON "Customer not found"
 // @Router /api/v1/customers/{id} [delete]
 func (h *CustomerHandler) Delete(ctx *fiber.Ctx) error {
-	id := ctx.Params("id")
-	parsedId, err := uuid.Parse(id)
+	parsedId, err := uuid.Parse(ctx.Params("id"))
 	if err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
@@ -218,11 +210,9 @@ func (h *CustomerHandler) Delete(ctx *fiber.Ctx) error {
 // @Success 200 {object} response.SelectJSON "Successfully retrieved dropdown options"
 // @Router /api/v1/dropdown/customers [get]
 func (h *CustomerHandler) SelectDropdownList(ctx *fiber.Ctx) error {
-	page, pageSize, _ := util.ParsePaginationParams(ctx)
-	search := ctx.Query("search")
-	options := util.SearchOptions{Fields: entity.Customer{}.SearchableFields()}
+	qp := util.ParseQueryParams(ctx, entity.Customer{}.SearchableFields())
 
-	items, totalCount, err := h.ICustomerService.SelectDropdownList(page, pageSize, search, options)
+	items, totalCount, err := h.ICustomerService.SelectDropdownList(qp)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
 			Status:  500,
@@ -231,7 +221,7 @@ func (h *CustomerHandler) SelectDropdownList(ctx *fiber.Ctx) error {
 		})
 	}
 
-	if totalCount == 0 || (page-1)*pageSize >= totalCount {
+	if totalCount == 0 || (qp.Page-1)*qp.PageSize >= totalCount {
 		return ctx.Status(fiber.StatusOK).JSON(response.SelectJSON{
 			Data: []response.SelectDropdownListResponse{},
 		})

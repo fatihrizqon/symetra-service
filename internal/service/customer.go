@@ -12,11 +12,11 @@ import (
 
 type ICustomerService interface {
 	Create(req request.CustomerCreateRequest) (entity.Customer, error)
-	FindAll(page, pageSize int, search string, options util.SearchOptions, filters entity.CustomerFilters) ([]response.CustomerResponse, int, error)
+	FindAll(qp *util.QueryParams) ([]response.CustomerResponse, int, error)
 	FindById(id uuid.UUID) (response.CustomerResponse, error)
 	Update(req request.CustomerUpdateRequest) (entity.Customer, error)
 	Delete(id uuid.UUID) (entity.Customer, error)
-	SelectDropdownList(page, pageSize int, search string, options util.SearchOptions) ([]response.SelectDropdownListResponse, int, error)
+	SelectDropdownList(qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error)
 }
 
 type CustomerService struct {
@@ -25,10 +25,7 @@ type CustomerService struct {
 }
 
 func NewCustomerService(repo repository.ICustomerRepository, validate *validator.Validate) ICustomerService {
-	return &CustomerService{
-		ICustomerRepository: repo,
-		validate:            validate,
-	}
+	return &CustomerService{ICustomerRepository: repo, validate: validate}
 }
 
 func toCustomerResponse(c entity.Customer) response.CustomerResponse {
@@ -55,7 +52,6 @@ func (s *CustomerService) Create(req request.CustomerCreateRequest) (entity.Cust
 	if err := s.validate.Struct(req); err != nil {
 		return entity.Customer{}, err
 	}
-
 	c := entity.Customer{
 		Code:    req.Code,
 		Name:    req.Name,
@@ -64,18 +60,17 @@ func (s *CustomerService) Create(req request.CustomerCreateRequest) (entity.Cust
 		Address: req.Address,
 		CoaId:   req.CoaId,
 	}
-
 	return s.ICustomerRepository.Create(c)
 }
 
-func (s *CustomerService) FindAll(page, pageSize int, search string, options util.SearchOptions, filters entity.CustomerFilters) ([]response.CustomerResponse, int, error) {
-	entities, total, err := s.ICustomerRepository.FindAll(page, pageSize, search, options, filters)
+func (s *CustomerService) FindAll(qp *util.QueryParams) ([]response.CustomerResponse, int, error) {
+	entities, total, err := s.ICustomerRepository.FindAll(qp)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	totalPages := (total + pageSize - 1) / pageSize
-	if total == 0 || page > totalPages {
+	totalPages := (total + qp.PageSize - 1) / qp.PageSize
+	if total == 0 || qp.Page > totalPages {
 		return []response.CustomerResponse{}, total, nil
 	}
 
@@ -99,18 +94,15 @@ func (s *CustomerService) Update(req request.CustomerUpdateRequest) (entity.Cust
 	if err != nil {
 		return c, err
 	}
-
 	if err := s.validate.Struct(req); err != nil {
 		return c, err
 	}
-
 	c.Code = req.Code
 	c.Name = req.Name
 	c.Email = req.Email
 	c.Phone = req.Phone
 	c.Address = req.Address
 	c.CoaId = req.CoaId
-
 	if err := s.ICustomerRepository.Update(c); err != nil {
 		return c, err
 	}
@@ -125,14 +117,17 @@ func (s *CustomerService) Delete(id uuid.UUID) (entity.Customer, error) {
 	return c, s.ICustomerRepository.Delete(id)
 }
 
-func (s *CustomerService) SelectDropdownList(page, pageSize int, search string, options util.SearchOptions) ([]response.SelectDropdownListResponse, int, error) {
-	entities, total, err := s.ICustomerRepository.FindAll(page, pageSize, search, options, entity.CustomerFilters{})
+// SelectDropdownList reuses FindAll with the same QueryParams.
+// The handler should set qp.Filters to empty to avoid applying status filters
+// on dropdown (show all active records only by convention).
+func (s *CustomerService) SelectDropdownList(qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error) {
+	entities, total, err := s.ICustomerRepository.FindAll(qp)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	totalPages := (total + pageSize - 1) / pageSize
-	if total == 0 || page > totalPages {
+	totalPages := (total + qp.PageSize - 1) / qp.PageSize
+	if total == 0 || qp.Page > totalPages {
 		return []response.SelectDropdownListResponse{}, total, nil
 	}
 

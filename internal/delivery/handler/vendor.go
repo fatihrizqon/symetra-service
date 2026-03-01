@@ -59,21 +59,16 @@ func (h *VendorHandler) Create(ctx *fiber.Ctx) error {
 // @Param search query string false "Search keyword"
 // @Param page query int false "Page number"
 // @Param page_size query int false "Page size"
+// @Param sort query string false "Sort column (code, name, email, status, created_at, updated_at)"
+// @Param order query string false "Sort direction (asc, desc)"
 // @Param status query string false "Filter by status"
 // @Success 200 {object} response.JSON "Successfully retrieved all records."
 // @Failure 500 {object} response.JSON "Internal Server Error"
 // @Router /api/v1/vendors [get]
 func (h *VendorHandler) FindAll(ctx *fiber.Ctx) error {
-	page, pageSize, _ := util.ParsePaginationParams(ctx)
-	search := ctx.Query("search")
-	options := util.SearchOptions{Fields: entity.Vendor{}.SearchableFields()}
+	qp := util.ParseQueryParams(ctx, entity.Vendor{}.SearchableFields())
 
-	filters := entity.VendorFilters{}
-	if status := ctx.Query("status"); status != "" {
-		filters.Status = &status
-	}
-
-	items, totalCount, err := h.IVendorService.FindAll(page, pageSize, search, options, filters)
+	items, totalCount, err := h.IVendorService.FindAll(qp)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
 			Status:  500,
@@ -82,7 +77,7 @@ func (h *VendorHandler) FindAll(ctx *fiber.Ctx) error {
 		})
 	}
 
-	if totalCount == 0 || (page-1)*pageSize >= totalCount {
+	if totalCount == 0 || (qp.Page-1)*qp.PageSize >= totalCount {
 		return ctx.Status(fiber.StatusOK).JSON(response.JSON{
 			Status:  200,
 			Message: "No records found.",
@@ -91,7 +86,7 @@ func (h *VendorHandler) FindAll(ctx *fiber.Ctx) error {
 	}
 
 	baseURL := ctx.Protocol() + "://" + ctx.Hostname() + ctx.Path()
-	meta := util.GenerateMeta(baseURL, search, page, pageSize, totalCount, nil)
+	meta := util.GenerateMeta(baseURL, qp, totalCount)
 
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
 		Status:  200,
@@ -103,7 +98,6 @@ func (h *VendorHandler) FindAll(ctx *fiber.Ctx) error {
 
 // Find Vendor by Id
 // @Summary Get vendor by ID
-// @Description Retrieve a single vendor by its ID
 // @Tags Vendors
 // @Accept json
 // @Produce json
@@ -112,8 +106,7 @@ func (h *VendorHandler) FindAll(ctx *fiber.Ctx) error {
 // @Failure 404 {object} response.JSON "Vendor not found"
 // @Router /api/v1/vendors/{id} [get]
 func (h *VendorHandler) FindById(ctx *fiber.Ctx) error {
-	id := ctx.Params("id")
-	parsedId, err := uuid.Parse(id)
+	parsedId, err := uuid.Parse(ctx.Params("id"))
 	if err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
@@ -136,7 +129,6 @@ func (h *VendorHandler) FindById(ctx *fiber.Ctx) error {
 
 // Update Vendor by Id
 // @Summary Update vendor
-// @Description Update vendor data by ID
 // @Tags Vendors
 // @Accept json
 // @Produce json
@@ -152,8 +144,7 @@ func (h *VendorHandler) Update(ctx *fiber.Ctx) error {
 		return nil
 	}
 
-	id := ctx.Params("id")
-	parsedId, err := uuid.Parse(id)
+	parsedId, err := uuid.Parse(ctx.Params("id"))
 	if err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
@@ -178,7 +169,6 @@ func (h *VendorHandler) Update(ctx *fiber.Ctx) error {
 
 // Delete Vendor by Id
 // @Summary Delete vendor
-// @Description Remove a vendor record by ID
 // @Tags Vendors
 // @Accept json
 // @Produce json
@@ -187,8 +177,7 @@ func (h *VendorHandler) Update(ctx *fiber.Ctx) error {
 // @Failure 404 {object} response.JSON "Vendor not found"
 // @Router /api/v1/vendors/{id} [delete]
 func (h *VendorHandler) Delete(ctx *fiber.Ctx) error {
-	id := ctx.Params("id")
-	parsedId, err := uuid.Parse(id)
+	parsedId, err := uuid.Parse(ctx.Params("id"))
 	if err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
@@ -210,7 +199,6 @@ func (h *VendorHandler) Delete(ctx *fiber.Ctx) error {
 
 // Select Vendor Dropdown List
 // @Summary Get vendor dropdown options
-// @Description Retrieve vendors for dropdown selection
 // @Tags Dropdowns
 // @Accept json
 // @Produce json
@@ -218,11 +206,9 @@ func (h *VendorHandler) Delete(ctx *fiber.Ctx) error {
 // @Success 200 {object} response.SelectJSON "Successfully retrieved dropdown options"
 // @Router /api/v1/dropdown/vendors [get]
 func (h *VendorHandler) SelectDropdownList(ctx *fiber.Ctx) error {
-	page, pageSize, _ := util.ParsePaginationParams(ctx)
-	search := ctx.Query("search")
-	options := util.SearchOptions{Fields: entity.Vendor{}.SearchableFields()}
+	qp := util.ParseQueryParams(ctx, entity.Vendor{}.SearchableFields())
 
-	items, totalCount, err := h.IVendorService.SelectDropdownList(page, pageSize, search, options)
+	items, totalCount, err := h.IVendorService.SelectDropdownList(qp)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
 			Status:  500,
@@ -231,7 +217,7 @@ func (h *VendorHandler) SelectDropdownList(ctx *fiber.Ctx) error {
 		})
 	}
 
-	if totalCount == 0 || (page-1)*pageSize >= totalCount {
+	if totalCount == 0 || (qp.Page-1)*qp.PageSize >= totalCount {
 		return ctx.Status(fiber.StatusOK).JSON(response.SelectJSON{
 			Data: []response.SelectDropdownListResponse{},
 		})

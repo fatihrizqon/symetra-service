@@ -20,7 +20,6 @@ func NewCOAHandler(serv service.ICOAService) *COAHandler {
 
 // Create a New COA
 // @Summary Create chart of account
-// @Description Store a new chart of account  record
 // @Tags COAs
 // @Accept json
 // @Produce json
@@ -28,15 +27,14 @@ func NewCOAHandler(serv service.ICOAService) *COAHandler {
 // @Success 201 {object} response.JSON "A new record has been stored."
 // @Failure 400 {object} response.JSON "Bad request"
 // @Router /api/v1/coa [post]
-func (handler *COAHandler) Create(ctx *fiber.Ctx) error {
+func (h *COAHandler) Create(ctx *fiber.Ctx) error {
 	req := request.COACreateRequest{}
-	err := ctx.BodyParser(&req)
-	if err != nil {
+	if err := ctx.BodyParser(&req); err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}
 
-	entity, err := handler.ICOAService.Create(req)
+	result, err := h.ICOAService.Create(req)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{
 			Status:  400,
@@ -47,32 +45,28 @@ func (handler *COAHandler) Create(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusCreated).JSON(response.JSON{
 		Status:  201,
 		Message: "A new record has been stored.",
-		Data:    entity,
+		Data:    result,
 	})
 }
 
 // Find All COAs
-// @Summary Get all chart of account s
-// @Description Retrieve all chart of account  records with pagination
+// @Summary Get all chart of accounts
 // @Tags COAs
 // @Accept json
 // @Produce json
 // @Param search query string false "Search keyword"
 // @Param page query int false "Page number"
-// @Param pageSize query int false "Page size"
+// @Param page_size query int false "Page size"
+// @Param sort query string false "Sort column (code, name, status, created_at, updated_at)"
+// @Param order query string false "Sort direction (asc, desc)"
+// @Param status query string false "Filter by status"
 // @Success 200 {object} response.JSON "Successfully retrieved all records."
 // @Failure 500 {object} response.JSON "Internal Server Error"
 // @Router /api/v1/coa [get]
-func (handler *COAHandler) FindAll(ctx *fiber.Ctx) error {
-	page, pageSize, _ := util.ParsePaginationParams(ctx)
+func (h *COAHandler) FindAll(ctx *fiber.Ctx) error {
+	qp := util.ParseQueryParams(ctx, entity.COA{}.SearchableFields())
 
-	search := ctx.Query("search")
-	entity := entity.COA{}
-	options := util.SearchOptions{
-		Fields: entity.SearchableFields(),
-	}
-
-	entities, totalCount, err := handler.ICOAService.FindAll(page, pageSize, search, options)
+	entities, totalCount, err := h.ICOAService.FindAll(qp)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
 			Status:  500,
@@ -81,7 +75,7 @@ func (handler *COAHandler) FindAll(ctx *fiber.Ctx) error {
 		})
 	}
 
-	if totalCount == 0 || (page-1)*pageSize >= totalCount {
+	if totalCount == 0 || (qp.Page-1)*qp.PageSize >= totalCount {
 		return ctx.Status(fiber.StatusOK).JSON(response.JSON{
 			Status:  200,
 			Message: "No records found.",
@@ -91,7 +85,7 @@ func (handler *COAHandler) FindAll(ctx *fiber.Ctx) error {
 	}
 
 	baseURL := ctx.Protocol() + "://" + ctx.Hostname() + ctx.Path()
-	meta := util.GenerateMeta(baseURL, search, page, pageSize, totalCount, nil)
+	meta := util.GenerateMeta(baseURL, qp, totalCount)
 
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
 		Status:  200,
@@ -102,8 +96,7 @@ func (handler *COAHandler) FindAll(ctx *fiber.Ctx) error {
 }
 
 // Find COA by Id
-// @Summary Get chart of account  by ID
-// @Description Retrieve a single chart of account  by its ID
+// @Summary Get chart of account by ID
 // @Tags COAs
 // @Accept json
 // @Produce json
@@ -111,15 +104,14 @@ func (handler *COAHandler) FindAll(ctx *fiber.Ctx) error {
 // @Success 200 {object} response.JSON "Successfully retrieved selected record."
 // @Failure 404 {object} response.JSON "COA not found"
 // @Router /api/v1/coa/{id} [get]
-func (handler *COAHandler) FindById(ctx *fiber.Ctx) error {
-	id := ctx.Params("id")
-	parsedId, err := uuid.Parse(id)
+func (h *COAHandler) FindById(ctx *fiber.Ctx) error {
+	parsedId, err := uuid.Parse(ctx.Params("id"))
 	if err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}
 
-	entity, err := handler.ICOAService.FindById(parsedId)
+	result, err := h.ICOAService.FindById(parsedId)
 	if err != nil {
 		return ctx.Status(fiber.StatusNotFound).JSON(response.JSON{
 			Status:  404,
@@ -130,31 +122,28 @@ func (handler *COAHandler) FindById(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
 		Status:  200,
 		Message: "Successfully retrieved selected record.",
-		Data:    entity,
+		Data:    result,
 	})
 }
 
-// Update COA  by Id
+// Update COA by Id
 // @Summary Update chart of account
-// @Description Update chart of account  data by ID
 // @Tags COAs
 // @Accept json
 // @Produce json
-// @Param id path string true "COA  ID"
-// @Param request body request.COAUpdateRequest true "COA  Update Request"
+// @Param id path string true "COA ID"
+// @Param request body request.COAUpdateRequest true "COA Update Request"
 // @Success 200 {object} response.JSON "Selected record has been updated."
-// @Failure 404 {object} response.JSON "COA  not found"
+// @Failure 404 {object} response.JSON "COA not found"
 // @Router /api/v1/coa/{id} [put]
-func (handler *COAHandler) Update(ctx *fiber.Ctx) error {
+func (h *COAHandler) Update(ctx *fiber.Ctx) error {
 	req := request.COAUpdateRequest{}
-	err := ctx.BodyParser(&req)
-	if err != nil {
+	if err := ctx.BodyParser(&req); err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}
 
-	id := ctx.Params("id")
-	parsedId, err := uuid.Parse(id)
+	parsedId, err := uuid.Parse(ctx.Params("id"))
 	if err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
@@ -162,7 +151,7 @@ func (handler *COAHandler) Update(ctx *fiber.Ctx) error {
 
 	req.Id = parsedId
 
-	entity, err := handler.ICOAService.Update(req)
+	result, err := h.ICOAService.Update(req)
 	if err != nil {
 		return ctx.Status(fiber.StatusNotFound).JSON(response.JSON{
 			Status:  404,
@@ -173,13 +162,12 @@ func (handler *COAHandler) Update(ctx *fiber.Ctx) error {
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
 		Status:  200,
 		Message: "Selected record has been updated.",
-		Data:    entity,
+		Data:    result,
 	})
 }
 
 // Delete COA by Id
 // @Summary Delete chart of account
-// @Description Remove a chart of account  record by ID
 // @Tags COAs
 // @Accept json
 // @Produce json
@@ -187,64 +175,40 @@ func (handler *COAHandler) Update(ctx *fiber.Ctx) error {
 // @Success 200 {object} response.JSON "Selected record has been deleted."
 // @Failure 404 {object} response.JSON "COA not found"
 // @Router /api/v1/coa/{id} [delete]
-func (handler *COAHandler) Delete(ctx *fiber.Ctx) error {
-	id := ctx.Params("id")
-	parsedId, err := uuid.Parse(id)
+func (h *COAHandler) Delete(ctx *fiber.Ctx) error {
+	parsedId, err := uuid.Parse(ctx.Params("id"))
 	if err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}
 
-	entity, err := handler.ICOAService.Delete(parsedId)
+	result, err := h.ICOAService.Delete(parsedId)
 	if err != nil {
-		resp := response.JSON{
+		return ctx.Status(fiber.StatusNotFound).JSON(response.JSON{
 			Status:  404,
 			Message: err.Error(),
-		}
-		if entity.Id == uuid.Nil {
-			return ctx.Status(fiber.StatusNotFound).JSON(resp)
-		}
-		return ctx.Status(fiber.StatusNotFound).JSON(resp)
+		})
 	}
 
-	resp := response.JSON{
+	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
 		Status:  200,
 		Message: "Selected record has been deleted.",
-		Data:    nil,
-	}
-	return ctx.Status(fiber.StatusOK).JSON(resp)
-}
-
-func (handler *COAHandler) setCOAFilters(ctx *fiber.Ctx) entity.COAFilters {
-	filters := entity.COAFilters{}
-
-	if status := ctx.Query("status"); status != "" {
-		filters.Status = &status
-	}
-
-	return filters
+		Data:    result,
+	})
 }
 
 // Select COA Dropdown List
 // @Summary Get COA dropdown options
-// @Description Retrieve a paginated list of chart of account s for dropdown selection. Supports optional search query.
 // @Tags Dropdowns
 // @Accept json
 // @Produce json
-// @Param search query string false "Search keyword for filtering s"
+// @Param search query string false "Search keyword"
 // @Success 200 {object} response.SelectJSON "Successfully retrieved dropdown options"
-// @Failure 500 {object} response.JSON "Failed to retrieve records"
 // @Router /api/v1/dropdown/coa [get]
-func (handler *COAHandler) SelectDropdownList(ctx *fiber.Ctx) error {
-	page, pageSize, _ := util.ParsePaginationParams(ctx)
+func (h *COAHandler) SelectDropdownList(ctx *fiber.Ctx) error {
+	qp := util.ParseQueryParams(ctx, entity.COA{}.SearchableFields())
 
-	search := ctx.Query("search")
-	entity := entity.COA{}
-	options := util.SearchOptions{
-		Fields: entity.SearchableFields(),
-	}
-
-	entities, totalCount, err := handler.ICOAService.SelectDropdownList(page, pageSize, search, options)
+	entities, totalCount, err := h.ICOAService.SelectDropdownList(qp)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
 			Status:  500,
@@ -253,16 +217,11 @@ func (handler *COAHandler) SelectDropdownList(ctx *fiber.Ctx) error {
 		})
 	}
 
-	if totalCount == 0 || (page-1)*pageSize >= totalCount {
-		return ctx.Status(fiber.StatusOK).JSON(response.JSON{
-			Status:  200,
-			Message: "No records found.",
-			Data:    []response.COAResponse{},
-			Meta:    nil,
+	if totalCount == 0 || (qp.Page-1)*qp.PageSize >= totalCount {
+		return ctx.Status(fiber.StatusOK).JSON(response.SelectJSON{
+			Data: []response.SelectDropdownListResponse{},
 		})
 	}
 
-	return ctx.Status(fiber.StatusOK).JSON(response.SelectJSON{
-		Data: entities,
-	})
+	return ctx.Status(fiber.StatusOK).JSON(response.SelectJSON{Data: entities})
 }

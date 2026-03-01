@@ -6,37 +6,46 @@ import (
 	"github.com/fatihrizqon/symetra-service/internal/delivery/http/response"
 )
 
-func GenerateMeta(baseURL, search string, page, pageSize, totalCount int, filters map[string]string) response.Meta {
+// GenerateMeta builds the pagination meta block for list responses.
+// It reconstructs query strings from qp so that all active filters,
+// sort, and search values are preserved in the next/prev/first/last links.
+func GenerateMeta(baseURL string, qp *QueryParams, totalCount int) response.Meta {
+	page := qp.Page
 	if page < 1 {
 		page = 1
 	}
 
-	totalPages := (totalCount + pageSize - 1) / pageSize
+	totalPages := (totalCount + qp.PageSize - 1) / qp.PageSize
 
-	buildURL := func(page int) string {
-		query := fmt.Sprintf("?page=%d&page_size=%d", page, pageSize)
-		if search != "" {
-			query += "&search=" + search
+	buildURL := func(p int) string {
+		query := fmt.Sprintf("?page=%d&page_size=%d", p, qp.PageSize)
+		if qp.Search != "" {
+			query += "&search=" + qp.Search
 		}
-		for key, value := range filters {
-			query += fmt.Sprintf("&%s=%s", key, value)
+		if qp.SortBy != "" {
+			query += "&sort=" + qp.SortBy + "&order=" + qp.SortDir
+		}
+		for key, values := range qp.Filters {
+			for _, value := range values {
+				query += fmt.Sprintf("&%s=%s", key, value)
+			}
 		}
 		return baseURL + query
 	}
 
 	currentPage := buildURL(page)
 	prevPage := getPageURL(page-1, buildURL)
-	nextPage := getPageURL(page+1, buildURL, (page*pageSize) < totalCount)
+	nextPage := getPageURL(page+1, buildURL, (page*qp.PageSize) < totalCount)
 
-	startIndex, endIndex := calculateIndices(page, pageSize, totalCount)
+	startIndex, endIndex := calculateIndices(page, qp.PageSize, totalCount)
 
 	return response.Meta{
-		Search:     search,
+		Search:     qp.Search,
 		Info:       fmt.Sprintf("Showing %d to %d from %d item(s).", startIndex, endIndex, totalCount),
 		Page:       page,
 		TotalCount: totalCount,
 		TotalPages: totalPages,
-		PageSize:   pageSize,
+		PageSize:   qp.PageSize,
 		Links: response.Links{
 			CurrentPage: currentPage,
 			FirstPage:   buildURL(1),

@@ -1,17 +1,24 @@
 package repository
 
 import (
-	"strings"
-
 	"github.com/fatihrizqon/symetra-service/internal/entity"
 	"github.com/fatihrizqon/symetra-service/internal/util"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
+var customerSortColumns = map[string]string{
+	"code":       "customers.code",
+	"name":       "customers.name",
+	"email":      "customers.email",
+	"status":     "customers.status",
+	"created_at": "customers.created_at",
+	"updated_at": "customers.updated_at",
+}
+
 type ICustomerRepository interface {
 	Create(entity.Customer) (entity.Customer, error)
-	FindAll(page, pageSize int, search string, options util.SearchOptions, filters entity.CustomerFilters) ([]entity.Customer, int, error)
+	FindAll(qp *util.QueryParams) ([]entity.Customer, int, error)
 	FindById(id uuid.UUID) (entity.Customer, error)
 	Update(entity.Customer) error
 	Delete(id uuid.UUID) error
@@ -35,39 +42,25 @@ func (r *CustomerRepository) Create(c entity.Customer) (entity.Customer, error) 
 	return c, nil
 }
 
-func (r *CustomerRepository) FindAll(page, pageSize int, search string, options util.SearchOptions, filters entity.CustomerFilters) ([]entity.Customer, int, error) {
+func (r *CustomerRepository) FindAll(qp *util.QueryParams) ([]entity.Customer, int, error) {
 	var entities []entity.Customer
 	var totalCount int64
 
 	query := r.Db.Preload("COA").Model(&entity.Customer{})
-
-	if search != "" && len(options.Fields) > 0 {
-		var conditions []string
-		var values []interface{}
-		for _, term := range strings.Split(search, ";") {
-			term = strings.TrimSpace(term)
-			for _, field := range options.Fields {
-				conditions = append(conditions, "LOWER("+field+") LIKE LOWER(?)")
-				values = append(values, "%"+term+"%")
-			}
-		}
-		query = query.Where(strings.Join(conditions, " OR "), values...)
-	}
-
-	if filters.Status != nil {
-		query = query.Where("status = ?", *filters.Status)
-	}
+	query = util.ApplySearch(query, qp)
+	query = entity.Customer{}.ApplyFilters(query, qp.Filters)
 
 	if err := query.Count(&totalCount).Error; err != nil {
 		return nil, 0, err
 	}
-
 	if totalCount == 0 {
 		return entities, 0, nil
 	}
 
-	offset := (page - 1) * pageSize
-	if err := query.Order("created_at ASC").Limit(pageSize).Offset(offset).Find(&entities).Error; err != nil {
+	query = util.ApplySort(query, qp, customerSortColumns, "customers.created_at")
+	query = util.ApplyPagination(query, qp)
+
+	if err := query.Find(&entities).Error; err != nil {
 		return nil, 0, err
 	}
 

@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	"github.com/fatihrizqon/symetra-service/internal/entity"
@@ -11,13 +10,23 @@ import (
 	"gorm.io/gorm"
 )
 
+// userSortColumns is the whitelist of sortable columns for the users table.
+// Key = public-facing ?sort= value, Value = safe SQL column expression.
+var userSortColumns = map[string]string{
+	"name":       "users.name",
+	"username":   "users.username",
+	"email":      "users.email",
+	"status":     "users.status",
+	"created_at": "users.created_at",
+	"updated_at": "users.updated_at",
+}
+
 type IUserRepository interface {
 	Create(entity.User) (entity.User, error)
-	FindAll(page, pageSize int, search string, options util.SearchOptions, filters entity.UserFilters) ([]entity.User, int, error)
-	FindById(entityId uuid.UUID) (entity.User, error)
+	FindAll(qp *util.QueryParams) ([]entity.User, int, error)
+	FindById(id uuid.UUID) (entity.User, error)
 	Update(entity.User) error
-	Delete(entityId uuid.UUID) error
-
+	Delete(id uuid.UUID) error
 	CountAll(ctx context.Context) (int64, error)
 	CountBetween(ctx context.Context, from time.Time, to time.Time) (int64, error)
 	CountVerified(ctx context.Context) (int64, error)
@@ -27,104 +36,69 @@ type UserRepository struct {
 	Db *gorm.DB
 }
 
-func NewUserRepository(Db *gorm.DB) IUserRepository {
-	return &UserRepository{Db: Db}
+func NewUserRepository(db *gorm.DB) IUserRepository {
+	return &UserRepository{Db: db}
 }
 
-// Create implements IUserRepository.
-func (e *UserRepository) Create(entity entity.User) (entity.User, error) {
-	tx := e.Db.Begin()
-
-	if err := tx.Create(&entity).Error; err != nil {
+func (r *UserRepository) Create(u entity.User) (entity.User, error) {
+	tx := r.Db.Begin()
+	if err := tx.Create(&u).Error; err != nil {
 		tx.Rollback()
-		return entity, err
+		return u, err
 	}
-
 	tx.Commit()
-	return entity, nil
+	return u, nil
 }
 
-// FindAll implements IUserRepository with pagination.
-func (e *UserRepository) FindAll(page, pageSize int, search string, options util.SearchOptions, filters entity.UserFilters) ([]entity.User, int, error) {
+func (r *UserRepository) FindAll(qp *util.QueryParams) ([]entity.User, int, error) {
 	var entities []entity.User
 	var totalCount int64
 
-	query := e.Db.Model(&entity.User{})
-
-	if search != "" && len(options.Fields) > 0 {
-		orConditions := []string{}
-		values := []interface{}{}
-		for _, term := range strings.Split(search, ";") {
-			term = strings.TrimSpace(term)
-			for _, field := range options.Fields {
-				orConditions = append(orConditions, "LOWER("+field+") LIKE LOWER(?)")
-				values = append(values, "%"+term+"%")
-			}
-		}
-		query = query.Where(strings.Join(orConditions, " OR "), values...)
-	}
-
-	if filters.Status != nil {
-		query = query.Where("status = ?", *filters.Status)
-	}
-
-	if filters.Verified != nil {
-		verified := strings.ToLower(strings.TrimSpace(*filters.Verified))
-		if verified == "true" {
-			query = query.Where("email_verified_at IS NOT NULL")
-		} else if verified == "false" {
-			query = query.Where("email_verified_at IS NULL")
-		}
-	}
+	query := r.Db.Model(&entity.User{})
+	query = util.ApplySearch(query, qp)
+	query = entity.User{}.ApplyFilters(query, qp.Filters)
 
 	if err := query.Count(&totalCount).Error; err != nil {
 		return nil, 0, err
 	}
-
 	if totalCount == 0 {
 		return entities, 0, nil
 	}
 
-	offset := (page - 1) * pageSize
-	if err := query.Order("created_at ASC").Limit(pageSize).Offset(offset).Find(&entities).Error; err != nil {
+	query = util.ApplySort(query, qp, userSortColumns, "users.created_at")
+	query = util.ApplyPagination(query, qp)
+
+	if err := query.Find(&entities).Error; err != nil {
 		return nil, 0, err
 	}
 
 	return entities, int(totalCount), nil
 }
 
-// FindById implements IUserRepository.
-func (e *UserRepository) FindById(entityId uuid.UUID) (entity.User, error) {
-	var entity entity.User
-	if err := e.Db.Where("id = ?", entityId).First(&entity).Error; err != nil {
-		return entity, err
+func (r *UserRepository) FindById(id uuid.UUID) (entity.User, error) {
+	var u entity.User
+	if err := r.Db.Where("id = ?", id).First(&u).Error; err != nil {
+		return u, err
 	}
-	return entity, nil
+	return u, nil
 }
 
-// Update implements IUserRepository.
-func (e *UserRepository) Update(entity entity.User) error {
-	tx := e.Db.Begin()
-
-	if err := tx.Model(&entity).Updates(entity).Error; err != nil {
+func (r *UserRepository) Update(u entity.User) error {
+	tx := r.Db.Begin()
+	if err := tx.Model(&u).Updates(u).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
-
 	tx.Commit()
 	return nil
 }
 
-// Delete implements IUserRepository.
-func (e *UserRepository) Delete(entityId uuid.UUID) error {
-	var entity entity.User
-	tx := e.Db.Begin()
-
-	if err := tx.Where("id = ?", entityId).Delete(&entity).Error; err != nil {
+func (r *UserRepository) Delete(id uuid.UUID) error {
+	tx := r.Db.Begin()
+	if err := tx.Where("id = ?", id).Delete(&entity.User{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
-
 	tx.Commit()
 	return nil
 }

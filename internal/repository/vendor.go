@@ -1,17 +1,24 @@
 package repository
 
 import (
-	"strings"
-
 	"github.com/fatihrizqon/symetra-service/internal/entity"
 	"github.com/fatihrizqon/symetra-service/internal/util"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
+var vendorSortColumns = map[string]string{
+	"code":       "vendors.code",
+	"name":       "vendors.name",
+	"email":      "vendors.email",
+	"status":     "vendors.status",
+	"created_at": "vendors.created_at",
+	"updated_at": "vendors.updated_at",
+}
+
 type IVendorRepository interface {
 	Create(entity.Vendor) (entity.Vendor, error)
-	FindAll(page, pageSize int, search string, options util.SearchOptions, filters entity.VendorFilters) ([]entity.Vendor, int, error)
+	FindAll(qp *util.QueryParams) ([]entity.Vendor, int, error)
 	FindById(id uuid.UUID) (entity.Vendor, error)
 	Update(entity.Vendor) error
 	Delete(id uuid.UUID) error
@@ -35,39 +42,25 @@ func (r *VendorRepository) Create(v entity.Vendor) (entity.Vendor, error) {
 	return v, nil
 }
 
-func (r *VendorRepository) FindAll(page, pageSize int, search string, options util.SearchOptions, filters entity.VendorFilters) ([]entity.Vendor, int, error) {
+func (r *VendorRepository) FindAll(qp *util.QueryParams) ([]entity.Vendor, int, error) {
 	var entities []entity.Vendor
 	var totalCount int64
 
 	query := r.Db.Preload("COA").Model(&entity.Vendor{})
-
-	if search != "" && len(options.Fields) > 0 {
-		var conditions []string
-		var values []interface{}
-		for _, term := range strings.Split(search, ";") {
-			term = strings.TrimSpace(term)
-			for _, field := range options.Fields {
-				conditions = append(conditions, "LOWER("+field+") LIKE LOWER(?)")
-				values = append(values, "%"+term+"%")
-			}
-		}
-		query = query.Where(strings.Join(conditions, " OR "), values...)
-	}
-
-	if filters.Status != nil {
-		query = query.Where("status = ?", *filters.Status)
-	}
+	query = util.ApplySearch(query, qp)
+	query = entity.Vendor{}.ApplyFilters(query, qp.Filters)
 
 	if err := query.Count(&totalCount).Error; err != nil {
 		return nil, 0, err
 	}
-
 	if totalCount == 0 {
 		return entities, 0, nil
 	}
 
-	offset := (page - 1) * pageSize
-	if err := query.Order("created_at ASC").Limit(pageSize).Offset(offset).Find(&entities).Error; err != nil {
+	query = util.ApplySort(query, qp, vendorSortColumns, "vendors.created_at")
+	query = util.ApplyPagination(query, qp)
+
+	if err := query.Find(&entities).Error; err != nil {
 		return nil, 0, err
 	}
 

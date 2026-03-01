@@ -16,144 +16,119 @@ import (
 
 type IUserService interface {
 	Create(req request.UserCreateRequest) (entity.User, error)
-	FindAll(page, pageSize int, search string, options util.SearchOptions, filters entity.UserFilters) ([]response.UserResponse, int, error)
+	FindAll(qp *util.QueryParams) ([]response.UserResponse, int, error)
 	FindById(reqId uuid.UUID) (response.UserResponse, error)
 	Update(req request.UserUpdateRequest) (entity.User, error)
 	Delete(reqId uuid.UUID) (entity.User, error)
 }
+
 type UserService struct {
 	IUserRepository repository.IUserRepository
 	validate        *validator.Validate
 }
 
 func NewUserService(repo repository.IUserRepository, validate *validator.Validate) IUserService {
-	return &UserService{
-		IUserRepository: repo,
-		validate:        validate,
-	}
+	return &UserService{IUserRepository: repo, validate: validate}
 }
 
-// Create implements IUserService.
-func (e *UserService) Create(req request.UserCreateRequest) (entity.User, error) {
-	var user entity.User
+func (s *UserService) Create(req request.UserCreateRequest) (entity.User, error) {
+	if err := s.validate.Struct(req); err != nil {
+		return entity.User{}, err
+	}
 
 	hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), 14)
 	if err != nil {
-		return user, errors.New("failed to hash password")
+		return entity.User{}, errors.New("failed to hash password")
 	}
 
-	entity := entity.User{
+	u := entity.User{
 		Username: strings.ToLower(req.Username),
 		Name:     req.Name,
 		Email:    strings.ToLower(strings.TrimSpace(req.Email)),
 		Password: string(hashed),
 	}
 
-	if err := e.validate.Struct(req); err != nil {
-		return entity, err
-	}
-
-	entity, err = e.IUserRepository.Create(entity)
-	if err != nil {
-		return entity, err
-	}
-
-	return entity, nil
+	return s.IUserRepository.Create(u)
 }
 
-// FindAll implements IUserService with pagination.
-func (e *UserService) FindAll(page, pageSize int, search string, options util.SearchOptions, filters entity.UserFilters) ([]response.UserResponse, int, error) {
-	var resps []response.UserResponse
-	entities, totalCount, err := e.IUserRepository.FindAll(page, pageSize, search, options, filters)
-
+func (s *UserService) FindAll(qp *util.QueryParams) ([]response.UserResponse, int, error) {
+	entities, totalCount, err := s.IUserRepository.FindAll(qp)
 	if err != nil {
 		return nil, 0, err
 	}
 
 	if totalCount == 0 {
-		return resps, totalCount, nil
+		return []response.UserResponse{}, 0, nil
 	}
 
-	totalPages := (totalCount + pageSize - 1) / pageSize
-	if page > totalPages {
+	totalPages := (totalCount + qp.PageSize - 1) / qp.PageSize
+	if qp.Page > totalPages {
 		return nil, totalCount, nil
 	}
 
-	for _, value := range entities {
-		resp := response.UserResponse{
-			Id:        value.Id,
-			Username:  value.Username,
-			Name:      value.Name,
-			Email:     value.Email,
-			Status:    value.Status,
-			CreatedAt: value.CreatedAt,
-			UpdatedAt: value.UpdatedAt,
-		}
-		resps = append(resps, resp)
+	resps := make([]response.UserResponse, 0, len(entities))
+	for _, u := range entities {
+		resps = append(resps, response.UserResponse{
+			Id:        u.Id,
+			Username:  u.Username,
+			Name:      u.Name,
+			Email:     u.Email,
+			Status:    u.Status,
+			CreatedAt: u.CreatedAt,
+			UpdatedAt: u.UpdatedAt,
+		})
 	}
 
 	return resps, totalCount, nil
 }
 
-// FindById implements IUserService.
-func (e *UserService) FindById(reqId uuid.UUID) (response.UserResponse, error) {
-	var res response.UserResponse
-	result, err := e.IUserRepository.FindById(reqId)
-
+func (s *UserService) FindById(reqId uuid.UUID) (response.UserResponse, error) {
+	u, err := s.IUserRepository.FindById(reqId)
 	if err != nil {
-		return res, err
+		return response.UserResponse{}, err
 	}
 
 	return response.UserResponse{
-		Id:        result.Id,
-		Username:  result.Username,
-		Name:      result.Name,
-		Email:     result.Email,
-		Status:    result.Status,
-		CreatedAt: result.CreatedAt,
-		UpdatedAt: result.UpdatedAt,
+		Id:        u.Id,
+		Username:  u.Username,
+		Name:      u.Name,
+		Email:     u.Email,
+		Status:    u.Status,
+		CreatedAt: u.CreatedAt,
+		UpdatedAt: u.UpdatedAt,
 	}, nil
 }
 
-// Update implements IUserService.
-func (e *UserService) Update(req request.UserUpdateRequest) (entity.User, error) {
-	entity, err := e.IUserRepository.FindById(req.Id)
+func (s *UserService) Update(req request.UserUpdateRequest) (entity.User, error) {
+	u, err := s.IUserRepository.FindById(req.Id)
 	if err != nil {
-		return entity, err
+		return u, err
 	}
 
-	entity.Username = strings.ToLower(req.Username)
-	entity.Name = req.Name
-	entity.Email = req.Email
+	u.Username = strings.ToLower(req.Username)
+	u.Name = req.Name
+	u.Email = req.Email
 
 	if req.Password != "" {
 		hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), 14)
 		if err != nil {
-			return entity, errors.New("failed to generate password")
+			return u, errors.New("failed to generate password")
 		}
-		entity.Password = string(hashed)
+		u.Password = string(hashed)
 	}
 
-	err = e.IUserRepository.Update(entity)
-	if err != nil {
-		return entity, err
+	if err := s.IUserRepository.Update(u); err != nil {
+		return u, err
 	}
 
-	entity.Password = ""
-	return entity, nil
+	u.Password = ""
+	return u, nil
 }
 
-// Delete implements IUserService.
-func (e *UserService) Delete(reqId uuid.UUID) (entity.User, error) {
-	entity, err := e.IUserRepository.FindById(reqId)
+func (s *UserService) Delete(reqId uuid.UUID) (entity.User, error) {
+	u, err := s.IUserRepository.FindById(reqId)
 	if err != nil {
-		return entity, err
+		return u, err
 	}
-
-	err = e.IUserRepository.Delete(reqId)
-	if err != nil {
-		return entity, err
-	}
-
-	return entity, nil
+	return u, s.IUserRepository.Delete(reqId)
 }

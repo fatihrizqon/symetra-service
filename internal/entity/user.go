@@ -1,9 +1,11 @@
 package entity
 
 import (
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 func (User) TableName() string {
@@ -26,7 +28,21 @@ func (User) SearchableFields() []string {
 	return []string{"username", "email"}
 }
 
-type UserFilters struct {
-	Status   *string
-	Verified *string
+// ApplyFilters applies User-specific filter logic to the given GORM query.
+// Supports multi-value filters via repeated params (e.g. ?status=1&status=2).
+func (User) ApplyFilters(db *gorm.DB, filters map[string][]string) *gorm.DB {
+	if values, ok := filters["status"]; ok {
+		db = db.Where("status IN ?", values)
+	}
+
+	if values, ok := filters["verified"]; ok && len(values) == 1 {
+		switch strings.ToLower(strings.TrimSpace(values[0])) {
+		case "true":
+			db = db.Where("email_verified_at IS NOT NULL")
+		case "false":
+			db = db.Where("email_verified_at IS NULL")
+		}
+	}
+
+	return db
 }

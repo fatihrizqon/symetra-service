@@ -16,7 +16,7 @@ import (
 
 type IJournalEntryService interface {
 	Create(req request.JournalEntryCreateRequest, createdBy uuid.UUID) (response.JournalEntryResponse, error)
-	FindAll(page, pageSize int, search string, options util.SearchOptions, filters entity.JournalEntryFilters) ([]response.JournalEntryResponse, int, error)
+	FindAll(qp *util.QueryParams) ([]response.JournalEntryResponse, int, error)
 	FindById(id uuid.UUID) (response.JournalEntryResponse, error)
 	Update(req request.JournalEntryUpdateRequest) (response.JournalEntryResponse, error)
 	Delete(id uuid.UUID) error
@@ -159,18 +159,28 @@ func (s *JournalEntryService) Create(req request.JournalEntryCreateRequest, crea
 }
 
 // FindAll retrieves paginated journal entries.
-func (s *JournalEntryService) FindAll(page, pageSize int, search string, options util.SearchOptions, filters entity.JournalEntryFilters) ([]response.JournalEntryResponse, int, error) {
-	entries, total, err := s.IJournalEntryRepository.FindAll(page, pageSize, search, options, filters)
+func (s *JournalEntryService) FindAll(qp *util.QueryParams) ([]response.JournalEntryResponse, int, error) {
+	entities, totalCount, err := s.IJournalEntryRepository.FindAll(qp)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	resps := make([]response.JournalEntryResponse, 0, len(entries))
-	for _, e := range entries {
+	if totalCount == 0 {
+		return []response.JournalEntryResponse{}, 0, nil
+	}
+
+	totalPages := (totalCount + qp.PageSize - 1) / qp.PageSize
+	if qp.Page > totalPages {
+		return nil, totalCount, nil
+	}
+
+	resps := make([]response.JournalEntryResponse, 0, len(entities))
+
+	for _, e := range entities {
 		resps = append(resps, toJournalResponse(e))
 	}
 
-	return resps, total, nil
+	return resps, totalCount, nil
 }
 
 // FindById retrieves a single journal entry by ID.

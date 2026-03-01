@@ -12,12 +12,11 @@ import (
 
 type ICOAGroupService interface {
 	Create(req request.COAGroupCreateRequest) (entity.COAGroup, error)
-	FindAll(page, pageSize int, search string, options util.SearchOptions) ([]response.COAGroupResponse, int, error)
+	FindAll(qp *util.QueryParams) ([]response.COAGroupResponse, int, error)
 	FindById(reqId uuid.UUID) (response.COAGroupResponse, error)
 	Update(req request.COAGroupUpdateRequest) (entity.COAGroup, error)
 	Delete(reqId uuid.UUID) (entity.COAGroup, error)
-
-	SelectDropdownList(page, pageSize int, search string, options util.SearchOptions) ([]response.SelectDropdownListResponse, int, error)
+	SelectDropdownList(qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error)
 }
 
 type COAGroupService struct {
@@ -26,52 +25,35 @@ type COAGroupService struct {
 }
 
 func NewCOAGroupService(repo repository.ICOAGroupRepository, validate *validator.Validate) ICOAGroupService {
-	return &COAGroupService{
-		ICOAGroupRepository: repo,
-		validate:            validate,
-	}
+	return &COAGroupService{ICOAGroupRepository: repo, validate: validate}
 }
 
-// Create implements ICOAGroupService.
 func (e *COAGroupService) Create(req request.COAGroupCreateRequest) (entity.COAGroup, error) {
-	entity := entity.COAGroup{
-		Code:          req.Code,
-		Name:          req.Name,
-		NormalBalance: req.NormalBalance,
-	}
-
 	if err := e.validate.Struct(req); err != nil {
-		return entity, err
+		return entity.COAGroup{}, err
 	}
-
-	entity, err := e.ICOAGroupRepository.Create(entity)
-	if err != nil {
-		return entity, err
-	}
-
-	return entity, nil
+	g := entity.COAGroup{Code: req.Code, Name: req.Name, NormalBalance: req.NormalBalance}
+	return e.ICOAGroupRepository.Create(g)
 }
 
-// FindAll implements ICOAGroupService with pagination.
-func (e *COAGroupService) FindAll(page, pageSize int, search string, options util.SearchOptions) ([]response.COAGroupResponse, int, error) {
-	var resps []response.COAGroupResponse
-	entities, totalCount, err := e.ICOAGroupRepository.FindAll(page, pageSize, search, options)
-
+func (e *COAGroupService) FindAll(qp *util.QueryParams) ([]response.COAGroupResponse, int, error) {
+	entities, totalCount, err := e.ICOAGroupRepository.FindAll(qp)
 	if err != nil {
 		return nil, 0, err
 	}
 
 	if totalCount == 0 {
-		return resps, totalCount, nil
+		return []response.COAGroupResponse{}, 0, nil
 	}
 
-	totalPages := (totalCount + pageSize - 1) / pageSize
-	if page > totalPages {
+	totalPages := (totalCount + qp.PageSize - 1) / qp.PageSize
+	if qp.Page > totalPages {
 		return nil, totalCount, nil
 	}
 
+	resps := make([]response.COAGroupResponse, 0, len(entities))
 	for _, value := range entities {
-		resp := response.COAGroupResponse{
+		resps = append(resps, response.COAGroupResponse{
 			Id:            value.Id,
 			Code:          value.Code,
 			Name:          value.Name,
@@ -79,92 +61,63 @@ func (e *COAGroupService) FindAll(page, pageSize int, search string, options uti
 			Status:        value.Status,
 			CreatedAt:     value.CreatedAt,
 			UpdatedAt:     value.UpdatedAt,
-		}
-		resps = append(resps, resp)
+		})
 	}
-
 	return resps, totalCount, nil
 }
 
-// FindById implements ICOAGroupService.
 func (e *COAGroupService) FindById(reqId uuid.UUID) (response.COAGroupResponse, error) {
-	var res response.COAGroupResponse
 	result, err := e.ICOAGroupRepository.FindById(reqId)
-
 	if err != nil {
-		return res, err
+		return response.COAGroupResponse{}, err
 	}
-
 	return response.COAGroupResponse{
 		Id:            result.Id,
+		Code:          result.Code,
 		Name:          result.Name,
 		NormalBalance: result.NormalBalance,
-		Code:          result.Code,
 		Status:        result.Status,
 		CreatedAt:     result.CreatedAt,
 		UpdatedAt:     result.UpdatedAt,
 	}, nil
 }
 
-// Update implements ICOAGroupService.
 func (e *COAGroupService) Update(req request.COAGroupUpdateRequest) (entity.COAGroup, error) {
-	entity, err := e.ICOAGroupRepository.FindById(req.Id)
+	g, err := e.ICOAGroupRepository.FindById(req.Id)
 	if err != nil {
-		return entity, err
+		return g, err
 	}
-
-	entity.Name = req.Name
-	entity.Code = req.Code
-	entity.NormalBalance = req.NormalBalance
-
-	err = e.ICOAGroupRepository.Update(entity)
-	if err != nil {
-		return entity, err
-	}
-
-	return entity, nil
+	g.Name = req.Name
+	g.Code = req.Code
+	g.NormalBalance = req.NormalBalance
+	return g, e.ICOAGroupRepository.Update(g)
 }
 
-// Delete implements ICOAGroupService.
 func (e *COAGroupService) Delete(reqId uuid.UUID) (entity.COAGroup, error) {
-	entity, err := e.ICOAGroupRepository.FindById(reqId)
+	g, err := e.ICOAGroupRepository.FindById(reqId)
 	if err != nil {
-		return entity, err
+		return g, err
 	}
-
-	err = e.ICOAGroupRepository.Delete(reqId)
-	if err != nil {
-		return entity, err
-	}
-
-	return entity, nil
+	return g, e.ICOAGroupRepository.Delete(reqId)
 }
 
-// SelectDropdownList implements ICOAGroupService.
-func (e *COAGroupService) SelectDropdownList(page int, pageSize int, search string, options util.SearchOptions) ([]response.SelectDropdownListResponse, int, error) {
-	var resps []response.SelectDropdownListResponse
-	entities, totalCount, err := e.ICOAGroupRepository.FindAll(page, pageSize, search, options)
-
+func (e *COAGroupService) SelectDropdownList(qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error) {
+	entities, totalCount, err := e.ICOAGroupRepository.FindAll(qp)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	if totalCount == 0 {
-		return resps, totalCount, nil
+	totalPages := (totalCount + qp.PageSize - 1) / qp.PageSize
+	if totalCount == 0 || qp.Page > totalPages {
+		return []response.SelectDropdownListResponse{}, totalCount, nil
 	}
 
-	totalPages := (totalCount + pageSize - 1) / pageSize
-	if page > totalPages {
-		return nil, totalCount, nil
-	}
-
+	resps := make([]response.SelectDropdownListResponse, 0, len(entities))
 	for _, value := range entities {
-		resp := response.SelectDropdownListResponse{
+		resps = append(resps, response.SelectDropdownListResponse{
 			Value: value.Id,
 			Label: value.Name,
-		}
-		resps = append(resps, resp)
+		})
 	}
-
 	return resps, totalCount, nil
 }

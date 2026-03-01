@@ -12,11 +12,11 @@ import (
 
 type IVendorService interface {
 	Create(req request.VendorCreateRequest) (entity.Vendor, error)
-	FindAll(page, pageSize int, search string, options util.SearchOptions, filters entity.VendorFilters) ([]response.VendorResponse, int, error)
+	FindAll(qp *util.QueryParams) ([]response.VendorResponse, int, error)
 	FindById(id uuid.UUID) (response.VendorResponse, error)
 	Update(req request.VendorUpdateRequest) (entity.Vendor, error)
 	Delete(id uuid.UUID) (entity.Vendor, error)
-	SelectDropdownList(page, pageSize int, search string, options util.SearchOptions) ([]response.SelectDropdownListResponse, int, error)
+	SelectDropdownList(qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error)
 }
 
 type VendorService struct {
@@ -25,10 +25,7 @@ type VendorService struct {
 }
 
 func NewVendorService(repo repository.IVendorRepository, validate *validator.Validate) IVendorService {
-	return &VendorService{
-		IVendorRepository: repo,
-		validate:          validate,
-	}
+	return &VendorService{IVendorRepository: repo, validate: validate}
 }
 
 func toVendorResponse(v entity.Vendor) response.VendorResponse {
@@ -55,7 +52,6 @@ func (s *VendorService) Create(req request.VendorCreateRequest) (entity.Vendor, 
 	if err := s.validate.Struct(req); err != nil {
 		return entity.Vendor{}, err
 	}
-
 	v := entity.Vendor{
 		Code:    req.Code,
 		Name:    req.Name,
@@ -64,18 +60,17 @@ func (s *VendorService) Create(req request.VendorCreateRequest) (entity.Vendor, 
 		Address: req.Address,
 		CoaId:   req.CoaId,
 	}
-
 	return s.IVendorRepository.Create(v)
 }
 
-func (s *VendorService) FindAll(page, pageSize int, search string, options util.SearchOptions, filters entity.VendorFilters) ([]response.VendorResponse, int, error) {
-	entities, total, err := s.IVendorRepository.FindAll(page, pageSize, search, options, filters)
+func (s *VendorService) FindAll(qp *util.QueryParams) ([]response.VendorResponse, int, error) {
+	entities, total, err := s.IVendorRepository.FindAll(qp)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	totalPages := (total + pageSize - 1) / pageSize
-	if total == 0 || page > totalPages {
+	totalPages := (total + qp.PageSize - 1) / qp.PageSize
+	if total == 0 || qp.Page > totalPages {
 		return []response.VendorResponse{}, total, nil
 	}
 
@@ -99,18 +94,15 @@ func (s *VendorService) Update(req request.VendorUpdateRequest) (entity.Vendor, 
 	if err != nil {
 		return v, err
 	}
-
 	if err := s.validate.Struct(req); err != nil {
 		return v, err
 	}
-
 	v.Code = req.Code
 	v.Name = req.Name
 	v.Email = req.Email
 	v.Phone = req.Phone
 	v.Address = req.Address
 	v.CoaId = req.CoaId
-
 	if err := s.IVendorRepository.Update(v); err != nil {
 		return v, err
 	}
@@ -125,14 +117,14 @@ func (s *VendorService) Delete(id uuid.UUID) (entity.Vendor, error) {
 	return v, s.IVendorRepository.Delete(id)
 }
 
-func (s *VendorService) SelectDropdownList(page, pageSize int, search string, options util.SearchOptions) ([]response.SelectDropdownListResponse, int, error) {
-	entities, total, err := s.IVendorRepository.FindAll(page, pageSize, search, options, entity.VendorFilters{})
+func (s *VendorService) SelectDropdownList(qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error) {
+	entities, total, err := s.IVendorRepository.FindAll(qp)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	totalPages := (total + pageSize - 1) / pageSize
-	if total == 0 || page > totalPages {
+	totalPages := (total + qp.PageSize - 1) / qp.PageSize
+	if total == 0 || qp.Page > totalPages {
 		return []response.SelectDropdownListResponse{}, total, nil
 	}
 

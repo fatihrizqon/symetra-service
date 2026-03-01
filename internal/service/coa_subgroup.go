@@ -12,12 +12,11 @@ import (
 
 type ICOASubGroupService interface {
 	Create(req request.COASubGroupCreateRequest) (entity.COASubGroup, error)
-	FindAll(page, pageSize int, search string, options util.SearchOptions) ([]response.COASubGroupResponse, int, error)
+	FindAll(qp *util.QueryParams) ([]response.COASubGroupResponse, int, error)
 	FindById(reqId uuid.UUID) (response.COASubGroupResponse, error)
 	Update(req request.COASubGroupUpdateRequest) (entity.COASubGroup, error)
 	Delete(reqId uuid.UUID) (entity.COASubGroup, error)
-
-	SelectDropdownList(page, pageSize int, search string, options util.SearchOptions) ([]response.SelectDropdownListResponse, int, error)
+	SelectDropdownList(qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error)
 }
 
 type COASubGroupService struct {
@@ -26,54 +25,35 @@ type COASubGroupService struct {
 }
 
 func NewCOASubGroupService(repo repository.ICOASubGroupRepository, validate *validator.Validate) ICOASubGroupService {
-	return &COASubGroupService{
-		ICOASubGroupRepository: repo,
-		validate:               validate,
-	}
+	return &COASubGroupService{ICOASubGroupRepository: repo, validate: validate}
 }
 
-// Create implements ICOASubGroupService.
 func (e *COASubGroupService) Create(req request.COASubGroupCreateRequest) (entity.COASubGroup, error) {
-	entity := entity.COASubGroup{
-		GroupId: req.GroupId,
-		Code:    req.Code,
-		Name:    req.Name,
-	}
-
 	if err := e.validate.Struct(req); err != nil {
-		return entity, err
+		return entity.COASubGroup{}, err
 	}
-
-	entity, err := e.ICOASubGroupRepository.Create(entity)
-	if err != nil {
-		return entity, err
-	}
-
-	return entity, nil
+	sg := entity.COASubGroup{GroupId: req.GroupId, Code: req.Code, Name: req.Name}
+	return e.ICOASubGroupRepository.Create(sg)
 }
 
-// FindAll implements ICOASubGroupService with pagination.
-func (e *COASubGroupService) FindAll(page, pageSize int, search string, options util.SearchOptions) ([]response.COASubGroupResponse, int, error) {
-	var resps []response.COASubGroupResponse
-	entities, totalCount, err := e.ICOASubGroupRepository.FindAll(page, pageSize, search, options)
-
+func (e *COASubGroupService) FindAll(qp *util.QueryParams) ([]response.COASubGroupResponse, int, error) {
+	entities, totalCount, err := e.ICOASubGroupRepository.FindAll(qp)
 	if err != nil {
 		return nil, 0, err
 	}
 
 	if totalCount == 0 {
-		return resps, totalCount, nil
+		return []response.COASubGroupResponse{}, 0, nil
 	}
 
-	totalPages := (totalCount + pageSize - 1) / pageSize
-	if page > totalPages {
+	totalPages := (totalCount + qp.PageSize - 1) / qp.PageSize
+	if qp.Page > totalPages {
 		return nil, totalCount, nil
 	}
 
+	resps := make([]response.COASubGroupResponse, 0, len(entities))
 	for _, value := range entities {
-
 		var groupResp *response.COAGroupResponse
-
 		if value.Group.Id != uuid.Nil {
 			groupResp = &response.COAGroupResponse{
 				Id:            value.Group.Id,
@@ -85,8 +65,7 @@ func (e *COASubGroupService) FindAll(page, pageSize int, search string, options 
 				UpdatedAt:     value.Group.UpdatedAt,
 			}
 		}
-
-		resp := response.COASubGroupResponse{
+		resps = append(resps, response.COASubGroupResponse{
 			Id:        value.Id,
 			GroupId:   value.GroupId,
 			Group:     groupResp,
@@ -95,93 +74,63 @@ func (e *COASubGroupService) FindAll(page, pageSize int, search string, options 
 			Status:    value.Status,
 			CreatedAt: value.CreatedAt,
 			UpdatedAt: value.UpdatedAt,
-		}
-
-		resps = append(resps, resp)
+		})
 	}
-
 	return resps, totalCount, nil
 }
 
-// FindById implements ICOASubGroupService.
 func (e *COASubGroupService) FindById(reqId uuid.UUID) (response.COASubGroupResponse, error) {
-	var res response.COASubGroupResponse
 	result, err := e.ICOASubGroupRepository.FindById(reqId)
-
 	if err != nil {
-		return res, err
+		return response.COASubGroupResponse{}, err
 	}
-
 	return response.COASubGroupResponse{
 		Id:        result.Id,
 		GroupId:   result.GroupId,
-		Name:      result.Name,
 		Code:      result.Code,
+		Name:      result.Name,
 		Status:    result.Status,
 		CreatedAt: result.CreatedAt,
 		UpdatedAt: result.UpdatedAt,
 	}, nil
 }
 
-// Update implements ICOASubGroupService.
 func (e *COASubGroupService) Update(req request.COASubGroupUpdateRequest) (entity.COASubGroup, error) {
-	entity, err := e.ICOASubGroupRepository.FindById(req.Id)
+	sg, err := e.ICOASubGroupRepository.FindById(req.Id)
 	if err != nil {
-		return entity, err
+		return sg, err
 	}
-
-	entity.GroupId = req.GroupId
-	entity.Name = req.Name
-	entity.Code = req.Code
-
-	err = e.ICOASubGroupRepository.Update(entity)
-	if err != nil {
-		return entity, err
-	}
-
-	return entity, nil
+	sg.GroupId = req.GroupId
+	sg.Name = req.Name
+	sg.Code = req.Code
+	return sg, e.ICOASubGroupRepository.Update(sg)
 }
 
-// Delete implements ICOASubGroupService.
 func (e *COASubGroupService) Delete(reqId uuid.UUID) (entity.COASubGroup, error) {
-	entity, err := e.ICOASubGroupRepository.FindById(reqId)
+	sg, err := e.ICOASubGroupRepository.FindById(reqId)
 	if err != nil {
-		return entity, err
+		return sg, err
 	}
-
-	err = e.ICOASubGroupRepository.Delete(reqId)
-	if err != nil {
-		return entity, err
-	}
-
-	return entity, nil
+	return sg, e.ICOASubGroupRepository.Delete(reqId)
 }
 
-// SelectDropdownList implements ICOASubGroupService.
-func (e *COASubGroupService) SelectDropdownList(page int, pageSize int, search string, options util.SearchOptions) ([]response.SelectDropdownListResponse, int, error) {
-	var resps []response.SelectDropdownListResponse
-	entities, totalCount, err := e.ICOASubGroupRepository.FindAll(page, pageSize, search, options)
-
+func (e *COASubGroupService) SelectDropdownList(qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error) {
+	entities, totalCount, err := e.ICOASubGroupRepository.FindAll(qp)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	if totalCount == 0 {
-		return resps, totalCount, nil
+	totalPages := (totalCount + qp.PageSize - 1) / qp.PageSize
+	if totalCount == 0 || qp.Page > totalPages {
+		return []response.SelectDropdownListResponse{}, totalCount, nil
 	}
 
-	totalPages := (totalCount + pageSize - 1) / pageSize
-	if page > totalPages {
-		return nil, totalCount, nil
-	}
-
+	resps := make([]response.SelectDropdownListResponse, 0, len(entities))
 	for _, value := range entities {
-		resp := response.SelectDropdownListResponse{
+		resps = append(resps, response.SelectDropdownListResponse{
 			Value: value.Id,
 			Label: value.Name,
-		}
-		resps = append(resps, resp)
+		})
 	}
-
 	return resps, totalCount, nil
 }

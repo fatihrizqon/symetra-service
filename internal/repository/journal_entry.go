@@ -3,7 +3,6 @@ package repository
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/fatihrizqon/symetra-service/internal/entity"
@@ -14,7 +13,7 @@ import (
 
 type IJournalEntryRepository interface {
 	Create(entry entity.JournalEntry, lines []entity.JournalLine) (entity.JournalEntry, error)
-	FindAll(page, pageSize int, search string, options util.SearchOptions, filters entity.JournalEntryFilters) ([]entity.JournalEntry, int, error)
+	FindAll(qp *util.QueryParams) ([]entity.JournalEntry, int, error)
 	FindById(id uuid.UUID) (entity.JournalEntry, error)
 	Update(entry entity.JournalEntry, lines []entity.JournalLine) (entity.JournalEntry, error)
 	Delete(id uuid.UUID) error
@@ -89,48 +88,29 @@ func (r *JournalEntryRepository) Create(entry entity.JournalEntry, lines []entit
 }
 
 // FindAll retrieves paginated journal entries with optional search and status filter.
-func (r *JournalEntryRepository) FindAll(page, pageSize int, search string, options util.SearchOptions, filters entity.JournalEntryFilters) ([]entity.JournalEntry, int, error) {
-	var entries []entity.JournalEntry
+func (r *JournalEntryRepository) FindAll(qp *util.QueryParams) ([]entity.JournalEntry, int, error) {
+	var entities []entity.JournalEntry
 	var totalCount int64
 
 	query := r.Db.Model(&entity.JournalEntry{})
-
-	if search != "" && len(options.Fields) > 0 {
-		var conditions []string
-		var values []interface{}
-		for _, term := range strings.Split(search, ";") {
-			term = strings.TrimSpace(term)
-			for _, field := range options.Fields {
-				conditions = append(conditions, "LOWER("+field+") LIKE LOWER(?)")
-				values = append(values, "%"+term+"%")
-			}
-		}
-		query = query.Where(strings.Join(conditions, " OR "), values...)
-	}
-
-	if filters.Status != nil {
-		query = query.Where("status = ?", *filters.Status)
-	}
+	query = util.ApplySearch(query, qp)
+	query = entity.User{}.ApplyFilters(query, qp.Filters)
 
 	if err := query.Count(&totalCount).Error; err != nil {
 		return nil, 0, err
 	}
-
 	if totalCount == 0 {
-		return entries, 0, nil
+		return entities, 0, nil
 	}
 
-	offset := (page - 1) * pageSize
-	if err := query.
-		Preload("Lines.COA").
-		Order("created_at DESC").
-		Limit(pageSize).
-		Offset(offset).
-		Find(&entries).Error; err != nil {
+	query = util.ApplySort(query, qp, userSortColumns, "journal_entries.created_at")
+	query = util.ApplyPagination(query, qp)
+
+	if err := query.Find(&entities).Error; err != nil {
 		return nil, 0, err
 	}
 
-	return entries, int(totalCount), nil
+	return entities, int(totalCount), nil
 }
 
 // FindById retrieves a single journal entry with all lines preloaded.

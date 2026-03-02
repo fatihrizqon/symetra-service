@@ -33,6 +33,14 @@ func (rc *RouteConfig) SetupGuestRoute() {
 	rc.App.Post("/api/v1/auth/login", rc.AuthHandler.Login)
 	rc.App.Post("/api/v1/auth/refresh", rc.AuthHandler.Refresh)
 	rc.App.Get("/swagger/*", swagger.HandlerDefault)
+}
+
+func (rc *RouteConfig) SetupAuthRoute() {
+	rc.App.Use(rc.AuthMiddleware)
+	rc.App.Post("/api/v1/auth/logout", rc.AuthHandler.Logout)
+
+	// Dashboard
+	rc.App.Get("/api/v1/dashboard/overview", rc.DashboardHandler.Overview)
 
 	// COA Groups
 	rc.App.Post("/api/v1/coa_groups", rc.COAGroupHandler.Create)
@@ -57,14 +65,6 @@ func (rc *RouteConfig) SetupGuestRoute() {
 	rc.App.Put("/api/v1/coa/:id", rc.COAHandler.Update)
 	rc.App.Delete("/api/v1/coa/:id", rc.COAHandler.Delete)
 	rc.App.Get("/api/v1/dropdown/coa", rc.COAHandler.SelectDropdownList)
-}
-
-func (rc *RouteConfig) SetupAuthRoute() {
-	rc.App.Use(rc.AuthMiddleware)
-	rc.App.Post("/api/v1/auth/logout", rc.AuthHandler.Logout)
-
-	// Dashboard
-	rc.App.Get("/api/v1/dashboard/overview", rc.DashboardHandler.Overview)
 
 	// Users
 	rc.App.Post("/api/v1/users", rc.UserHandler.Create)

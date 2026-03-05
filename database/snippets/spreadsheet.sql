@@ -3,19 +3,19 @@
 -- Strategi: 1 entry per hari per metode pembayaran
 -- Setiap entry: 4 lines (Bank/Cash debit, HPP debit, Sales credit, Inventory credit)
 --
--- PENTING: Jalankan query berikut dulu untuk dapat chart_of_accounts IDs kamu:
--- SELECT id, code, name FROM chart_of_accounts WHERE code IN
+-- PENTING: Jalankan query berikut dulu untuk dapat coa IDs kamu:
+-- SELECT id, code, name FROM coa WHERE code IN
 --   ('10101','10102','10104','40101','50101');
 -- =============================================================
 
 DO $$
 DECLARE
-  -- chart_of_accounts IDs — ambil dari database kamu
-  v_cash_id    UUID := (SELECT id FROM chart_of_accounts WHERE code = '10101');  -- Cash
-  v_bank_id    UUID := (SELECT id FROM chart_of_accounts WHERE code = '10102');  -- Bank
-  v_inventory  UUID := (SELECT id FROM chart_of_accounts WHERE code = '10104');  -- Inventory - Eggs
-  v_sales      UUID := (SELECT id FROM chart_of_accounts WHERE code = '40101');  -- Egg Sales
-  v_cogs       UUID := (SELECT id FROM chart_of_accounts WHERE code = '50101');  -- Egg Purchase Cost
+  -- coa IDs — ambil dari database kamu
+  v_cash_id    UUID := (SELECT id FROM coa WHERE code = '10101');  -- Cash
+  v_bank_id    UUID := (SELECT id FROM coa WHERE code = '10102');  -- Bank
+  v_inventory  UUID := (SELECT id FROM coa WHERE code = '10104');  -- Inventory - Eggs
+  v_sales      UUID := (SELECT id FROM coa WHERE code = '40101');  -- Egg Sales
+  v_cogs       UUID := (SELECT id FROM coa WHERE code = '50101');  -- Egg Purchase Cost
   v_admin_id   UUID := (SELECT id FROM users WHERE email = 'admin@example.com' LIMIT 1);
   v_je_id      UUID;
 BEGIN
@@ -286,7 +286,7 @@ ORDER BY date, journal_number;
 -- Strategi: 1 entry per hari per metode pembayaran
 -- Transaksi BELUM BAYAR / Proses: SKIP
 --
--- chart_of_accounts yang dibutuhkan (pastikan ada di DB kamu):
+-- coa yang dibutuhkan (pastikan ada di DB kamu):
 --   10101 Cash
 --   10102 Bank BPD
 --   10103 Bank BPD       ← BARU (insert dulu jika belum ada)
@@ -296,30 +296,30 @@ ORDER BY date, journal_number;
 --   50101 Egg Purchase Cost
 -- ================================================================
 
--- ── Tambah chart_of_accounts Bank baru jika belum ada ─────────────────────────
+-- ── Tambah coa Bank baru jika belum ada ─────────────────────────
 -- (Jalankan bagian ini manual dulu, atau skip jika sudah ada)
 /*
-INSERT INTO chart_of_accounts (id, subgroup_id, code, name, status)
+INSERT INTO coa (id, subgroup_id, code, name, status)
 SELECT gen_random_uuid(),
        (SELECT id FROM coa_subgroups WHERE name ILIKE '%current asset%' LIMIT 1),
        '10103', 'Bank BPD', 1
-WHERE NOT EXISTS (SELECT 1 FROM chart_of_accounts WHERE code = '10103');
+WHERE NOT EXISTS (SELECT 1 FROM coa WHERE code = '10103');
 
-INSERT INTO chart_of_accounts (id, subgroup_id, code, name, status)
+INSERT INTO coa (id, subgroup_id, code, name, status)
 SELECT gen_random_uuid(),
        (SELECT id FROM coa_subgroups WHERE name ILIKE '%current asset%' LIMIT 1),
        '10104', 'Bank BPD', 1
-WHERE NOT EXISTS (SELECT 1 FROM chart_of_accounts WHERE code = '10104');
+WHERE NOT EXISTS (SELECT 1 FROM coa WHERE code = '10104');
 */
 
 DO $$
 DECLARE
-  v_cash     UUID := (SELECT id FROM chart_of_accounts WHERE code = '10101');
-  v_bpd      UUID := (SELECT id FROM chart_of_accounts WHERE code = '10102');
-  v_inv      UUID := (SELECT id FROM chart_of_accounts WHERE code = '10104');  -- Inventory - Eggs
-  v_sales    UUID := (SELECT id FROM chart_of_accounts WHERE code = '40101');  -- Egg Sales
-  v_cogs     UUID := (SELECT id FROM chart_of_accounts WHERE code = '50101');  -- Egg Purchase Cost
-  v_ar       UUID := (SELECT id FROM chart_of_accounts WHERE code = '10103');  -- Accounts Receivable (fallback)
+  v_cash     UUID := (SELECT id FROM coa WHERE code = '10101');
+  v_bpd      UUID := (SELECT id FROM coa WHERE code = '10102');
+  v_inv      UUID := (SELECT id FROM coa WHERE code = '10104');  -- Inventory - Eggs
+  v_sales    UUID := (SELECT id FROM coa WHERE code = '40101');  -- Egg Sales
+  v_cogs     UUID := (SELECT id FROM coa WHERE code = '50101');  -- Egg Purchase Cost
+  v_ar       UUID := (SELECT id FROM coa WHERE code = '10103');  -- Accounts Receivable (fallback)
   v_admin_id UUID := (SELECT id FROM users WHERE email = 'admin@example.com' LIMIT 1);
   v_je_id    UUID;
 BEGIN
@@ -1292,10 +1292,10 @@ ORDER BY date, journal_number;
 
 -- ── Grand Total Check ───────────────────────────────────────────
 SELECT
-  SUM(CASE WHEN jl.coa_id = (SELECT id FROM chart_of_accounts WHERE code='40101') THEN jl.credit ELSE 0 END) AS total_revenue,
-  SUM(CASE WHEN jl.coa_id = (SELECT id FROM chart_of_accounts WHERE code='50101') THEN jl.debit  ELSE 0 END) AS total_cogs,
-  SUM(CASE WHEN jl.coa_id = (SELECT id FROM chart_of_accounts WHERE code='40101') THEN jl.credit ELSE 0 END)
-  - SUM(CASE WHEN jl.coa_id = (SELECT id FROM chart_of_accounts WHERE code='50101') THEN jl.debit ELSE 0 END) AS profit
+  SUM(CASE WHEN jl.coa_id = (SELECT id FROM coa WHERE code='40101') THEN jl.credit ELSE 0 END) AS total_revenue,
+  SUM(CASE WHEN jl.coa_id = (SELECT id FROM coa WHERE code='50101') THEN jl.debit  ELSE 0 END) AS total_cogs,
+  SUM(CASE WHEN jl.coa_id = (SELECT id FROM coa WHERE code='40101') THEN jl.credit ELSE 0 END)
+  - SUM(CASE WHEN jl.coa_id = (SELECT id FROM coa WHERE code='50101') THEN jl.debit ELSE 0 END) AS profit
 FROM journal_lines jl
 INNER JOIN journal_entries je ON je.id = jl.journal_entry_id
 WHERE je.status = 'posted'

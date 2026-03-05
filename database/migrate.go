@@ -7,24 +7,24 @@ import (
 
 func Migrate(db *gorm.DB) {
 	db.AutoMigrate(
-		// Auth & Users
+		// ── Auth & Users ──────────────────────────────────────────────────────
 		&entity.User{},
 		&entity.Session{},
 		&entity.Credential{},
 
-		// Chart of Accounts hierarchy
+		// ── Chart of Accounts hierarchy ───────────────────────────────────────
 		&entity.COAGroup{},
 		&entity.COASubGroup{},
 		&entity.COA{},
 
-		// Master data
-		&entity.Customer{},
-		&entity.Vendor{},
-
-		// Journal entries — must come after COA
+		// ── Legacy (kept for backward compat, will migrate to ledger system) ──
 		&entity.JournalEntry{},
 		&entity.JournalLine{},
 	)
 
-	seedDefaultUser(db)
+	seedDefaultData(db)
+}
+
+func seedDefaultData(db *gorm.DB) {
+	SeedData(db)
 }

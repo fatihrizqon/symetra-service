@@ -8,10 +8,11 @@ import (
 )
 
 type RouteConfig struct {
-	App                 *fiber.App
+	App            *fiber.App
+	AuthMiddleware fiber.Handler
+
 	UserHandler         *handler.UserHandler
 	AuthHandler         *handler.AuthHandler
-	AuthMiddleware      fiber.Handler
 	DashboardHandler    *handler.DashboardHandler
 	COAGroupHandler     *handler.COAGroupHandler
 	COASubGroupHandler  *handler.COASubGroupHandler
@@ -19,8 +20,6 @@ type RouteConfig struct {
 	JournalEntryHandler *handler.JournalEntryHandler
 	RevenueHandler      *handler.RevenueHandler
 	ExpenseHandler      *handler.ExpenseHandler
-	CustomerHandler     *handler.CustomerHandler
-	VendorHandler       *handler.VendorHandler
 	ReportHandler       *handler.ReportHandler
 }
 
@@ -38,33 +37,7 @@ func (rc *RouteConfig) SetupGuestRoute() {
 func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Use(rc.AuthMiddleware)
 	rc.App.Post("/api/v1/auth/logout", rc.AuthHandler.Logout)
-
-	// Dashboard
 	rc.App.Get("/api/v1/dashboard/overview", rc.DashboardHandler.Overview)
-
-	// COA Groups
-	rc.App.Post("/api/v1/coa_groups", rc.COAGroupHandler.Create)
-	rc.App.Get("/api/v1/coa_groups", rc.COAGroupHandler.FindAll)
-	rc.App.Get("/api/v1/coa_groups/:id", rc.COAGroupHandler.FindById)
-	rc.App.Put("/api/v1/coa_groups/:id", rc.COAGroupHandler.Update)
-	rc.App.Delete("/api/v1/coa_groups/:id", rc.COAGroupHandler.Delete)
-	rc.App.Get("/api/v1/dropdown/coa_groups", rc.COAGroupHandler.SelectDropdownList)
-
-	// COA Subgroups
-	rc.App.Post("/api/v1/coa_subgroups", rc.COASubGroupHandler.Create)
-	rc.App.Get("/api/v1/coa_subgroups", rc.COASubGroupHandler.FindAll)
-	rc.App.Get("/api/v1/coa_subgroups/:id", rc.COASubGroupHandler.FindById)
-	rc.App.Put("/api/v1/coa_subgroups/:id", rc.COASubGroupHandler.Update)
-	rc.App.Delete("/api/v1/coa_subgroups/:id", rc.COASubGroupHandler.Delete)
-	rc.App.Get("/api/v1/dropdown/coa_subgroups", rc.COASubGroupHandler.SelectDropdownList)
-
-	// COA Accounts — dropdown now supports ?group_type=revenue|expense|asset etc.
-	rc.App.Post("/api/v1/coa", rc.COAHandler.Create)
-	rc.App.Get("/api/v1/coa", rc.COAHandler.FindAll)
-	rc.App.Get("/api/v1/coa/:id", rc.COAHandler.FindById)
-	rc.App.Put("/api/v1/coa/:id", rc.COAHandler.Update)
-	rc.App.Delete("/api/v1/coa/:id", rc.COAHandler.Delete)
-	rc.App.Get("/api/v1/dropdown/coa", rc.COAHandler.SelectDropdownList)
 
 	// Users
 	rc.App.Post("/api/v1/users", rc.UserHandler.Create)
@@ -73,7 +46,29 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Put("/api/v1/users/:id", rc.UserHandler.Update)
 	rc.App.Delete("/api/v1/users/:id", rc.UserHandler.Delete)
 
-	// Journal Entries (General Journal — Jurnal Umum)
+	// COA
+	rc.App.Post("/api/v1/coa_groups", rc.COAGroupHandler.Create)
+	rc.App.Get("/api/v1/coa_groups", rc.COAGroupHandler.FindAll)
+	rc.App.Get("/api/v1/coa_groups/:id", rc.COAGroupHandler.FindById)
+	rc.App.Put("/api/v1/coa_groups/:id", rc.COAGroupHandler.Update)
+	rc.App.Delete("/api/v1/coa_groups/:id", rc.COAGroupHandler.Delete)
+	rc.App.Get("/api/v1/dropdown/coa_groups", rc.COAGroupHandler.SelectDropdownList)
+
+	rc.App.Post("/api/v1/coa_subgroups", rc.COASubGroupHandler.Create)
+	rc.App.Get("/api/v1/coa_subgroups", rc.COASubGroupHandler.FindAll)
+	rc.App.Get("/api/v1/coa_subgroups/:id", rc.COASubGroupHandler.FindById)
+	rc.App.Put("/api/v1/coa_subgroups/:id", rc.COASubGroupHandler.Update)
+	rc.App.Delete("/api/v1/coa_subgroups/:id", rc.COASubGroupHandler.Delete)
+	rc.App.Get("/api/v1/dropdown/coa_subgroups", rc.COASubGroupHandler.SelectDropdownList)
+
+	rc.App.Post("/api/v1/coa", rc.COAHandler.Create)
+	rc.App.Get("/api/v1/coa", rc.COAHandler.FindAll)
+	rc.App.Get("/api/v1/coa/:id", rc.COAHandler.FindById)
+	rc.App.Put("/api/v1/coa/:id", rc.COAHandler.Update)
+	rc.App.Delete("/api/v1/coa/:id", rc.COAHandler.Delete)
+	rc.App.Get("/api/v1/dropdown/coa", rc.COAHandler.SelectDropdownList)
+
+	// Journal
 	rc.App.Post("/api/v1/journal_entries", rc.JournalEntryHandler.Create)
 	rc.App.Get("/api/v1/journal_entries", rc.JournalEntryHandler.FindAll)
 	rc.App.Get("/api/v1/journal_entries/:id", rc.JournalEntryHandler.FindById)
@@ -82,7 +77,6 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Put("/api/v1/journal_entries/:id/post", rc.JournalEntryHandler.Post)
 	rc.App.Put("/api/v1/journal_entries/:id/void", rc.JournalEntryHandler.Void)
 
-	// Revenue Entries (Jurnal Pendapatan)
 	rc.App.Post("/api/v1/revenues", rc.RevenueHandler.Create)
 	rc.App.Get("/api/v1/revenues", rc.RevenueHandler.FindAll)
 	rc.App.Get("/api/v1/revenues/:id", rc.RevenueHandler.FindById)
@@ -91,7 +85,6 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Put("/api/v1/revenues/:id/post", rc.RevenueHandler.Post)
 	rc.App.Put("/api/v1/revenues/:id/void", rc.RevenueHandler.Void)
 
-	// Expense Entries (Jurnal Pengeluaran)
 	rc.App.Post("/api/v1/expenses", rc.ExpenseHandler.Create)
 	rc.App.Get("/api/v1/expenses", rc.ExpenseHandler.FindAll)
 	rc.App.Get("/api/v1/expenses/:id", rc.ExpenseHandler.FindById)
@@ -99,22 +92,6 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Delete("/api/v1/expenses/:id", rc.ExpenseHandler.Delete)
 	rc.App.Put("/api/v1/expenses/:id/post", rc.ExpenseHandler.Post)
 	rc.App.Put("/api/v1/expenses/:id/void", rc.ExpenseHandler.Void)
-
-	// Customers
-	rc.App.Post("/api/v1/customers", rc.CustomerHandler.Create)
-	rc.App.Get("/api/v1/customers", rc.CustomerHandler.FindAll)
-	rc.App.Get("/api/v1/customers/:id", rc.CustomerHandler.FindById)
-	rc.App.Put("/api/v1/customers/:id", rc.CustomerHandler.Update)
-	rc.App.Delete("/api/v1/customers/:id", rc.CustomerHandler.Delete)
-	rc.App.Get("/api/v1/dropdown/customers", rc.CustomerHandler.SelectDropdownList)
-
-	// Vendors
-	rc.App.Post("/api/v1/vendors", rc.VendorHandler.Create)
-	rc.App.Get("/api/v1/vendors", rc.VendorHandler.FindAll)
-	rc.App.Get("/api/v1/vendors/:id", rc.VendorHandler.FindById)
-	rc.App.Put("/api/v1/vendors/:id", rc.VendorHandler.Update)
-	rc.App.Delete("/api/v1/vendors/:id", rc.VendorHandler.Delete)
-	rc.App.Get("/api/v1/dropdown/vendors", rc.VendorHandler.SelectDropdownList)
 
 	// Reports
 	rc.App.Get("/api/v1/reports/trial-balance", rc.ReportHandler.TrialBalance)

@@ -7,31 +7,27 @@ import (
 	"gorm.io/gorm"
 )
 
-func (COASubGroup) TableName() string {
-	return "coa_subgroups"
-}
+func (COASubGroup) TableName() string { return "coa_subgroups" }
 
 type COASubGroup struct {
-	Id        uuid.UUID `gorm:"type:uuid;primaryKey;" json:"id"`
-	GroupId   uuid.UUID `gorm:"type:uuid;not null;index" json:"group_id"`
-	Group     COAGroup  `gorm:"foreignKey:GroupId;references:Id;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;" json:"group,omitempty"`
-	COA       []COA     `gorm:"foreignKey:SubgroupId"`
-	Code      string
-	Name      string
-	Status    int
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	Id        uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid();" json:"id"`
+	GroupId   uuid.UUID `gorm:"type:uuid;not null;index;" json:"group_id"`
+	Group     *COAGroup `gorm:"foreignKey:GroupId;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;" json:"group,omitempty"`
+	Code      string    `gorm:"type:character varying;not null;" json:"code"`
+	Name      string    `gorm:"type:character varying;not null;" json:"name"`
+	Status    int       `gorm:"type:int;not null;default:1;" json:"status"`
+	CreatedAt time.Time `gorm:"autoCreateTime;" json:"created_at"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime;" json:"updated_at"`
 }
 
-func (COASubGroup) SearchableFields() []string {
-	return []string{"name", "code"}
-}
+func (COASubGroup) SearchableFields() []string { return []string{"code", "name"} }
 
-// ApplyFilters applies COASubGroup-specific filter logic to the given GORM query.
-// Supports multi-value filters via repeated params (e.g. ?status=1&status=2).
 func (COASubGroup) ApplyFilters(db *gorm.DB, filters map[string][]string) *gorm.DB {
+	if values, ok := filters["group_id"]; ok {
+		db = db.Where("coa_subgroups.group_id IN ?", values)
+	}
 	if values, ok := filters["status"]; ok {
-		db = db.Where("status IN ?", values)
+		db = db.Where("coa_subgroups.status IN ?", values)
 	}
 	return db
 }

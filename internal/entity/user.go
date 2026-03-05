@@ -34,7 +34,6 @@ func (User) ApplyFilters(db *gorm.DB, filters map[string][]string) *gorm.DB {
 	if values, ok := filters["status"]; ok {
 		db = db.Where("status IN ?", values)
 	}
-
 	if values, ok := filters["verified"]; ok && len(values) == 1 {
 		switch strings.ToLower(strings.TrimSpace(values[0])) {
 		case "true":

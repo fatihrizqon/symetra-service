@@ -20,7 +20,7 @@ func NewCOAGroupHandler(serv service.ICOAGroupService) *COAGroupHandler {
 
 // Create a New COAGroup
 // @Summary Create chart of account group
-// @Tags COAGroups
+// @Tags #ChartofAccounts Group
 // @Accept json
 // @Produce json
 // @Param request body request.COAGroupCreateRequest true "COAGroup Create Request"
@@ -51,7 +51,7 @@ func (h *COAGroupHandler) Create(ctx *fiber.Ctx) error {
 
 // Find All COAGroups
 // @Summary Get all chart of account groups
-// @Tags COAGroups
+// @Tags #ChartofAccounts Group
 // @Accept json
 // @Produce json
 // @Param search query string false "Search keyword"
@@ -97,7 +97,7 @@ func (h *COAGroupHandler) FindAll(ctx *fiber.Ctx) error {
 
 // Find COAGroup by Id
 // @Summary Get chart of account group by ID
-// @Tags COAGroups
+// @Tags #ChartofAccounts Group
 // @Accept json
 // @Produce json
 // @Param id path string true "COAGroup ID"
@@ -128,7 +128,7 @@ func (h *COAGroupHandler) FindById(ctx *fiber.Ctx) error {
 
 // Update COAGroup by Id
 // @Summary Update chart of account group
-// @Tags COAGroups
+// @Tags #ChartofAccounts Group
 // @Accept json
 // @Produce json
 // @Param id path string true "COAGroup ID"
@@ -168,7 +168,7 @@ func (h *COAGroupHandler) Update(ctx *fiber.Ctx) error {
 
 // Delete COAGroup by Id
 // @Summary Delete chart of account group
-// @Tags COAGroups
+// @Tags #ChartofAccounts Group
 // @Accept json
 // @Produce json
 // @Param id path string true "COAGroup ID"

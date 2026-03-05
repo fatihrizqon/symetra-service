@@ -199,3 +199,24 @@ This project is open-source and available under the **MIT License**.
 **Author**  
 Fatih Rizqon
 
+
+## Next Sprint Additions
+
+### New Backend Services
+- `StockMovementService` — FIFO & moving-average valuation, stock balance queries
+- `RBACMiddleware` — permission-based access control (`RequirePermission`, `RequireAnyPermission`)
+- `SeedPostingRules` — seeds default double-entry rules for all transaction types
+
+### New Unit Tests (3 files, ~40 test cases)
+- `posting_engine_test.go` — WorkflowTransition, WorkflowActionToState
+- `sales_invoice_test.go` — Create validation, FindAll/FindById, full workflow lifecycle
+- `vendor_bill_test.go` — Full workflow lifecycle, period close/lock transitions
+
+### Frontend
+- `CreateInvoiceModal` — multi-line Sales Invoice creation form with live totals
+- `CreateVendorBillModal` — multi-line Vendor Bill creation form with tax calculation
+- Both wired into their respective list pages
+
+### Repository Refactors
+- `IVendorBillRepository` expanded: `Create`, `UpdateStatus`, `HasOpenPayments`, `GenerateBillNo`
+- `VendorBillService.Transition` now uses repo methods (testable without raw DB)

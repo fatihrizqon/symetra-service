@@ -20,7 +20,7 @@ func NewCOASubGroupHandler(serv service.ICOASubGroupService) *COASubGroupHandler
 
 // Create a New COASubGroup
 // @Summary Create chart of account subgroup
-// @Tags COASubGroups
+// @Tags #ChartofAccounts SubGroups
 // @Accept json
 // @Produce json
 // @Param request body request.COASubGroupCreateRequest true "COASubGroup Create Request"
@@ -51,7 +51,7 @@ func (h *COASubGroupHandler) Create(ctx *fiber.Ctx) error {
 
 // Find All COASubGroups
 // @Summary Get all chart of account subgroups
-// @Tags COASubGroups
+// @Tags #ChartofAccounts SubGroups
 // @Accept json
 // @Produce json
 // @Param search query string false "Search keyword"
@@ -97,7 +97,7 @@ func (h *COASubGroupHandler) FindAll(ctx *fiber.Ctx) error {
 
 // Find COASubGroup by Id
 // @Summary Get chart of account subgroup by ID
-// @Tags COASubGroups
+// @Tags #ChartofAccounts SubGroups
 // @Accept json
 // @Produce json
 // @Param id path string true "COASubGroup ID"
@@ -128,7 +128,7 @@ func (h *COASubGroupHandler) FindById(ctx *fiber.Ctx) error {
 
 // Update COASubGroup by Id
 // @Summary Update chart of account subgroup
-// @Tags COASubGroups
+// @Tags #ChartofAccounts SubGroups
 // @Accept json
 // @Produce json
 // @Param id path string true "COASubGroup ID"
@@ -168,7 +168,7 @@ func (h *COASubGroupHandler) Update(ctx *fiber.Ctx) error {
 
 // Delete COASubGroup by Id
 // @Summary Delete chart of account subgroup
-// @Tags COASubGroups
+// @Tags #ChartofAccounts SubGroups
 // @Accept json
 // @Produce json
 // @Param id path string true "COASubGroup ID"

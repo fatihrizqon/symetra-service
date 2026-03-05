@@ -6,8 +6,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// Reserved query parameter keys that are handled explicitly.
-// Any other key is treated as a filter and placed into Filters.
 var reservedKeys = map[string]bool{
 	"page":      true,
 	"page_size": true,
@@ -16,31 +14,16 @@ var reservedKeys = map[string]bool{
 	"order":     true,
 }
 
-// QueryParams is the single contract passed across handler → service → repository
-// for all list/pagination queries. Add fields to this struct instead of changing
-// function signatures when new query capabilities are needed.
 type QueryParams struct {
-	// Pagination
 	Page     int
 	PageSize int
-
-	// Full-text search value and the DB columns to search against.
-	// Fields is populated by the handler from entity.SearchableFields().
-	Search string
-	Fields []string
-
-	// Sorting — validated against a per-repository whitelist to prevent injection.
-	SortBy  string // raw column name requested by the caller
-	SortDir string // "asc" or "desc"
-
-	// Filters holds every query parameter that is NOT one of the reserved keys
-	// above. Repository layers pass these to entity.ApplyFilters().
-	// Multi-value filters are supported via repeated params: ?code=1&code=2
-	Filters map[string][]string
+	Search   string
+	Fields   []string
+	SortBy   string
+	SortDir  string
+	Filters  map[string][]string
 }
 
-// ParseQueryParams builds a QueryParams from a Fiber request context.
-// fields should come from entity.SearchableFields() at the call site.
 func ParseQueryParams(ctx *fiber.Ctx, fields []string) *QueryParams {
 	qp := &QueryParams{
 		Page:     1,

@@ -120,7 +120,6 @@ const docTemplate = `{
         },
         "/api/v1/coa": {
             "get": {
-                "description": "Retrieve all chart of account  records with pagination",
                 "consumes": [
                     "application/json"
                 ],
@@ -128,9 +127,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "COAs"
+                    "#ChartofAccounts COA"
                 ],
-                "summary": "Get all chart of account s",
+                "summary": "Get all chart of accounts",
                 "parameters": [
                     {
                         "type": "string",
@@ -147,7 +146,25 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "description": "Page size",
-                        "name": "pageSize",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sort column (code, name, status, created_at, updated_at)",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sort direction (asc, desc)",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by status",
+                        "name": "status",
                         "in": "query"
                     }
                 ],
@@ -167,7 +184,6 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Store a new chart of account  record",
                 "consumes": [
                     "application/json"
                 ],
@@ -175,7 +191,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "COAs"
+                    "#ChartofAccounts COA"
                 ],
                 "summary": "Create chart of account",
                 "parameters": [
@@ -207,7 +223,6 @@ const docTemplate = `{
         },
         "/api/v1/coa/{id}": {
             "get": {
-                "description": "Retrieve a single chart of account  by its ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -215,9 +230,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "COAs"
+                    "#ChartofAccounts COA"
                 ],
-                "summary": "Get chart of account  by ID",
+                "summary": "Get chart of account by ID",
                 "parameters": [
                     {
                         "type": "string",
@@ -243,7 +258,6 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "Update chart of account  data by ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -251,19 +265,19 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "COAs"
+                    "#ChartofAccounts COA"
                 ],
                 "summary": "Update chart of account",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "COA  ID",
+                        "description": "COA ID",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "COA  Update Request",
+                        "description": "COA Update Request",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -280,7 +294,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "COA  not found",
+                        "description": "COA not found",
                         "schema": {
                             "$ref": "#/definitions/response.JSON"
                         }
@@ -288,7 +302,6 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "Remove a chart of account  record by ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -296,7 +309,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "COAs"
+                    "#ChartofAccounts COA"
                 ],
                 "summary": "Delete chart of account",
                 "parameters": [
@@ -326,7 +339,6 @@ const docTemplate = `{
         },
         "/api/v1/coa_groups": {
             "get": {
-                "description": "Retrieve all chart of account group records with pagination",
                 "consumes": [
                     "application/json"
                 ],
@@ -334,7 +346,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "COAGroups"
+                    "#ChartofAccounts Group"
                 ],
                 "summary": "Get all chart of account groups",
                 "parameters": [
@@ -353,7 +365,25 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "description": "Page size",
-                        "name": "pageSize",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sort column (code, name, normal_balance, status, created_at, updated_at)",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sort direction (asc, desc)",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by status",
+                        "name": "status",
                         "in": "query"
                     }
                 ],
@@ -373,7 +403,6 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Store a new chart of account group record",
                 "consumes": [
                     "application/json"
                 ],
@@ -381,7 +410,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "COAGroups"
+                    "#ChartofAccounts Group"
                 ],
                 "summary": "Create chart of account group",
                 "parameters": [
@@ -413,7 +442,6 @@ const docTemplate = `{
         },
         "/api/v1/coa_groups/{id}": {
             "get": {
-                "description": "Retrieve a single chart of account group by its ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -421,7 +449,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "COAGroups"
+                    "#ChartofAccounts Group"
                 ],
                 "summary": "Get chart of account group by ID",
                 "parameters": [
@@ -449,7 +477,6 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "Update chart of account group data by ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -457,19 +484,19 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "COAGroups"
+                    "#ChartofAccounts Group"
                 ],
                 "summary": "Update chart of account group",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "COA Group ID",
+                        "description": "COAGroup ID",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "COA Group Update Request",
+                        "description": "COAGroup Update Request",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -486,7 +513,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "COA Group not found",
+                        "description": "COAGroup not found",
                         "schema": {
                             "$ref": "#/definitions/response.JSON"
                         }
@@ -494,7 +521,6 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "Remove a chart of account group record by ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -502,7 +528,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "COAGroups"
+                    "#ChartofAccounts Group"
                 ],
                 "summary": "Delete chart of account group",
                 "parameters": [
@@ -532,7 +558,6 @@ const docTemplate = `{
         },
         "/api/v1/coa_subgroups": {
             "get": {
-                "description": "Retrieve all chart of account subgroup records with pagination",
                 "consumes": [
                     "application/json"
                 ],
@@ -540,7 +565,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "COASubGroups"
+                    "#ChartofAccounts SubGroups"
                 ],
                 "summary": "Get all chart of account subgroups",
                 "parameters": [
@@ -559,7 +584,25 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "description": "Page size",
-                        "name": "pageSize",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sort column (code, name, status, created_at, updated_at)",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sort direction (asc, desc)",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by status",
+                        "name": "status",
                         "in": "query"
                     }
                 ],
@@ -579,7 +622,6 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Store a new chart of account subgroup record",
                 "consumes": [
                     "application/json"
                 ],
@@ -587,7 +629,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "COASubGroups"
+                    "#ChartofAccounts SubGroups"
                 ],
                 "summary": "Create chart of account subgroup",
                 "parameters": [
@@ -619,7 +661,6 @@ const docTemplate = `{
         },
         "/api/v1/coa_subgroups/{id}": {
             "get": {
-                "description": "Retrieve a single chart of account subgroup by its ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -627,7 +668,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "COASubGroups"
+                    "#ChartofAccounts SubGroups"
                 ],
                 "summary": "Get chart of account subgroup by ID",
                 "parameters": [
@@ -655,7 +696,6 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "Update chart of account subgroup data by ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -663,19 +703,19 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "COASubGroups"
+                    "#ChartofAccounts SubGroups"
                 ],
                 "summary": "Update chart of account subgroup",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "COA SubGroup ID",
+                        "description": "COASubGroup ID",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "COA SubGroup Update Request",
+                        "description": "COASubGroup Update Request",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -692,7 +732,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "COA SubGroup not found",
+                        "description": "COASubGroup not found",
                         "schema": {
                             "$ref": "#/definitions/response.JSON"
                         }
@@ -700,7 +740,6 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "Remove a chart of account subgroup record by ID",
                 "consumes": [
                     "application/json"
                 ],
@@ -708,7 +747,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "COASubGroups"
+                    "#ChartofAccounts SubGroups"
                 ],
                 "summary": "Delete chart of account subgroup",
                 "parameters": [
@@ -736,9 +775,8 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/customers": {
+        "/api/v1/dropdown/coa": {
             "get": {
-                "description": "Retrieve all customer records with pagination",
                 "consumes": [
                     "application/json"
                 ],
@@ -746,9 +784,96 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Customers"
+                    "Dropdowns"
                 ],
-                "summary": "Get all customers",
+                "summary": "Get COA dropdown options",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search keyword",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved dropdown options",
+                        "schema": {
+                            "$ref": "#/definitions/response.SelectJSON"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/dropdown/coa_groups": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Dropdowns"
+                ],
+                "summary": "Get COAGroup dropdown options",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search keyword",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved dropdown options",
+                        "schema": {
+                            "$ref": "#/definitions/response.SelectJSON"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/dropdown/coa_subgroups": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Dropdowns"
+                ],
+                "summary": "Get COASubGroup dropdown options",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search keyword",
+                        "name": "search",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved dropdown options",
+                        "schema": {
+                            "$ref": "#/definitions/response.SelectJSON"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/expenses": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Expenses"
+                ],
+                "summary": "Get all expense entries",
                 "parameters": [
                     {
                         "type": "string",
@@ -758,7 +883,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "integer",
-                        "description": "Page number",
+                        "description": "Page",
                         "name": "page",
                         "in": "query"
                     },
@@ -777,13 +902,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Successfully retrieved all records.",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/response.JSON"
                         }
@@ -791,7 +910,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Store a new customer record",
+                "description": "Store a new expense journal entry (type=expense, prefix EX-).",
                 "consumes": [
                     "application/json"
                 ],
@@ -799,29 +918,23 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Customers"
+                    "Expenses"
                 ],
-                "summary": "Create customer",
+                "summary": "Create expense entry",
                 "parameters": [
                     {
-                        "description": "Customer Create Request",
+                        "description": "Expense Create Request",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.CustomerCreateRequest"
+                            "$ref": "#/definitions/request.JournalEntryCreateRequest"
                         }
                     }
                 ],
                 "responses": {
                     "201": {
-                        "description": "A new record has been stored.",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad request",
+                        "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/response.JSON"
                         }
@@ -829,23 +942,16 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/customers/{id}": {
+        "/api/v1/expenses/{id}": {
             "get": {
-                "description": "Retrieve a single customer by its ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
                 "tags": [
-                    "Customers"
+                    "Expenses"
                 ],
-                "summary": "Get customer by ID",
+                "summary": "Get expense entry by ID",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Customer ID",
+                        "description": "Entry ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -853,13 +959,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Successfully retrieved selected record.",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    },
-                    "404": {
-                        "description": "Customer not found",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/response.JSON"
                         }
@@ -867,44 +967,34 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "Update customer data by ID",
                 "consumes": [
                     "application/json"
                 ],
-                "produces": [
-                    "application/json"
-                ],
                 "tags": [
-                    "Customers"
+                    "Expenses"
                 ],
-                "summary": "Update customer",
+                "summary": "Update expense entry",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Customer ID",
+                        "description": "Entry ID",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "Customer Update Request",
+                        "description": "Expense Update Request",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.CustomerUpdateRequest"
+                            "$ref": "#/definitions/request.JournalEntryUpdateRequest"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Selected record has been updated.",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    },
-                    "404": {
-                        "description": "Customer not found",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/response.JSON"
                         }
@@ -912,21 +1002,14 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "Remove a customer record by ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
                 "tags": [
-                    "Customers"
+                    "Expenses"
                 ],
-                "summary": "Delete customer",
+                "summary": "Delete expense entry",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Customer ID",
+                        "description": "Entry ID",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -934,13 +1017,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Selected record has been deleted.",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    },
-                    "404": {
-                        "description": "Customer not found",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/response.JSON"
                         }
@@ -948,36 +1025,24 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/dropdown/coa": {
-            "get": {
-                "description": "Retrieve a paginated list of chart of account s for dropdown selection. Supports optional search query.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
+        "/api/v1/expenses/{id}/post": {
+            "put": {
                 "tags": [
-                    "Dropdowns"
+                    "Expenses"
                 ],
-                "summary": "Get COA dropdown options",
+                "summary": "Post expense entry",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Search keyword for filtering s",
-                        "name": "search",
-                        "in": "query"
+                        "description": "Entry ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Successfully retrieved dropdown options",
-                        "schema": {
-                            "$ref": "#/definitions/response.SelectJSON"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to retrieve records",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/response.JSON"
                         }
@@ -985,137 +1050,26 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/dropdown/coa_groups": {
-            "get": {
-                "description": "Retrieve a paginated list of chart of account groups for dropdown selection. Supports optional search query.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
+        "/api/v1/expenses/{id}/void": {
+            "put": {
                 "tags": [
-                    "Dropdowns"
+                    "Expenses"
                 ],
-                "summary": "Get COAGroup dropdown options",
+                "summary": "Void expense entry",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Search keyword for filtering groups",
-                        "name": "search",
-                        "in": "query"
+                        "description": "Entry ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Successfully retrieved dropdown options",
-                        "schema": {
-                            "$ref": "#/definitions/response.SelectJSON"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to retrieve records",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/dropdown/coa_subgroups/": {
-            "get": {
-                "description": "Retrieve a paginated list of chart of account subgroups for dropdown selection. Supports optional search query.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Dropdowns"
-                ],
-                "summary": "Get COASubGroup dropdown options",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Search keyword for filtering subgroups",
-                        "name": "search",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successfully retrieved dropdown options",
-                        "schema": {
-                            "$ref": "#/definitions/response.SelectJSON"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to retrieve records",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/dropdown/customers": {
-            "get": {
-                "description": "Retrieve customers for dropdown selection",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Dropdowns"
-                ],
-                "summary": "Get customer dropdown options",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Search keyword",
-                        "name": "search",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successfully retrieved dropdown options",
-                        "schema": {
-                            "$ref": "#/definitions/response.SelectJSON"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/dropdown/vendors": {
-            "get": {
-                "description": "Retrieve vendors for dropdown selection",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Dropdowns"
-                ],
-                "summary": "Get vendor dropdown options",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Search keyword",
-                        "name": "search",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successfully retrieved dropdown options",
-                        "schema": {
-                            "$ref": "#/definitions/response.SelectJSON"
                         }
                     }
                 }
@@ -1123,17 +1077,13 @@ const docTemplate = `{
         },
         "/api/v1/journal_entries": {
             "get": {
-                "description": "Retrieve all journal entries with pagination and optional status filter",
-                "consumes": [
-                    "application/json"
-                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "JournalEntries"
                 ],
-                "summary": "Get all journal entries",
+                "summary": "Get all general journal entries",
                 "parameters": [
                     {
                         "type": "string",
@@ -1162,13 +1112,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Successfully retrieved all records.",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/response.JSON"
                         }
@@ -1176,7 +1120,6 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Store a new journal entry. Total debit must equal total credit.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1186,7 +1129,7 @@ const docTemplate = `{
                 "tags": [
                     "JournalEntries"
                 ],
-                "summary": "Create journal entry",
+                "summary": "Create general journal entry",
                 "parameters": [
                     {
                         "description": "Journal Entry Create Request",
@@ -1200,13 +1143,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "201": {
-                        "description": "A new record has been stored.",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad request or unbalanced entry",
+                        "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/response.JSON"
                         }
@@ -1216,10 +1153,6 @@ const docTemplate = `{
         },
         "/api/v1/journal_entries/{id}": {
             "get": {
-                "description": "Retrieve a single journal entry by its ID including all lines",
-                "consumes": [
-                    "application/json"
-                ],
                 "produces": [
                     "application/json"
                 ],
@@ -1238,13 +1171,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Successfully retrieved selected record.",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    },
-                    "404": {
-                        "description": "Journal entry not found",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/response.JSON"
                         }
@@ -1252,7 +1179,6 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "Update a draft journal entry. Posted entries cannot be updated.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1283,13 +1209,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Selected record has been updated.",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad request or business rule violation",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/response.JSON"
                         }
@@ -1297,13 +1217,6 @@ const docTemplate = `{
                 }
             },
             "delete": {
-                "description": "Delete a draft journal entry. Posted or void entries cannot be deleted.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
                 "tags": [
                     "JournalEntries"
                 ],
@@ -1319,19 +1232,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Selected record has been deleted.",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    },
-                    "400": {
-                        "description": "Business rule violation",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    },
-                    "404": {
-                        "description": "Journal entry not found",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/response.JSON"
                         }
@@ -1340,14 +1241,7 @@ const docTemplate = `{
             }
         },
         "/api/v1/journal_entries/{id}/post": {
-            "patch": {
-                "description": "Transition a draft journal entry to posted status. Entry must be balanced.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
+            "put": {
                 "tags": [
                     "JournalEntries"
                 ],
@@ -1363,13 +1257,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Journal entry has been posted.",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    },
-                    "400": {
-                        "description": "Business rule violation",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/response.JSON"
                         }
@@ -1378,14 +1266,7 @@ const docTemplate = `{
             }
         },
         "/api/v1/journal_entries/{id}/void": {
-            "patch": {
-                "description": "Transition a posted journal entry to void status.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
+            "put": {
                 "tags": [
                     "JournalEntries"
                 ],
@@ -1401,13 +1282,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Journal entry has been voided.",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    },
-                    "400": {
-                        "description": "Business rule violation",
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/response.JSON"
                         }
@@ -1574,6 +1449,216 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/revenues": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Revenue"
+                ],
+                "summary": "Get all revenue entries",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search keyword",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page number",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Page size",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by status",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Store a new revenue journal entry (type=revenue, prefix RV-).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Revenue"
+                ],
+                "summary": "Create revenue entry",
+                "parameters": [
+                    {
+                        "description": "Revenue Create Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.JournalEntryCreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/revenues/{id}": {
+            "get": {
+                "tags": [
+                    "Revenue"
+                ],
+                "summary": "Get revenue entry by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Entry ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Revenue"
+                ],
+                "summary": "Update revenue entry",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Entry ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Revenue Update Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.JournalEntryUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Revenue"
+                ],
+                "summary": "Delete revenue entry",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Entry ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/revenues/{id}/post": {
+            "put": {
+                "tags": [
+                    "Revenue"
+                ],
+                "summary": "Post revenue entry",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Entry ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/revenues/{id}/void": {
+            "put": {
+                "tags": [
+                    "Revenue"
+                ],
+                "summary": "Void revenue entry",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Entry ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/response.JSON"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/users": {
             "get": {
                 "description": "Retrieve all user records with pagination",
@@ -1603,7 +1688,31 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "description": "Page size",
-                        "name": "pageSize",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sort column (name, username, email, status, created_at, updated_at)",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sort direction (asc, desc)",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by email verified (true, false)",
+                        "name": "verified",
                         "in": "query"
                     }
                 ],
@@ -1779,218 +1888,6 @@ const docTemplate = `{
                     }
                 }
             }
-        },
-        "/api/v1/vendors": {
-            "get": {
-                "description": "Retrieve all vendor records with pagination",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Vendors"
-                ],
-                "summary": "Get all vendors",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Search keyword",
-                        "name": "search",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page number",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page size",
-                        "name": "page_size",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filter by status",
-                        "name": "status",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successfully retrieved all records.",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "Store a new vendor record",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Vendors"
-                ],
-                "summary": "Create vendor",
-                "parameters": [
-                    {
-                        "description": "Vendor Create Request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.VendorCreateRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "A new record has been stored.",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad request",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/vendors/{id}": {
-            "get": {
-                "description": "Retrieve a single vendor by its ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Vendors"
-                ],
-                "summary": "Get vendor by ID",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Vendor ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successfully retrieved selected record.",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    },
-                    "404": {
-                        "description": "Vendor not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "description": "Update vendor data by ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Vendors"
-                ],
-                "summary": "Update vendor",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Vendor ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Vendor Update Request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.VendorUpdateRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Selected record has been updated.",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    },
-                    "404": {
-                        "description": "Vendor not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "description": "Remove a vendor record by ID",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Vendors"
-                ],
-                "summary": "Delete vendor",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Vendor ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Selected record has been deleted.",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    },
-                    "404": {
-                        "description": "Vendor not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
-            }
         }
     },
     "definitions": {
@@ -2133,66 +2030,6 @@ const docTemplate = `{
                     "minLength": 1
                 },
                 "subgroup_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "request.CustomerCreateRequest": {
-            "type": "object",
-            "required": [
-                "code",
-                "name"
-            ],
-            "properties": {
-                "address": {
-                    "type": "string"
-                },
-                "coa_id": {
-                    "type": "string"
-                },
-                "code": {
-                    "type": "string",
-                    "maxLength": 20,
-                    "minLength": 1
-                },
-                "email": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string",
-                    "minLength": 1
-                },
-                "phone": {
-                    "type": "string"
-                }
-            }
-        },
-        "request.CustomerUpdateRequest": {
-            "type": "object",
-            "required": [
-                "code",
-                "name"
-            ],
-            "properties": {
-                "address": {
-                    "type": "string"
-                },
-                "coa_id": {
-                    "type": "string"
-                },
-                "code": {
-                    "type": "string",
-                    "maxLength": 20,
-                    "minLength": 1
-                },
-                "email": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string",
-                    "minLength": 1
-                },
-                "phone": {
                     "type": "string"
                 }
             }
@@ -2345,66 +2182,6 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 20,
                     "minLength": 1
-                }
-            }
-        },
-        "request.VendorCreateRequest": {
-            "type": "object",
-            "required": [
-                "code",
-                "name"
-            ],
-            "properties": {
-                "address": {
-                    "type": "string"
-                },
-                "coa_id": {
-                    "type": "string"
-                },
-                "code": {
-                    "type": "string",
-                    "maxLength": 20,
-                    "minLength": 1
-                },
-                "email": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string",
-                    "minLength": 1
-                },
-                "phone": {
-                    "type": "string"
-                }
-            }
-        },
-        "request.VendorUpdateRequest": {
-            "type": "object",
-            "required": [
-                "code",
-                "name"
-            ],
-            "properties": {
-                "address": {
-                    "type": "string"
-                },
-                "coa_id": {
-                    "type": "string"
-                },
-                "code": {
-                    "type": "string",
-                    "maxLength": 20,
-                    "minLength": 1
-                },
-                "email": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string",
-                    "minLength": 1
-                },
-                "phone": {
-                    "type": "string"
                 }
             }
         },

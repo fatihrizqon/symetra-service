@@ -104,48 +104,6 @@ definitions:
     - name
     - subgroup_id
     type: object
-  request.CustomerCreateRequest:
-    properties:
-      address:
-        type: string
-      coa_id:
-        type: string
-      code:
-        maxLength: 20
-        minLength: 1
-        type: string
-      email:
-        type: string
-      name:
-        minLength: 1
-        type: string
-      phone:
-        type: string
-    required:
-    - code
-    - name
-    type: object
-  request.CustomerUpdateRequest:
-    properties:
-      address:
-        type: string
-      coa_id:
-        type: string
-      code:
-        maxLength: 20
-        minLength: 1
-        type: string
-      email:
-        type: string
-      name:
-        minLength: 1
-        type: string
-      phone:
-        type: string
-    required:
-    - code
-    - name
-    type: object
   request.JournalEntryCreateRequest:
     properties:
       date:
@@ -255,48 +213,6 @@ definitions:
     - email
     - name
     - username
-    type: object
-  request.VendorCreateRequest:
-    properties:
-      address:
-        type: string
-      coa_id:
-        type: string
-      code:
-        maxLength: 20
-        minLength: 1
-        type: string
-      email:
-        type: string
-      name:
-        minLength: 1
-        type: string
-      phone:
-        type: string
-    required:
-    - code
-    - name
-    type: object
-  request.VendorUpdateRequest:
-    properties:
-      address:
-        type: string
-      coa_id:
-        type: string
-      code:
-        maxLength: 20
-        minLength: 1
-        type: string
-      email:
-        type: string
-      name:
-        minLength: 1
-        type: string
-      phone:
-        type: string
-    required:
-    - code
-    - name
     type: object
   response.AuthJSON:
     properties:
@@ -458,7 +374,6 @@ paths:
     get:
       consumes:
       - application/json
-      description: Retrieve all chart of account  records with pagination
       parameters:
       - description: Search keyword
         in: query
@@ -470,8 +385,20 @@ paths:
         type: integer
       - description: Page size
         in: query
-        name: pageSize
+        name: page_size
         type: integer
+      - description: Sort column (code, name, status, created_at, updated_at)
+        in: query
+        name: sort
+        type: string
+      - description: Sort direction (asc, desc)
+        in: query
+        name: order
+        type: string
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
       produces:
       - application/json
       responses:
@@ -483,13 +410,12 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/response.JSON'
-      summary: Get all chart of account s
+      summary: Get all chart of accounts
       tags:
-      - COAs
+      - '#ChartofAccounts COA'
     post:
       consumes:
       - application/json
-      description: Store a new chart of account  record
       parameters:
       - description: COA Create Request
         in: body
@@ -510,12 +436,11 @@ paths:
             $ref: '#/definitions/response.JSON'
       summary: Create chart of account
       tags:
-      - COAs
+      - '#ChartofAccounts COA'
   /api/v1/coa/{id}:
     delete:
       consumes:
       - application/json
-      description: Remove a chart of account  record by ID
       parameters:
       - description: COA ID
         in: path
@@ -535,11 +460,10 @@ paths:
             $ref: '#/definitions/response.JSON'
       summary: Delete chart of account
       tags:
-      - COAs
+      - '#ChartofAccounts COA'
     get:
       consumes:
       - application/json
-      description: Retrieve a single chart of account  by its ID
       parameters:
       - description: COA ID
         in: path
@@ -557,20 +481,19 @@ paths:
           description: COA not found
           schema:
             $ref: '#/definitions/response.JSON'
-      summary: Get chart of account  by ID
+      summary: Get chart of account by ID
       tags:
-      - COAs
+      - '#ChartofAccounts COA'
     put:
       consumes:
       - application/json
-      description: Update chart of account  data by ID
       parameters:
-      - description: COA  ID
+      - description: COA ID
         in: path
         name: id
         required: true
         type: string
-      - description: COA  Update Request
+      - description: COA Update Request
         in: body
         name: request
         required: true
@@ -584,17 +507,16 @@ paths:
           schema:
             $ref: '#/definitions/response.JSON'
         "404":
-          description: COA  not found
+          description: COA not found
           schema:
             $ref: '#/definitions/response.JSON'
       summary: Update chart of account
       tags:
-      - COAs
+      - '#ChartofAccounts COA'
   /api/v1/coa_groups:
     get:
       consumes:
       - application/json
-      description: Retrieve all chart of account group records with pagination
       parameters:
       - description: Search keyword
         in: query
@@ -606,8 +528,21 @@ paths:
         type: integer
       - description: Page size
         in: query
-        name: pageSize
+        name: page_size
         type: integer
+      - description: Sort column (code, name, normal_balance, status, created_at,
+          updated_at)
+        in: query
+        name: sort
+        type: string
+      - description: Sort direction (asc, desc)
+        in: query
+        name: order
+        type: string
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
       produces:
       - application/json
       responses:
@@ -621,11 +556,10 @@ paths:
             $ref: '#/definitions/response.JSON'
       summary: Get all chart of account groups
       tags:
-      - COAGroups
+      - '#ChartofAccounts Group'
     post:
       consumes:
       - application/json
-      description: Store a new chart of account group record
       parameters:
       - description: COAGroup Create Request
         in: body
@@ -646,12 +580,11 @@ paths:
             $ref: '#/definitions/response.JSON'
       summary: Create chart of account group
       tags:
-      - COAGroups
+      - '#ChartofAccounts Group'
   /api/v1/coa_groups/{id}:
     delete:
       consumes:
       - application/json
-      description: Remove a chart of account group record by ID
       parameters:
       - description: COAGroup ID
         in: path
@@ -671,11 +604,10 @@ paths:
             $ref: '#/definitions/response.JSON'
       summary: Delete chart of account group
       tags:
-      - COAGroups
+      - '#ChartofAccounts Group'
     get:
       consumes:
       - application/json
-      description: Retrieve a single chart of account group by its ID
       parameters:
       - description: COAGroup ID
         in: path
@@ -695,18 +627,17 @@ paths:
             $ref: '#/definitions/response.JSON'
       summary: Get chart of account group by ID
       tags:
-      - COAGroups
+      - '#ChartofAccounts Group'
     put:
       consumes:
       - application/json
-      description: Update chart of account group data by ID
       parameters:
-      - description: COA Group ID
+      - description: COAGroup ID
         in: path
         name: id
         required: true
         type: string
-      - description: COA Group Update Request
+      - description: COAGroup Update Request
         in: body
         name: request
         required: true
@@ -720,17 +651,16 @@ paths:
           schema:
             $ref: '#/definitions/response.JSON'
         "404":
-          description: COA Group not found
+          description: COAGroup not found
           schema:
             $ref: '#/definitions/response.JSON'
       summary: Update chart of account group
       tags:
-      - COAGroups
+      - '#ChartofAccounts Group'
   /api/v1/coa_subgroups:
     get:
       consumes:
       - application/json
-      description: Retrieve all chart of account subgroup records with pagination
       parameters:
       - description: Search keyword
         in: query
@@ -742,8 +672,20 @@ paths:
         type: integer
       - description: Page size
         in: query
-        name: pageSize
+        name: page_size
         type: integer
+      - description: Sort column (code, name, status, created_at, updated_at)
+        in: query
+        name: sort
+        type: string
+      - description: Sort direction (asc, desc)
+        in: query
+        name: order
+        type: string
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
       produces:
       - application/json
       responses:
@@ -757,11 +699,10 @@ paths:
             $ref: '#/definitions/response.JSON'
       summary: Get all chart of account subgroups
       tags:
-      - COASubGroups
+      - '#ChartofAccounts SubGroups'
     post:
       consumes:
       - application/json
-      description: Store a new chart of account subgroup record
       parameters:
       - description: COASubGroup Create Request
         in: body
@@ -782,12 +723,11 @@ paths:
             $ref: '#/definitions/response.JSON'
       summary: Create chart of account subgroup
       tags:
-      - COASubGroups
+      - '#ChartofAccounts SubGroups'
   /api/v1/coa_subgroups/{id}:
     delete:
       consumes:
       - application/json
-      description: Remove a chart of account subgroup record by ID
       parameters:
       - description: COASubGroup ID
         in: path
@@ -807,11 +747,10 @@ paths:
             $ref: '#/definitions/response.JSON'
       summary: Delete chart of account subgroup
       tags:
-      - COASubGroups
+      - '#ChartofAccounts SubGroups'
     get:
       consumes:
       - application/json
-      description: Retrieve a single chart of account subgroup by its ID
       parameters:
       - description: COASubGroup ID
         in: path
@@ -831,18 +770,17 @@ paths:
             $ref: '#/definitions/response.JSON'
       summary: Get chart of account subgroup by ID
       tags:
-      - COASubGroups
+      - '#ChartofAccounts SubGroups'
     put:
       consumes:
       - application/json
-      description: Update chart of account subgroup data by ID
       parameters:
-      - description: COA SubGroup ID
+      - description: COASubGroup ID
         in: path
         name: id
         required: true
         type: string
-      - description: COA SubGroup Update Request
+      - description: COASubGroup Update Request
         in: body
         name: request
         required: true
@@ -856,23 +794,77 @@ paths:
           schema:
             $ref: '#/definitions/response.JSON'
         "404":
-          description: COA SubGroup not found
+          description: COASubGroup not found
           schema:
             $ref: '#/definitions/response.JSON'
       summary: Update chart of account subgroup
       tags:
-      - COASubGroups
-  /api/v1/customers:
+      - '#ChartofAccounts SubGroups'
+  /api/v1/dropdown/coa:
     get:
       consumes:
       - application/json
-      description: Retrieve all customer records with pagination
       parameters:
       - description: Search keyword
         in: query
         name: search
         type: string
-      - description: Page number
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved dropdown options
+          schema:
+            $ref: '#/definitions/response.SelectJSON'
+      summary: Get COA dropdown options
+      tags:
+      - Dropdowns
+  /api/v1/dropdown/coa_groups:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved dropdown options
+          schema:
+            $ref: '#/definitions/response.SelectJSON'
+      summary: Get COAGroup dropdown options
+      tags:
+      - Dropdowns
+  /api/v1/dropdown/coa_subgroups:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved dropdown options
+          schema:
+            $ref: '#/definitions/response.SelectJSON'
+      summary: Get COASubGroup dropdown options
+      tags:
+      - Dropdowns
+  /api/v1/expenses:
+    get:
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      - description: Page
         in: query
         name: page
         type: integer
@@ -888,241 +880,121 @@ paths:
       - application/json
       responses:
         "200":
-          description: Successfully retrieved all records.
+          description: OK
           schema:
             $ref: '#/definitions/response.JSON'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/response.JSON'
-      summary: Get all customers
+      summary: Get all expense entries
       tags:
-      - Customers
+      - Expenses
     post:
       consumes:
       - application/json
-      description: Store a new customer record
+      description: Store a new expense journal entry (type=expense, prefix EX-).
       parameters:
-      - description: Customer Create Request
+      - description: Expense Create Request
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/request.CustomerCreateRequest'
+          $ref: '#/definitions/request.JournalEntryCreateRequest'
       produces:
       - application/json
       responses:
         "201":
-          description: A new record has been stored.
+          description: Created
           schema:
             $ref: '#/definitions/response.JSON'
-        "400":
-          description: Bad request
-          schema:
-            $ref: '#/definitions/response.JSON'
-      summary: Create customer
+      summary: Create expense entry
       tags:
-      - Customers
-  /api/v1/customers/{id}:
+      - Expenses
+  /api/v1/expenses/{id}:
     delete:
-      consumes:
-      - application/json
-      description: Remove a customer record by ID
       parameters:
-      - description: Customer ID
+      - description: Entry ID
         in: path
         name: id
         required: true
         type: string
-      produces:
-      - application/json
       responses:
         "200":
-          description: Selected record has been deleted.
+          description: OK
           schema:
             $ref: '#/definitions/response.JSON'
-        "404":
-          description: Customer not found
-          schema:
-            $ref: '#/definitions/response.JSON'
-      summary: Delete customer
+      summary: Delete expense entry
       tags:
-      - Customers
+      - Expenses
     get:
-      consumes:
-      - application/json
-      description: Retrieve a single customer by its ID
       parameters:
-      - description: Customer ID
+      - description: Entry ID
         in: path
         name: id
         required: true
         type: string
-      produces:
-      - application/json
       responses:
         "200":
-          description: Successfully retrieved selected record.
+          description: OK
           schema:
             $ref: '#/definitions/response.JSON'
-        "404":
-          description: Customer not found
-          schema:
-            $ref: '#/definitions/response.JSON'
-      summary: Get customer by ID
+      summary: Get expense entry by ID
       tags:
-      - Customers
+      - Expenses
     put:
       consumes:
       - application/json
-      description: Update customer data by ID
       parameters:
-      - description: Customer ID
+      - description: Entry ID
         in: path
         name: id
         required: true
         type: string
-      - description: Customer Update Request
+      - description: Expense Update Request
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/request.CustomerUpdateRequest'
-      produces:
-      - application/json
+          $ref: '#/definitions/request.JournalEntryUpdateRequest'
       responses:
         "200":
-          description: Selected record has been updated.
+          description: OK
           schema:
             $ref: '#/definitions/response.JSON'
-        "404":
-          description: Customer not found
+      summary: Update expense entry
+      tags:
+      - Expenses
+  /api/v1/expenses/{id}/post:
+    put:
+      parameters:
+      - description: Entry ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
           schema:
             $ref: '#/definitions/response.JSON'
-      summary: Update customer
+      summary: Post expense entry
       tags:
-      - Customers
-  /api/v1/dropdown/coa:
-    get:
-      consumes:
-      - application/json
-      description: Retrieve a paginated list of chart of account s for dropdown selection.
-        Supports optional search query.
+      - Expenses
+  /api/v1/expenses/{id}/void:
+    put:
       parameters:
-      - description: Search keyword for filtering s
-        in: query
-        name: search
+      - description: Entry ID
+        in: path
+        name: id
+        required: true
         type: string
-      produces:
-      - application/json
       responses:
         "200":
-          description: Successfully retrieved dropdown options
-          schema:
-            $ref: '#/definitions/response.SelectJSON'
-        "500":
-          description: Failed to retrieve records
+          description: OK
           schema:
             $ref: '#/definitions/response.JSON'
-      summary: Get COA dropdown options
+      summary: Void expense entry
       tags:
-      - Dropdowns
-  /api/v1/dropdown/coa_groups:
-    get:
-      consumes:
-      - application/json
-      description: Retrieve a paginated list of chart of account groups for dropdown
-        selection. Supports optional search query.
-      parameters:
-      - description: Search keyword for filtering groups
-        in: query
-        name: search
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successfully retrieved dropdown options
-          schema:
-            $ref: '#/definitions/response.SelectJSON'
-        "500":
-          description: Failed to retrieve records
-          schema:
-            $ref: '#/definitions/response.JSON'
-      summary: Get COAGroup dropdown options
-      tags:
-      - Dropdowns
-  /api/v1/dropdown/coa_subgroups/:
-    get:
-      consumes:
-      - application/json
-      description: Retrieve a paginated list of chart of account subgroups for dropdown
-        selection. Supports optional search query.
-      parameters:
-      - description: Search keyword for filtering subgroups
-        in: query
-        name: search
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successfully retrieved dropdown options
-          schema:
-            $ref: '#/definitions/response.SelectJSON'
-        "500":
-          description: Failed to retrieve records
-          schema:
-            $ref: '#/definitions/response.JSON'
-      summary: Get COASubGroup dropdown options
-      tags:
-      - Dropdowns
-  /api/v1/dropdown/customers:
-    get:
-      consumes:
-      - application/json
-      description: Retrieve customers for dropdown selection
-      parameters:
-      - description: Search keyword
-        in: query
-        name: search
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successfully retrieved dropdown options
-          schema:
-            $ref: '#/definitions/response.SelectJSON'
-      summary: Get customer dropdown options
-      tags:
-      - Dropdowns
-  /api/v1/dropdown/vendors:
-    get:
-      consumes:
-      - application/json
-      description: Retrieve vendors for dropdown selection
-      parameters:
-      - description: Search keyword
-        in: query
-        name: search
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successfully retrieved dropdown options
-          schema:
-            $ref: '#/definitions/response.SelectJSON'
-      summary: Get vendor dropdown options
-      tags:
-      - Dropdowns
+      - Expenses
   /api/v1/journal_entries:
     get:
-      consumes:
-      - application/json
-      description: Retrieve all journal entries with pagination and optional status
-        filter
       parameters:
       - description: Search keyword
         in: query
@@ -1144,20 +1016,15 @@ paths:
       - application/json
       responses:
         "200":
-          description: Successfully retrieved all records.
+          description: OK
           schema:
             $ref: '#/definitions/response.JSON'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/response.JSON'
-      summary: Get all journal entries
+      summary: Get all general journal entries
       tags:
       - JournalEntries
     post:
       consumes:
       - application/json
-      description: Store a new journal entry. Total debit must equal total credit.
       parameters:
       - description: Journal Entry Create Request
         in: body
@@ -1169,50 +1036,29 @@ paths:
       - application/json
       responses:
         "201":
-          description: A new record has been stored.
+          description: Created
           schema:
             $ref: '#/definitions/response.JSON'
-        "400":
-          description: Bad request or unbalanced entry
-          schema:
-            $ref: '#/definitions/response.JSON'
-      summary: Create journal entry
+      summary: Create general journal entry
       tags:
       - JournalEntries
   /api/v1/journal_entries/{id}:
     delete:
-      consumes:
-      - application/json
-      description: Delete a draft journal entry. Posted or void entries cannot be
-        deleted.
       parameters:
       - description: Journal Entry ID
         in: path
         name: id
         required: true
         type: string
-      produces:
-      - application/json
       responses:
         "200":
-          description: Selected record has been deleted.
-          schema:
-            $ref: '#/definitions/response.JSON'
-        "400":
-          description: Business rule violation
-          schema:
-            $ref: '#/definitions/response.JSON'
-        "404":
-          description: Journal entry not found
+          description: OK
           schema:
             $ref: '#/definitions/response.JSON'
       summary: Delete journal entry
       tags:
       - JournalEntries
     get:
-      consumes:
-      - application/json
-      description: Retrieve a single journal entry by its ID including all lines
       parameters:
       - description: Journal Entry ID
         in: path
@@ -1223,11 +1069,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: Successfully retrieved selected record.
-          schema:
-            $ref: '#/definitions/response.JSON'
-        "404":
-          description: Journal entry not found
+          description: OK
           schema:
             $ref: '#/definitions/response.JSON'
       summary: Get journal entry by ID
@@ -1236,7 +1078,6 @@ paths:
     put:
       consumes:
       - application/json
-      description: Update a draft journal entry. Posted entries cannot be updated.
       parameters:
       - description: Journal Entry ID
         in: path
@@ -1253,62 +1094,39 @@ paths:
       - application/json
       responses:
         "200":
-          description: Selected record has been updated.
-          schema:
-            $ref: '#/definitions/response.JSON'
-        "400":
-          description: Bad request or business rule violation
+          description: OK
           schema:
             $ref: '#/definitions/response.JSON'
       summary: Update journal entry
       tags:
       - JournalEntries
   /api/v1/journal_entries/{id}/post:
-    patch:
-      consumes:
-      - application/json
-      description: Transition a draft journal entry to posted status. Entry must be
-        balanced.
+    put:
       parameters:
       - description: Journal Entry ID
         in: path
         name: id
         required: true
         type: string
-      produces:
-      - application/json
       responses:
         "200":
-          description: Journal entry has been posted.
-          schema:
-            $ref: '#/definitions/response.JSON'
-        "400":
-          description: Business rule violation
+          description: OK
           schema:
             $ref: '#/definitions/response.JSON'
       summary: Post journal entry
       tags:
       - JournalEntries
   /api/v1/journal_entries/{id}/void:
-    patch:
-      consumes:
-      - application/json
-      description: Transition a posted journal entry to void status.
+    put:
       parameters:
       - description: Journal Entry ID
         in: path
         name: id
         required: true
         type: string
-      produces:
-      - application/json
       responses:
         "200":
-          description: Journal entry has been voided.
-          schema:
-            $ref: '#/definitions/response.JSON'
-        "400":
-          description: Business rule violation
+          description: OK
           schema:
             $ref: '#/definitions/response.JSON'
       summary: Void journal entry
@@ -1415,6 +1233,142 @@ paths:
       summary: Trial Balance
       tags:
       - Reports
+  /api/v1/revenues:
+    get:
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Get all revenue entries
+      tags:
+      - Revenue
+    post:
+      consumes:
+      - application/json
+      description: Store a new revenue journal entry (type=revenue, prefix RV-).
+      parameters:
+      - description: Revenue Create Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.JournalEntryCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Create revenue entry
+      tags:
+      - Revenue
+  /api/v1/revenues/{id}:
+    delete:
+      parameters:
+      - description: Entry ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Delete revenue entry
+      tags:
+      - Revenue
+    get:
+      parameters:
+      - description: Entry ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Get revenue entry by ID
+      tags:
+      - Revenue
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Entry ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Revenue Update Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.JournalEntryUpdateRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Update revenue entry
+      tags:
+      - Revenue
+  /api/v1/revenues/{id}/post:
+    put:
+      parameters:
+      - description: Entry ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Post revenue entry
+      tags:
+      - Revenue
+  /api/v1/revenues/{id}/void:
+    put:
+      parameters:
+      - description: Entry ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Void revenue entry
+      tags:
+      - Revenue
   /api/v1/users:
     get:
       consumes:
@@ -1431,8 +1385,24 @@ paths:
         type: integer
       - description: Page size
         in: query
-        name: pageSize
+        name: page_size
         type: integer
+      - description: Sort column (name, username, email, status, created_at, updated_at)
+        in: query
+        name: sort
+        type: string
+      - description: Sort direction (asc, desc)
+        in: query
+        name: order
+        type: string
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
+      - description: Filter by email verified (true, false)
+        in: query
+        name: verified
+        type: string
       produces:
       - application/json
       responses:
@@ -1551,144 +1521,4 @@ paths:
       summary: Update user
       tags:
       - Users
-  /api/v1/vendors:
-    get:
-      consumes:
-      - application/json
-      description: Retrieve all vendor records with pagination
-      parameters:
-      - description: Search keyword
-        in: query
-        name: search
-        type: string
-      - description: Page number
-        in: query
-        name: page
-        type: integer
-      - description: Page size
-        in: query
-        name: page_size
-        type: integer
-      - description: Filter by status
-        in: query
-        name: status
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successfully retrieved all records.
-          schema:
-            $ref: '#/definitions/response.JSON'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/response.JSON'
-      summary: Get all vendors
-      tags:
-      - Vendors
-    post:
-      consumes:
-      - application/json
-      description: Store a new vendor record
-      parameters:
-      - description: Vendor Create Request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/request.VendorCreateRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: A new record has been stored.
-          schema:
-            $ref: '#/definitions/response.JSON'
-        "400":
-          description: Bad request
-          schema:
-            $ref: '#/definitions/response.JSON'
-      summary: Create vendor
-      tags:
-      - Vendors
-  /api/v1/vendors/{id}:
-    delete:
-      consumes:
-      - application/json
-      description: Remove a vendor record by ID
-      parameters:
-      - description: Vendor ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Selected record has been deleted.
-          schema:
-            $ref: '#/definitions/response.JSON'
-        "404":
-          description: Vendor not found
-          schema:
-            $ref: '#/definitions/response.JSON'
-      summary: Delete vendor
-      tags:
-      - Vendors
-    get:
-      consumes:
-      - application/json
-      description: Retrieve a single vendor by its ID
-      parameters:
-      - description: Vendor ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successfully retrieved selected record.
-          schema:
-            $ref: '#/definitions/response.JSON'
-        "404":
-          description: Vendor not found
-          schema:
-            $ref: '#/definitions/response.JSON'
-      summary: Get vendor by ID
-      tags:
-      - Vendors
-    put:
-      consumes:
-      - application/json
-      description: Update vendor data by ID
-      parameters:
-      - description: Vendor ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Vendor Update Request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/request.VendorUpdateRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Selected record has been updated.
-          schema:
-            $ref: '#/definitions/response.JSON'
-        "404":
-          description: Vendor not found
-          schema:
-            $ref: '#/definitions/response.JSON'
-      summary: Update vendor
-      tags:
-      - Vendors
 swagger: "2.0"

@@ -34,8 +34,6 @@ func Bootstrap(config *BootstrapConfig) {
 	coaSubGroupRepository := repository.NewCOASubGroupRepository(config.DB)
 	coaRepository := repository.NewCOARepository(config.DB)
 	journalEntryRepository := repository.NewJournalEntryRepository(config.DB)
-	customerRepository := repository.NewCustomerRepository(config.DB)
-	vendorRepository := repository.NewVendorRepository(config.DB)
 	reportRepository := repository.NewReportRepository(config.DB)
 
 	// ── Services ──────────────────────────────────────────────────────────────
@@ -46,8 +44,6 @@ func Bootstrap(config *BootstrapConfig) {
 	coaSubGroupService := service.NewCOASubGroupService(coaSubGroupRepository, config.Validate)
 	coaService := service.NewCOAService(coaRepository, config.Validate)
 	journalEntryService := service.NewJournalEntryService(journalEntryRepository, config.Validate)
-	customerService := service.NewCustomerService(customerRepository, config.Validate)
-	vendorService := service.NewVendorService(vendorRepository, config.Validate)
 	reportService := service.NewReportService(reportRepository)
 
 	// ── Handlers ──────────────────────────────────────────────────────────────
@@ -58,23 +54,18 @@ func Bootstrap(config *BootstrapConfig) {
 	coaSubGroupHandler := handler.NewCOASubGroupHandler(coaSubGroupService)
 	coaHandler := handler.NewCOAHandler(coaService)
 	journalEntryHandler := handler.NewJournalEntryHandler(journalEntryService)
-	// Revenue and Expense handlers reuse the same journalEntryService —
-	// they only differ in how they scope the type filter and journal number prefix.
 	revenueHandler := handler.NewRevenueHandler(journalEntryService)
 	expenseHandler := handler.NewExpenseHandler(journalEntryService)
-	customerHandler := handler.NewCustomerHandler(customerService)
-	vendorHandler := handler.NewVendorHandler(vendorService)
 	reportHandler := handler.NewReportHandler(reportService)
 
-	// ── Middleware ─────────────────────────────────────────────────────────────
 	authMiddleware := middleware.NewAuth(tokenRepository)
 
-	// ── Routes ────────────────────────────────────────────────────────────────
 	routeConfig := route.RouteConfig{
-		App:                 config.App,
+		App:            config.App,
+		AuthMiddleware: authMiddleware,
+
 		UserHandler:         userHandler,
 		AuthHandler:         authHandler,
-		AuthMiddleware:      authMiddleware,
 		DashboardHandler:    dashboardHandler,
 		COAGroupHandler:     coaGroupHandler,
 		COASubGroupHandler:  coaSubGroupHandler,
@@ -82,8 +73,6 @@ func Bootstrap(config *BootstrapConfig) {
 		JournalEntryHandler: journalEntryHandler,
 		RevenueHandler:      revenueHandler,
 		ExpenseHandler:      expenseHandler,
-		CustomerHandler:     customerHandler,
-		VendorHandler:       vendorHandler,
 		ReportHandler:       reportHandler,
 	}
 

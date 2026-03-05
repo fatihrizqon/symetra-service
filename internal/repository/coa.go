@@ -8,11 +8,11 @@ import (
 )
 
 var coaSortColumns = map[string]string{
-	"code":       "chart_of_accounts.code",
-	"name":       "chart_of_accounts.name",
-	"status":     "chart_of_accounts.status",
-	"created_at": "chart_of_accounts.created_at",
-	"updated_at": "chart_of_accounts.updated_at",
+	"code":       "coa.code",
+	"name":       "coa.name",
+	"status":     "coa.status",
+	"created_at": "coa.created_at",
+	"updated_at": "coa.updated_at",
 }
 
 type ICOARepository interface {
@@ -56,7 +56,7 @@ func (e *COARepository) FindAll(qp *util.QueryParams) ([]entity.COA, int, error)
 		return entities, 0, nil
 	}
 
-	query = util.ApplySort(query, qp, coaSortColumns, "chart_of_accounts.created_at")
+	query = util.ApplySort(query, qp, coaSortColumns, "coa.created_at")
 	query = util.ApplyPagination(query, qp)
 
 	err := query.

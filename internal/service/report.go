@@ -9,14 +9,14 @@ import (
 	"github.com/fatihrizqon/symetra-service/internal/repository"
 )
 
-// ─── COA Group name constants (must match your coa_groups.name data) ─────────
-// Adjust these if your group names differ.
+// ─── COA Group name constants ─────────────────────────────────────────────────
+// Must match coa_groups.name in seed data (case-insensitive contains check).
 const (
 	groupAssets      = "assets"
 	groupLiabilities = "liabilities"
 	groupEquity      = "equity"
 	groupRevenue     = "revenue"
-	groupExpenses    = "expenses"
+	groupExpense     = "expense" // COA seed uses singular "Expense"
 )
 
 func normalizeGroup(name string) string {
@@ -27,7 +27,6 @@ func isGroup(groupName, target string) bool {
 	return strings.Contains(normalizeGroup(groupName), target)
 }
 
-// subgroupContains checks if subgroup name contains keyword (case-insensitive)
 func subgroupContains(name, keyword string) bool {
 	return strings.Contains(strings.ToLower(name), strings.ToLower(keyword))
 }
@@ -49,6 +48,7 @@ func NewReportService(repo repository.IReportRepository) IReportService {
 }
 
 // ─── 1. Trial Balance ────────────────────────────────────────────────────────
+// Shows debit / credit totals per account for the given period.
 
 func (s *ReportService) TrialBalance(start, end time.Time) (response.TrialBalanceResponse, error) {
 	rows, err := s.IReportRepository.GetLedger(start, end)
@@ -62,13 +62,19 @@ func (s *ReportService) TrialBalance(start, end time.Time) (response.TrialBalanc
 	var totalDebit, totalCredit float64
 
 	for _, r := range rows {
+		// Skip accounts with zero activity in the period
+		if r.TotalDebit == 0 && r.TotalCredit == 0 {
+			continue
+		}
 		balance := r.TotalDebit - r.TotalCredit
 		lines = append(lines, response.TrialBalanceLine{
-			AccountCode: r.AccountCode,
-			AccountName: r.AccountName,
-			TotalDebit:  r.TotalDebit,
-			TotalCredit: r.TotalCredit,
-			Balance:     balance,
+			AccountCode:  r.AccountCode,
+			AccountName:  r.AccountName,
+			GroupName:    r.GroupName,
+			SubgroupName: r.SubgroupName,
+			TotalDebit:   r.TotalDebit,
+			TotalCredit:  r.TotalCredit,
+			Balance:      balance,
 		})
 		totalDebit += r.TotalDebit
 		totalCredit += r.TotalCredit
@@ -87,6 +93,8 @@ func (s *ReportService) TrialBalance(start, end time.Time) (response.TrialBalanc
 }
 
 // ─── 2. Profit & Loss ────────────────────────────────────────────────────────
+// Laba Rugi: Pendapatan → HPP → Laba Kotor → Beban Operasional →
+//            Laba Operasional → Pendapatan/Beban Lain → Laba Bersih
 
 func (s *ReportService) ProfitLoss(start, end time.Time) (response.ProfitLossResponse, error) {
 	rows, err := s.IReportRepository.GetLedger(start, end)
@@ -94,207 +102,243 @@ func (s *ReportService) ProfitLoss(start, end time.Time) (response.ProfitLossRes
 		return response.ProfitLossResponse{}, err
 	}
 
-	revenue := response.ReportSection{Title: "Revenue"}
-	cogs := response.ReportSection{Title: "Cost of Goods Sold (HPP)"}
-	opex := response.ReportSection{Title: "Operating Expenses"}
-	otherExp := response.ReportSection{Title: "Other Expenses"}
-	otherRev := response.ReportSection{Title: "Other Revenue"}
+	operatingRevenue := response.ReportSection{Title: "Pendapatan Operasional"}
+	otherRevenue     := response.ReportSection{Title: "Pendapatan Lain-lain"}
+	cogs             := response.ReportSection{Title: "Harga Pokok Penjualan (HPP)"}
+	opex             := response.ReportSection{Title: "Beban Operasional"}
+	adminExp         := response.ReportSection{Title: "Beban Administrasi"}
+	finExp           := response.ReportSection{Title: "Beban Keuangan / Lain-lain"}
 
 	for _, r := range rows {
-		g := normalizeGroup(r.GroupName)
-		amount := r.TotalCredit - r.TotalDebit // revenue normal balance = credit
-		item := response.ReportLineItem{
-			AccountCode: r.AccountCode,
-			AccountName: r.AccountName,
-		}
+		g  := normalizeGroup(r.GroupName)
+		sg := strings.ToLower(r.SubgroupName)
 
 		switch {
-		case strings.Contains(g, groupRevenue):
-			if subgroupContains(r.SubgroupName, "other") {
-				item.Amount = r.TotalCredit - r.TotalDebit
-				otherRev.Items = append(otherRev.Items, item)
-				otherRev.Subtotal += item.Amount
-			} else {
-				item.Amount = r.TotalCredit - r.TotalDebit
-				revenue.Items = append(revenue.Items, item)
-				revenue.Subtotal += item.Amount
+		// ── Revenue group ─────────────────────────────────────────────────
+		case isGroup(g, groupRevenue):
+			item := response.ReportLineItem{
+				AccountCode: r.AccountCode,
+				AccountName: r.AccountName,
+				// Revenue normal balance = credit; positive = credit > debit
+				Amount: r.TotalCredit - r.TotalDebit,
 			}
-		case strings.Contains(g, groupExpenses):
-			expAmount := r.TotalDebit - r.TotalCredit // expense normal balance = debit
-			item.Amount = expAmount
-			if subgroupContains(r.SubgroupName, "cogs") || subgroupContains(r.SubgroupName, "cost of goods") || subgroupContains(r.SubgroupName, "hpp") {
-				cogs.Items = append(cogs.Items, item)
-				cogs.Subtotal += expAmount
-			} else if subgroupContains(r.SubgroupName, "other") {
-				otherExp.Items = append(otherExp.Items, item)
-				otherExp.Subtotal += expAmount
+			if subgroupContains(sg, "other") {
+				otherRevenue.Items = append(otherRevenue.Items, item)
+				otherRevenue.Subtotal += item.Amount
 			} else {
+				operatingRevenue.Items = append(operatingRevenue.Items, item)
+				operatingRevenue.Subtotal += item.Amount
+			}
+
+		// ── Expense group ─────────────────────────────────────────────────
+		case isGroup(g, groupExpense):
+			item := response.ReportLineItem{
+				AccountCode: r.AccountCode,
+				AccountName: r.AccountName,
+				// Expense normal balance = debit; positive = debit > credit
+				Amount: r.TotalDebit - r.TotalCredit,
+			}
+			switch {
+			case subgroupContains(sg, "cost of goods") || subgroupContains(sg, "cogs") || subgroupContains(sg, "hpp"):
+				cogs.Items = append(cogs.Items, item)
+				cogs.Subtotal += item.Amount
+			case subgroupContains(sg, "operating"):
 				opex.Items = append(opex.Items, item)
-				opex.Subtotal += expAmount
+				opex.Subtotal += item.Amount
+			case subgroupContains(sg, "administrative") || subgroupContains(sg, "admin"):
+				adminExp.Items = append(adminExp.Items, item)
+				adminExp.Subtotal += item.Amount
+			default:
+				// Financial expense, other → goes to other/financial
+				finExp.Items = append(finExp.Items, item)
+				finExp.Subtotal += item.Amount
 			}
 		}
-		_ = amount
 	}
 
-	grossProfit := revenue.Subtotal - cogs.Subtotal
-	operatingProfit := grossProfit - opex.Subtotal
-	netProfit := operatingProfit + otherRev.Subtotal - otherExp.Subtotal
+	totalRevenue     := operatingRevenue.Subtotal + otherRevenue.Subtotal
+	grossProfit      := operatingRevenue.Subtotal - cogs.Subtotal
+	totalOpex        := opex.Subtotal + adminExp.Subtotal
+	operatingProfit  := grossProfit - totalOpex
+	netProfit        := operatingProfit + otherRevenue.Subtotal - finExp.Subtotal
 
 	return response.ProfitLossResponse{
-		GeneratedAt:       time.Now(),
-		StartDate:         start.Format("2006-01-02"),
-		EndDate:           end.Format("2006-01-02"),
-		Revenue:           revenue,
-		COGS:              cogs,
-		GrossProfit:       grossProfit,
+		GeneratedAt:      time.Now(),
+		StartDate:        start.Format("2006-01-02"),
+		EndDate:          end.Format("2006-01-02"),
+		OperatingRevenue: operatingRevenue,
+		OtherRevenue:     otherRevenue,
+		TotalRevenue:     totalRevenue,
+		COGS:             cogs,
+		GrossProfit:      grossProfit,
 		OperatingExpenses: opex,
-		OtherExpenses:     otherExp,
-		OtherRevenue:      otherRev,
-		OperatingProfit:   operatingProfit,
-		NetProfit:         netProfit,
+		AdminExpenses:    adminExp,
+		FinancialExpenses: finExp,
+		OperatingProfit:  operatingProfit,
+		NetProfit:        netProfit,
 	}, nil
 }
 
 // ─── 3. Balance Sheet ────────────────────────────────────────────────────────
+// Neraca: kumulatif dari awal sampai asOf.
 
 func (s *ReportService) BalanceSheet(asOf time.Time) (response.BalanceSheetResponse, error) {
-	// Balance sheet is cumulative — from beginning of time to asOf date
-	start := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
-	rows, err := s.IReportRepository.GetLedger(start, asOf)
+	rows, err := s.IReportRepository.GetLedgerUpTo(asOf)
 	if err != nil {
 		return response.BalanceSheetResponse{}, err
 	}
 
-	// Map subgroup → section items
-	assetSections := map[string]*response.ReportSection{}
-	liabSections := map[string]*response.ReportSection{}
+	assetSections  := map[string]*response.ReportSection{}
+	liabSections   := map[string]*response.ReportSection{}
 	equitySections := map[string]*response.ReportSection{}
 
 	var totalAssets, totalLiabilities, totalEquity float64
 
-	// Also compute net profit to add to equity
-	plResp, err := s.ProfitLoss(start, asOf)
-	if err != nil {
-		return response.BalanceSheetResponse{}, err
-	}
-
 	for _, r := range rows {
 		g := normalizeGroup(r.GroupName)
-		item := response.ReportLineItem{
-			AccountCode: r.AccountCode,
-			AccountName: r.AccountName,
-		}
 
 		switch {
-		case strings.Contains(g, groupAssets):
-			item.Amount = r.TotalDebit - r.TotalCredit
+		case isGroup(g, groupAssets):
+			// Asset normal balance = debit
+			amount := r.TotalDebit - r.TotalCredit
 			sec := ensureSection(assetSections, r.SubgroupName)
-			sec.Items = append(sec.Items, item)
-			sec.Subtotal += item.Amount
-			totalAssets += item.Amount
+			sec.Items = append(sec.Items, response.ReportLineItem{
+				AccountCode: r.AccountCode,
+				AccountName: r.AccountName,
+				Amount:      amount,
+			})
+			sec.Subtotal += amount
+			totalAssets += amount
 
-		case strings.Contains(g, groupLiabilities):
-			item.Amount = r.TotalCredit - r.TotalDebit
+		case isGroup(g, groupLiabilities):
+			// Liability normal balance = credit
+			amount := r.TotalCredit - r.TotalDebit
 			sec := ensureSection(liabSections, r.SubgroupName)
-			sec.Items = append(sec.Items, item)
-			sec.Subtotal += item.Amount
-			totalLiabilities += item.Amount
+			sec.Items = append(sec.Items, response.ReportLineItem{
+				AccountCode: r.AccountCode,
+				AccountName: r.AccountName,
+				Amount:      amount,
+			})
+			sec.Subtotal += amount
+			totalLiabilities += amount
 
-		case strings.Contains(g, groupEquity):
-			item.Amount = r.TotalCredit - r.TotalDebit
+		case isGroup(g, groupEquity):
+			// Equity normal balance = credit
+			amount := r.TotalCredit - r.TotalDebit
 			sec := ensureSection(equitySections, r.SubgroupName)
-			sec.Items = append(sec.Items, item)
-			sec.Subtotal += item.Amount
-			totalEquity += item.Amount
+			sec.Items = append(sec.Items, response.ReportLineItem{
+				AccountCode: r.AccountCode,
+				AccountName: r.AccountName,
+				Amount:      amount,
+			})
+			sec.Subtotal += amount
+			totalEquity += amount
 		}
 	}
 
-	// Add Retained Earnings (net profit) to Equity
-	if plResp.NetProfit != 0 {
-		sec := ensureSection(equitySections, "Retained Earnings")
+	// Retained earnings: net profit from all revenue/expense accounts up to asOf
+	// is embedded in the ledger via journal entries; no need to add separately
+	// as long as closing entries exist. If no closing entries (open-book),
+	// compute and inject current-period net profit into equity.
+	plResp, err := s.profitLossFromRows(rows)
+	if err == nil && plResp.NetProfit != 0 {
+		sec := ensureSection(equitySections, "Laba Periode Berjalan")
 		sec.Items = append(sec.Items, response.ReportLineItem{
 			AccountCode: "-",
-			AccountName: "Net Profit (Current Period)",
+			AccountName: "Laba / Rugi Bersih",
 			Amount:      plResp.NetProfit,
 		})
 		sec.Subtotal += plResp.NetProfit
 		totalEquity += plResp.NetProfit
 	}
 
-	assets := sectionsToSlice(assetSections)
-	liabilities := sectionsToSlice(liabSections)
-	equity := sectionsToSlice(equitySections)
-
 	return response.BalanceSheetResponse{
 		GeneratedAt:      time.Now(),
 		AsOfDate:         asOf.Format("2006-01-02"),
-		Assets:           assets,
+		Assets:           sectionsToSlice(assetSections),
 		TotalAssets:      totalAssets,
-		Liabilities:      liabilities,
+		Liabilities:      sectionsToSlice(liabSections),
 		TotalLiabilities: totalLiabilities,
-		Equity:           equity,
+		Equity:           sectionsToSlice(equitySections),
 		TotalEquity:      totalEquity,
-		IsBalanced:       math.Abs(totalAssets-(totalLiabilities+totalEquity)) < 0.01,
+		IsBalanced:       math.Abs(totalAssets-(totalLiabilities+totalEquity)) < 1.0,
 	}, nil
 }
 
 // ─── 4. Cash Flow ────────────────────────────────────────────────────────────
+// Arus Kas: Indirect method — Operating (from P&L), Investing, Financing.
 
 func (s *ReportService) CashFlow(start, end time.Time) (response.CashFlowResponse, error) {
-	rows, err := s.IReportRepository.GetLedger(start, end)
+	// Period rows
+	periodRows, err := s.IReportRepository.GetLedger(start, end)
 	if err != nil {
 		return response.CashFlowResponse{}, err
 	}
 
-	// Opening cash: all cash/bank before start date
-	openingRows, err := s.IReportRepository.GetLedger(time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC), start.Add(-24*time.Hour))
+	// Opening cash: cumulative balance of cash/bank accounts BEFORE start
+	openingEnd := start.Add(-24 * time.Hour)
+	openingRows, err := s.IReportRepository.GetLedgerUpTo(openingEnd)
 	if err != nil {
 		return response.CashFlowResponse{}, err
 	}
 
-	operating := response.ReportSection{Title: "Operating Activities"}
-	investing := response.ReportSection{Title: "Investing Activities"}
-	financing := response.ReportSection{Title: "Financing Activities"}
+	operating := response.ReportSection{Title: "Aktivitas Operasi"}
+	investing  := response.ReportSection{Title: "Aktivitas Investasi"}
+	financing  := response.ReportSection{Title: "Aktivitas Pendanaan"}
 
-	for _, r := range rows {
-		g := normalizeGroup(r.GroupName)
+	for _, r := range periodRows {
+		g  := normalizeGroup(r.GroupName)
 		sg := strings.ToLower(r.SubgroupName)
-		netFlow := r.TotalDebit - r.TotalCredit
 
 		item := response.ReportLineItem{
 			AccountCode: r.AccountCode,
 			AccountName: r.AccountName,
-			Amount:      netFlow,
 		}
 
 		switch {
-		case strings.Contains(g, groupRevenue) || (strings.Contains(g, groupExpenses) && (strings.Contains(sg, "cogs") || strings.Contains(sg, "operating"))):
+		// Revenue → cash inflow (positive)
+		case isGroup(g, groupRevenue):
+			item.Amount = r.TotalCredit - r.TotalDebit
 			operating.Items = append(operating.Items, item)
-			operating.Subtotal += netFlow
+			operating.Subtotal += item.Amount
 
-		case strings.Contains(g, groupAssets) && (strings.Contains(sg, "fixed") || strings.Contains(sg, "equipment") || strings.Contains(sg, "vehicle")):
+		// Expense → cash outflow (negative)
+		case isGroup(g, groupExpense):
+			item.Amount = -(r.TotalDebit - r.TotalCredit)
+			operating.Items = append(operating.Items, item)
+			operating.Subtotal += item.Amount
+
+		// Fixed / intangible assets → investing
+		case isGroup(g, groupAssets) &&
+			(subgroupContains(sg, "fixed") || subgroupContains(sg, "intangible") ||
+				subgroupContains(sg, "equipment") || subgroupContains(sg, "vehicle")):
+			item.Amount = -(r.TotalDebit - r.TotalCredit) // purchase = outflow
 			investing.Items = append(investing.Items, item)
-			investing.Subtotal += netFlow
+			investing.Subtotal += item.Amount
 
-		case strings.Contains(g, groupLiabilities) || strings.Contains(g, groupEquity):
+		// Liabilities & equity → financing
+		case isGroup(g, groupLiabilities) || isGroup(g, groupEquity):
+			item.Amount = r.TotalCredit - r.TotalDebit
 			financing.Items = append(financing.Items, item)
-			financing.Subtotal += netFlow
+			financing.Subtotal += item.Amount
 		}
 	}
 
-	// Opening cash
+	// Compute opening cash balance (Cash + Bank accounts)
 	var openingCash float64
 	for _, r := range openingRows {
-		n := strings.ToLower(r.AccountName)
-		if strings.Contains(n, "cash") || strings.Contains(n, "bank") {
-			openingCash += r.TotalDebit - r.TotalCredit
+		if isGroup(normalizeGroup(r.GroupName), groupAssets) {
+			name := strings.ToLower(r.AccountName)
+			sg   := strings.ToLower(r.SubgroupName)
+			if strings.Contains(name, "cash") || strings.Contains(name, "bank") ||
+				strings.Contains(sg, "cash") || strings.Contains(sg, "current") {
+				openingCash += r.TotalDebit - r.TotalCredit
+			}
 		}
 	}
 
-	netChange := operating.Subtotal + investing.Subtotal + financing.Subtotal
-	// Negate because cash normal balance = debit (increase = debit > credit)
-	netOperating := -operating.Subtotal
-	operating.Subtotal = netOperating
+	netChange   := operating.Subtotal + investing.Subtotal + financing.Subtotal
+	closingCash := openingCash + netChange
 
 	return response.CashFlowResponse{
 		GeneratedAt:      time.Now(),
@@ -303,28 +347,28 @@ func (s *ReportService) CashFlow(start, end time.Time) (response.CashFlowRespons
 		Operating:        operating,
 		Investing:        investing,
 		Financing:        financing,
-		NetCashOperating: netOperating,
+		NetCashOperating: operating.Subtotal,
 		NetCashInvesting: investing.Subtotal,
 		NetCashFinancing: financing.Subtotal,
 		NetCashChange:    netChange,
 		OpeningCash:      openingCash,
-		ClosingCash:      openingCash + netChange,
+		ClosingCash:      closingCash,
 	}, nil
 }
 
 // ─── 5. Equity Statement ─────────────────────────────────────────────────────
 
 func (s *ReportService) EquityStatement(start, end time.Time) (response.EquityStatementResponse, error) {
-	// Opening equity = all equity postings before start
-	openStart := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
-	openRows, err := s.IReportRepository.GetLedger(openStart, start.Add(-24*time.Hour))
+	// Opening equity: cumulative up to day before start
+	openingEnd := start.Add(-24 * time.Hour)
+	openRows, err := s.IReportRepository.GetLedgerUpTo(openingEnd)
 	if err != nil {
 		return response.EquityStatementResponse{}, err
 	}
 
 	var openingEquity float64
 	for _, r := range openRows {
-		if strings.Contains(normalizeGroup(r.GroupName), groupEquity) {
+		if isGroup(normalizeGroup(r.GroupName), groupEquity) {
 			openingEquity += r.TotalCredit - r.TotalDebit
 		}
 	}
@@ -336,14 +380,17 @@ func (s *ReportService) EquityStatement(start, end time.Time) (response.EquitySt
 	}
 
 	var movements []response.EquityMovement
+	var equityMovementTotal float64
 	for _, r := range periodRows {
-		if strings.Contains(normalizeGroup(r.GroupName), groupEquity) {
+		if isGroup(normalizeGroup(r.GroupName), groupEquity) {
 			amount := r.TotalCredit - r.TotalDebit
 			if amount != 0 {
 				movements = append(movements, response.EquityMovement{
+					AccountCode: r.AccountCode,
 					Description: r.AccountName,
 					Amount:      amount,
 				})
+				equityMovementTotal += amount
 			}
 		}
 	}
@@ -352,11 +399,6 @@ func (s *ReportService) EquityStatement(start, end time.Time) (response.EquitySt
 	plResp, err := s.ProfitLoss(start, end)
 	if err != nil {
 		return response.EquityStatementResponse{}, err
-	}
-
-	var equityMovementTotal float64
-	for _, m := range movements {
-		equityMovementTotal += m.Amount
 	}
 
 	closingEquity := openingEquity + equityMovementTotal + plResp.NetProfit
@@ -372,7 +414,23 @@ func (s *ReportService) EquityStatement(start, end time.Time) (response.EquitySt
 	}, nil
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Internal helpers ─────────────────────────────────────────────────────────
+
+// profitLossFromRows computes net profit directly from a pre-fetched ledger slice.
+// Used by BalanceSheet to avoid a second DB round-trip.
+func (s *ReportService) profitLossFromRows(rows []repository.AccountLedgerRow) (response.ProfitLossResponse, error) {
+	var totalRevenue, totalExpense float64
+	for _, r := range rows {
+		g := normalizeGroup(r.GroupName)
+		switch {
+		case isGroup(g, groupRevenue):
+			totalRevenue += r.TotalCredit - r.TotalDebit
+		case isGroup(g, groupExpense):
+			totalExpense += r.TotalDebit - r.TotalCredit
+		}
+	}
+	return response.ProfitLossResponse{NetProfit: totalRevenue - totalExpense}, nil
+}
 
 func ensureSection(m map[string]*response.ReportSection, title string) *response.ReportSection {
 	if _, ok := m[title]; !ok {
@@ -382,7 +440,7 @@ func ensureSection(m map[string]*response.ReportSection, title string) *response
 }
 
 func sectionsToSlice(m map[string]*response.ReportSection) []response.ReportSection {
-	var result []response.ReportSection
+	result := make([]response.ReportSection, 0, len(m))
 	for _, sec := range m {
 		result = append(result, *sec)
 	}

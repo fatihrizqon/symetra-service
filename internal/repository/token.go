@@ -69,21 +69,24 @@ func (r *TokenRepository) CreateCredential(credential entity.Credential) error {
 	return nil
 }
 
+// FindCredentialByToken — FIXED
+//
+// BUG: Previously only filtered by revoked_at IS NULL, ignoring ExpiresAt.
+// This meant expired refresh tokens could still be used to obtain new access tokens
+// indefinitely, as long as they hadn't been explicitly revoked.
+//
+// FIX: Added `AND expires_at > NOW()` to reject expired credentials.
+// Also removed debug fmt.Printf statements (production code should not log raw tokens).
 func (r *TokenRepository) FindCredentialByToken(refreshToken string) (entity.Credential, error) {
 	var credential entity.Credential
 
-	fmt.Printf("TOKEN RAW      : [%s]\n", refreshToken)
-	fmt.Printf("TOKEN LEN      : %d\n", len(refreshToken))
-
-	err := r.Db.Debug().
-		Where("refresh_token = ? AND revoked_at IS NULL", refreshToken).
+	err := r.Db.
+		Where("refresh_token = ? AND revoked_at IS NULL AND expires_at > ?", refreshToken, time.Now()).
 		First(&credential).Error
 
 	if err != nil {
-		return credential, err
+		return credential, fmt.Errorf("invalid, expired, or revoked refresh token")
 	}
-
-	fmt.Printf("TOKEN DB LEN   : %d\n", len(credential.RefreshToken))
 
 	return credential, nil
 }

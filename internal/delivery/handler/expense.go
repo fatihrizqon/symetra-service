@@ -24,6 +24,7 @@ func NewExpenseHandler(svc service.IJournalEntryService) *ExpenseHandler {
 // @Summary Create expense entry
 // @Description Store a new expense journal entry (type=expense, prefix EX-).
 // @Tags Expenses
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param request body request.JournalEntryCreateRequest true "Expense Create Request"
@@ -131,6 +132,7 @@ func (h *ExpenseHandler) FindById(ctx *fiber.Ctx) error {
 // Update Expense Entry by Id
 // @Summary Update expense entry
 // @Tags Expenses
+// @Security BearerAuth
 // @Accept json
 // @Param id path string true "Entry ID"
 // @Param request body request.JournalEntryUpdateRequest true "Expense Update Request"

@@ -33,7 +33,7 @@
     "password": "root",
     "host": "localhost",
     "port": 2025,
-    "name": "symetra-dev",
+    "name": "symetra",
     "pool": {
       "idle": 25,
       "max": 50,

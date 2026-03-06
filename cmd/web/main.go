@@ -17,6 +17,10 @@ import (
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 // @host 127.0.0.1:3000
 // @BasePath /
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 func main() {
 	viper := config.NewViper()
 	cors := config.NewCORS(viper)

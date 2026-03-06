@@ -21,6 +21,7 @@ func NewCOAHandler(serv service.ICOAService) *COAHandler {
 // Create a New COA
 // @Summary Create chart of account
 // @Tags #ChartofAccounts COA
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param request body request.COACreateRequest true "COA Create Request"
@@ -52,6 +53,7 @@ func (h *COAHandler) Create(ctx *fiber.Ctx) error {
 // Find All COAs
 // @Summary Get all chart of accounts
 // @Tags #ChartofAccounts COA
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param search query string false "Search keyword"
@@ -98,6 +100,7 @@ func (h *COAHandler) FindAll(ctx *fiber.Ctx) error {
 // Find COA by Id
 // @Summary Get chart of account by ID
 // @Tags #ChartofAccounts COA
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param id path string true "COA ID"
@@ -129,6 +132,7 @@ func (h *COAHandler) FindById(ctx *fiber.Ctx) error {
 // Update COA by Id
 // @Summary Update chart of account
 // @Tags #ChartofAccounts COA
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param id path string true "COA ID"
@@ -169,6 +173,7 @@ func (h *COAHandler) Update(ctx *fiber.Ctx) error {
 // Delete COA by Id
 // @Summary Delete chart of account
 // @Tags #ChartofAccounts COA
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param id path string true "COA ID"
@@ -200,6 +205,7 @@ func (h *COAHandler) Delete(ctx *fiber.Ctx) error {
 // Select COA Dropdown List
 // @Summary Get COA dropdown options
 // @Tags Dropdowns
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param search query string false "Search keyword"

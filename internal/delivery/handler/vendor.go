@@ -22,6 +22,7 @@ func NewVendorHandler(svc service.IVendorService) *VendorHandler {
 // @Summary Create vendor
 // @Description Store a new vendor record
 // @Tags Vendors
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param request body request.VendorCreateRequest true "Vendor Create Request"
@@ -54,6 +55,7 @@ func (h *VendorHandler) Create(ctx *fiber.Ctx) error {
 // @Summary Get all vendors
 // @Description Retrieve all vendor records with pagination
 // @Tags Vendors
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param search query string false "Search keyword"
@@ -99,6 +101,7 @@ func (h *VendorHandler) FindAll(ctx *fiber.Ctx) error {
 // Find Vendor by Id
 // @Summary Get vendor by ID
 // @Tags Vendors
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param id path string true "Vendor ID"
@@ -130,6 +133,7 @@ func (h *VendorHandler) FindById(ctx *fiber.Ctx) error {
 // Update Vendor by Id
 // @Summary Update vendor
 // @Tags Vendors
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param id path string true "Vendor ID"
@@ -170,6 +174,7 @@ func (h *VendorHandler) Update(ctx *fiber.Ctx) error {
 // Delete Vendor by Id
 // @Summary Delete vendor
 // @Tags Vendors
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param id path string true "Vendor ID"
@@ -200,6 +205,7 @@ func (h *VendorHandler) Delete(ctx *fiber.Ctx) error {
 // Select Vendor Dropdown List
 // @Summary Get vendor dropdown options
 // @Tags Dropdowns
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param search query string false "Search keyword"

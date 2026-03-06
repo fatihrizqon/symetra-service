@@ -24,6 +24,7 @@ func NewRevenueHandler(svc service.IJournalEntryService) *RevenueHandler {
 // @Summary Create revenue entry
 // @Description Store a new revenue journal entry (type=revenue, prefix RV-).
 // @Tags Revenue
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param request body request.JournalEntryCreateRequest true "Revenue Create Request"
@@ -131,6 +132,7 @@ func (h *RevenueHandler) FindById(ctx *fiber.Ctx) error {
 // Update Revenue Entry by Id
 // @Summary Update revenue entry
 // @Tags Revenue
+// @Security BearerAuth
 // @Accept json
 // @Param id path string true "Entry ID"
 // @Param request body request.JournalEntryUpdateRequest true "Revenue Update Request"

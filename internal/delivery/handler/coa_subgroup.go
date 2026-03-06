@@ -21,6 +21,7 @@ func NewCOASubGroupHandler(serv service.ICOASubGroupService) *COASubGroupHandler
 // Create a New COASubGroup
 // @Summary Create chart of account subgroup
 // @Tags #ChartofAccounts SubGroups
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param request body request.COASubGroupCreateRequest true "COASubGroup Create Request"
@@ -52,6 +53,7 @@ func (h *COASubGroupHandler) Create(ctx *fiber.Ctx) error {
 // Find All COASubGroups
 // @Summary Get all chart of account subgroups
 // @Tags #ChartofAccounts SubGroups
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param search query string false "Search keyword"
@@ -98,6 +100,7 @@ func (h *COASubGroupHandler) FindAll(ctx *fiber.Ctx) error {
 // Find COASubGroup by Id
 // @Summary Get chart of account subgroup by ID
 // @Tags #ChartofAccounts SubGroups
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param id path string true "COASubGroup ID"
@@ -129,6 +132,7 @@ func (h *COASubGroupHandler) FindById(ctx *fiber.Ctx) error {
 // Update COASubGroup by Id
 // @Summary Update chart of account subgroup
 // @Tags #ChartofAccounts SubGroups
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param id path string true "COASubGroup ID"
@@ -169,6 +173,7 @@ func (h *COASubGroupHandler) Update(ctx *fiber.Ctx) error {
 // Delete COASubGroup by Id
 // @Summary Delete chart of account subgroup
 // @Tags #ChartofAccounts SubGroups
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param id path string true "COASubGroup ID"
@@ -200,6 +205,7 @@ func (h *COASubGroupHandler) Delete(ctx *fiber.Ctx) error {
 // Select COASubGroup Dropdown List
 // @Summary Get COASubGroup dropdown options
 // @Tags Dropdowns
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param search query string false "Search keyword"

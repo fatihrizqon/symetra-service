@@ -21,6 +21,7 @@ func NewJournalEntryHandler(svc service.IJournalEntryService) *JournalEntryHandl
 // Create a New General Journal Entry
 // @Summary Create general journal entry
 // @Tags JournalEntries
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param request body request.JournalEntryCreateRequest true "Journal Entry Create Request"
@@ -130,6 +131,7 @@ func (h *JournalEntryHandler) FindById(ctx *fiber.Ctx) error {
 // Update Journal Entry by Id
 // @Summary Update journal entry
 // @Tags JournalEntries
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param id path string true "Journal Entry ID"

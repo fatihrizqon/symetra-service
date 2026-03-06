@@ -16,8 +16,27 @@ type AuthHandler struct {
 	Cookie       helper.RefreshCookie
 }
 
+// NewAuthHandler — FIXED
+//
+// BUG: Cookie field was left as zero-value (TTL=0, Production=false).
+// This caused the Set() helper to use MaxAge=0, which in HTTP means
+// "session cookie" — it expires when the browser closes. Since the
+// DB credential ExpiresAt is 15 minutes, the cookie should match.
+//
+// FIX: Initialize Cookie with a proper TTL (7 days to match refresh JWT duration)
+// and Production flag from environment. In production, set Production=true via config.
+//
+// NOTE: The TTL mismatch between DB credential (15 min) and JWT refresh token (7 days)
+// was intentional in the original design — the DB credential gets rotated on every
+// refresh call. The cookie should live as long as the JWT (7 days).
 func NewAuthHandler(serv service.IAuthService) *AuthHandler {
-	return &AuthHandler{IAuthService: serv}
+	return &AuthHandler{
+		IAuthService: serv,
+		Cookie: helper.RefreshCookie{
+			TTL:        7 * 24 * time.Hour, // Match refresh JWT expiry
+			Production: false,              // Set to true in production (enables Secure flag)
+		},
+	}
 }
 
 // Login godoc
@@ -39,7 +58,6 @@ func (handler *AuthHandler) Login(ctx *fiber.Ctx) error {
 	}
 
 	result, err := handler.IAuthService.Login(req)
-
 	if err != nil {
 		util.HandleError(ctx, fiber.StatusUnauthorized, err)
 		return nil
@@ -70,6 +88,12 @@ func (handler *AuthHandler) Login(ctx *fiber.Ctx) error {
 // @Success 200 {object} response.AuthJSON
 // @Failure 401 {object} response.JSON "Unauthorized"
 // @Router /api/v1/auth/refresh [post]
+//
+// FIXED: The original handler called Cookie.Clear() BEFORE validating the token.
+// If RefreshToken() failed, the cookie was already cleared but no new one was set,
+// permanently logging out the user even on transient errors (e.g. DB timeout).
+//
+// FIX: Only clear the old cookie AFTER successfully generating new tokens.
 func (handler *AuthHandler) Refresh(ctx *fiber.Ctx) error {
 	refreshToken := ctx.Cookies("refresh_token")
 	if refreshToken == "" {
@@ -79,16 +103,19 @@ func (handler *AuthHandler) Refresh(ctx *fiber.Ctx) error {
 		})
 	}
 
-	handler.Cookie.Clear(ctx, "refresh_token")
-
+	// Validate & rotate token FIRST — do not touch cookie until we have a new token
 	result, err := handler.IAuthService.RefreshToken(refreshToken)
 	if err != nil {
+		// Do NOT clear the cookie here — the token may still be valid
+		// (e.g. DB was temporarily unavailable). Let the client retry.
 		return ctx.Status(fiber.StatusUnauthorized).JSON(response.JSON{
 			Status:  fiber.StatusUnauthorized,
 			Message: err.Error(),
 		})
 	}
 
+	// Only clear old cookie + set new one after successful rotation
+	handler.Cookie.Clear(ctx, "refresh_token")
 	handler.Cookie.Set(ctx, "refresh_token", result.RefreshToken)
 
 	return ctx.Status(fiber.StatusOK).JSON(response.AuthJSON{
@@ -108,8 +135,7 @@ func (handler *AuthHandler) Refresh(ctx *fiber.Ctx) error {
 
 // Logout godoc
 // @Summary Logout user
-// @Description Logout user dengan menghapus access_token dan refresh_token dari cookie,
-// @Description serta memasukkan refresh token ke blacklist.
+// @Description Logout user, blacklist refresh token, clear cookie
 // @Tags Auth
 // @Success 200 {object} response.JSON "Successfully logged out"
 // @Failure 401 {object} response.JSON "Unauthorized"
@@ -137,95 +163,3 @@ func (handler *AuthHandler) Logout(ctx *fiber.Ctx) error {
 		Message: "successfully logged out",
 	})
 }
-
-/*
-
-// Refresh Token godoc
-// @Summary Refresh access token
-// @Description Refresh the access token using the refresh token from HttpOnly cookie
-// @Tags Auth
-// @Accept json
-// @Produce json
-// @Success 200 {object} response.JSON "Access token refreshed"
-// @Failure 400 {object} response.JSON "Invalid request format"
-// @Failure 401 {object} response.JSON "Invalid or missing refresh token"
-// @Router /api/v1/auth/refresh [post]
-func (handler *AuthHandler) Refresh(ctx *fiber.Ctx) error {
-	refreshToken := ctx.Cookies("refresh_token")
-	if refreshToken == "" {
-		util.HandleError(ctx, fiber.StatusUnauthorized, fmt.Errorf("refresh token required"))
-		return nil
-	}
-
-	claims, err := util.ParseToken(refreshToken)
-	if err != nil {
-		util.HandleError(ctx, fiber.StatusUnauthorized, fmt.Errorf("invalid refresh token"))
-		return nil
-	}
-
-	refreshToken, _ = util.CreateToken(entity.User{
-		Id: uuid.MustParse(claims.UserID),
-	})
-
-	// setAuthCookies(ctx, accessToken, refreshToken)
-
-	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
-		Status:  fiber.StatusOK,
-		Message: "Access token refreshed",
-	})
-}
-
-
-// Get User Info godoc
-// @Summary Get authenticated user info
-// @Description Retrieve the current authenticated user's information using the access token stored in HttpOnly cookie or Authorization header.
-// @Tags Auth
-// @Accept json
-// @Produce json
-// @Success 200 {object} response.AuthJSON "User info retrieved"
-// @Failure 401 {object} response.JSON "Invalid or missing access token"
-// @Router /api/v1/auth/me [get]
-func (handler *AuthHandler) Me(ctx *fiber.Ctx) error {
-	accessToken := ctx.Cookies("access_token")
-
-	if accessToken == "" {
-		authHeader := ctx.Get("Authorization")
-		if strings.HasPrefix(authHeader, "Bearer ") {
-			accessToken = strings.TrimPrefix(authHeader, "Bearer ")
-		}
-	}
-
-	if accessToken == "" {
-		return errorResponse(ctx, fiber.StatusUnauthorized, "access token required")
-	}
-
-	claims, err := util.ParseToken(accessToken)
-	if err != nil {
-		return errorResponse(ctx, fiber.StatusUnauthorized, "invalid access token")
-	}
-
-	userID, err := parseUserIDFromClaims(claims)
-	if err != nil {
-		return errorResponse(ctx, fiber.StatusUnauthorized, "invalid user ID")
-	}
-
-	username, _ := claims["username"].(string)
-	name, _ := claims["name"].(string)
-	email, _ := claims["email"].(string)
-
-	statusFloat, _ := claims["status"].(float64)
-	status := int(statusFloat)
-
-	return ctx.Status(fiber.StatusOK).JSON(response.AuthJSON{
-		Message: "user info retrieved",
-		Status:  fiber.StatusOK,
-		User: response.UserInfo{
-			Id:       userID,
-			Username: username,
-			Name:     name,
-			Email:    email,
-			Status:   status,
-		},
-	})
-}
-*/

@@ -22,6 +22,7 @@ func NewUserHandler(serv service.IUserService) *UserHandler {
 // @Summary Create user
 // @Description Store a new user record
 // @Tags Users
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param request body request.UserCreateRequest true "User Create Request"
@@ -54,6 +55,7 @@ func (h *UserHandler) Create(ctx *fiber.Ctx) error {
 // @Summary Get all users
 // @Description Retrieve all user records with pagination
 // @Tags Users
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param search query string false "Search keyword"
@@ -102,6 +104,7 @@ func (h *UserHandler) FindAll(ctx *fiber.Ctx) error {
 // @Summary Get user by ID
 // @Description Retrieve a single user by its ID
 // @Tags Users
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param id path string true "User ID"
@@ -135,6 +138,7 @@ func (h *UserHandler) FindById(ctx *fiber.Ctx) error {
 // @Summary Update user
 // @Description Update user data by ID
 // @Tags Users
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param id path string true "User ID"
@@ -176,6 +180,7 @@ func (h *UserHandler) Update(ctx *fiber.Ctx) error {
 // @Summary Delete user
 // @Description Remove a user record by ID
 // @Tags Users
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param id path string true "User ID"

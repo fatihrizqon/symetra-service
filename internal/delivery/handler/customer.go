@@ -22,6 +22,7 @@ func NewCustomerHandler(svc service.ICustomerService) *CustomerHandler {
 // @Summary Create customer
 // @Description Store a new customer record
 // @Tags Customers
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param request body request.CustomerCreateRequest true "Customer Create Request"
@@ -54,6 +55,7 @@ func (h *CustomerHandler) Create(ctx *fiber.Ctx) error {
 // @Summary Get all customers
 // @Description Retrieve all customer records with pagination
 // @Tags Customers
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param search query string false "Search keyword"
@@ -100,6 +102,7 @@ func (h *CustomerHandler) FindAll(ctx *fiber.Ctx) error {
 // @Summary Get customer by ID
 // @Description Retrieve a single customer by its ID
 // @Tags Customers
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param id path string true "Customer ID"
@@ -132,6 +135,7 @@ func (h *CustomerHandler) FindById(ctx *fiber.Ctx) error {
 // @Summary Update customer
 // @Description Update customer data by ID
 // @Tags Customers
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param id path string true "Customer ID"
@@ -173,6 +177,7 @@ func (h *CustomerHandler) Update(ctx *fiber.Ctx) error {
 // @Summary Delete customer
 // @Description Remove a customer record by ID
 // @Tags Customers
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param id path string true "Customer ID"
@@ -204,6 +209,7 @@ func (h *CustomerHandler) Delete(ctx *fiber.Ctx) error {
 // @Summary Get customer dropdown options
 // @Description Retrieve customers for dropdown selection
 // @Tags Dropdowns
+// @Security BearerAuth
 // @Accept json
 // @Produce json
 // @Param search query string false "Search keyword"

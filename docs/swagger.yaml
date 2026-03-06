@@ -104,6 +104,48 @@ definitions:
     - name
     - subgroup_id
     type: object
+  request.CustomerCreateRequest:
+    properties:
+      address:
+        type: string
+      coa_id:
+        type: string
+      code:
+        maxLength: 20
+        minLength: 1
+        type: string
+      email:
+        type: string
+      name:
+        minLength: 1
+        type: string
+      phone:
+        type: string
+    required:
+    - code
+    - name
+    type: object
+  request.CustomerUpdateRequest:
+    properties:
+      address:
+        type: string
+      coa_id:
+        type: string
+      code:
+        maxLength: 20
+        minLength: 1
+        type: string
+      email:
+        type: string
+      name:
+        minLength: 1
+        type: string
+      phone:
+        type: string
+    required:
+    - code
+    - name
+    type: object
   request.JournalEntryCreateRequest:
     properties:
       date:
@@ -213,6 +255,48 @@ definitions:
     - email
     - name
     - username
+    type: object
+  request.VendorCreateRequest:
+    properties:
+      address:
+        type: string
+      coa_id:
+        type: string
+      code:
+        maxLength: 20
+        minLength: 1
+        type: string
+      email:
+        type: string
+      name:
+        minLength: 1
+        type: string
+      phone:
+        type: string
+    required:
+    - code
+    - name
+    type: object
+  request.VendorUpdateRequest:
+    properties:
+      address:
+        type: string
+      coa_id:
+        type: string
+      code:
+        maxLength: 20
+        minLength: 1
+        type: string
+      email:
+        type: string
+      name:
+        minLength: 1
+        type: string
+      phone:
+        type: string
+    required:
+    - code
+    - name
     type: object
   response.AuthJSON:
     properties:
@@ -333,6 +417,8 @@ paths:
           description: Authentication failed
           schema:
             $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
       summary: User login
       tags:
       - Auth
@@ -410,6 +496,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
       summary: Get all chart of accounts
       tags:
       - '#ChartofAccounts COA'
@@ -434,6 +522,8 @@ paths:
           description: Bad request
           schema:
             $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
       summary: Create chart of account
       tags:
       - '#ChartofAccounts COA'
@@ -458,6 +548,8 @@ paths:
           description: COA not found
           schema:
             $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
       summary: Delete chart of account
       tags:
       - '#ChartofAccounts COA'
@@ -481,6 +573,8 @@ paths:
           description: COA not found
           schema:
             $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
       summary: Get chart of account by ID
       tags:
       - '#ChartofAccounts COA'
@@ -510,6 +604,8 @@ paths:
           description: COA not found
           schema:
             $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
       summary: Update chart of account
       tags:
       - '#ChartofAccounts COA'
@@ -554,6 +650,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
       summary: Get all chart of account groups
       tags:
       - '#ChartofAccounts Group'
@@ -578,6 +676,8 @@ paths:
           description: Bad request
           schema:
             $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
       summary: Create chart of account group
       tags:
       - '#ChartofAccounts Group'
@@ -602,6 +702,8 @@ paths:
           description: COAGroup not found
           schema:
             $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
       summary: Delete chart of account group
       tags:
       - '#ChartofAccounts Group'
@@ -625,6 +727,8 @@ paths:
           description: COAGroup not found
           schema:
             $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
       summary: Get chart of account group by ID
       tags:
       - '#ChartofAccounts Group'
@@ -654,6 +758,8 @@ paths:
           description: COAGroup not found
           schema:
             $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
       summary: Update chart of account group
       tags:
       - '#ChartofAccounts Group'
@@ -697,6 +803,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
       summary: Get all chart of account subgroups
       tags:
       - '#ChartofAccounts SubGroups'
@@ -721,6 +829,8 @@ paths:
           description: Bad request
           schema:
             $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
       summary: Create chart of account subgroup
       tags:
       - '#ChartofAccounts SubGroups'
@@ -745,6 +855,8 @@ paths:
           description: COASubGroup not found
           schema:
             $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
       summary: Delete chart of account subgroup
       tags:
       - '#ChartofAccounts SubGroups'
@@ -768,6 +880,8 @@ paths:
           description: COASubGroup not found
           schema:
             $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
       summary: Get chart of account subgroup by ID
       tags:
       - '#ChartofAccounts SubGroups'
@@ -797,9 +911,169 @@ paths:
           description: COASubGroup not found
           schema:
             $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
       summary: Update chart of account subgroup
       tags:
       - '#ChartofAccounts SubGroups'
+  /api/v1/customers:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all customer records with pagination
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Sort column (code, name, email, status, created_at, updated_at)
+        in: query
+        name: sort
+        type: string
+      - description: Sort direction (asc, desc)
+        in: query
+        name: order
+        type: string
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved all records.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get all customers
+      tags:
+      - Customers
+    post:
+      consumes:
+      - application/json
+      description: Store a new customer record
+      parameters:
+      - description: Customer Create Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CustomerCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: A new record has been stored.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Create customer
+      tags:
+      - Customers
+  /api/v1/customers/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a customer record by ID
+      parameters:
+      - description: Customer ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been deleted.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Customer not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Delete customer
+      tags:
+      - Customers
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single customer by its ID
+      parameters:
+      - description: Customer ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved selected record.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Customer not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get customer by ID
+      tags:
+      - Customers
+    put:
+      consumes:
+      - application/json
+      description: Update customer data by ID
+      parameters:
+      - description: Customer ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Customer Update Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CustomerUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been updated.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Customer not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Update customer
+      tags:
+      - Customers
   /api/v1/dropdown/coa:
     get:
       consumes:
@@ -816,6 +1090,8 @@ paths:
           description: Successfully retrieved dropdown options
           schema:
             $ref: '#/definitions/response.SelectJSON'
+      security:
+      - BearerAuth: []
       summary: Get COA dropdown options
       tags:
       - Dropdowns
@@ -835,6 +1111,8 @@ paths:
           description: Successfully retrieved dropdown options
           schema:
             $ref: '#/definitions/response.SelectJSON'
+      security:
+      - BearerAuth: []
       summary: Get COAGroup dropdown options
       tags:
       - Dropdowns
@@ -854,7 +1132,52 @@ paths:
           description: Successfully retrieved dropdown options
           schema:
             $ref: '#/definitions/response.SelectJSON'
+      security:
+      - BearerAuth: []
       summary: Get COASubGroup dropdown options
+      tags:
+      - Dropdowns
+  /api/v1/dropdown/customers:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve customers for dropdown selection
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved dropdown options
+          schema:
+            $ref: '#/definitions/response.SelectJSON'
+      security:
+      - BearerAuth: []
+      summary: Get customer dropdown options
+      tags:
+      - Dropdowns
+  /api/v1/dropdown/vendors:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved dropdown options
+          schema:
+            $ref: '#/definitions/response.SelectJSON'
+      security:
+      - BearerAuth: []
+      summary: Get vendor dropdown options
       tags:
       - Dropdowns
   /api/v1/expenses:
@@ -904,6 +1227,8 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
       summary: Create expense entry
       tags:
       - Expenses
@@ -958,6 +1283,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
       summary: Update expense entry
       tags:
       - Expenses
@@ -1039,6 +1366,8 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
       summary: Create general journal entry
       tags:
       - JournalEntries
@@ -1097,6 +1426,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
       summary: Update journal entry
       tags:
       - JournalEntries
@@ -1280,6 +1611,8 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
       summary: Create revenue entry
       tags:
       - Revenue
@@ -1334,6 +1667,8 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
       summary: Update revenue entry
       tags:
       - Revenue
@@ -1414,6 +1749,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
       summary: Get all users
       tags:
       - Users
@@ -1439,6 +1776,8 @@ paths:
           description: Bad request
           schema:
             $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
       summary: Create user
       tags:
       - Users
@@ -1464,6 +1803,8 @@ paths:
           description: User not found
           schema:
             $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
       summary: Delete user
       tags:
       - Users
@@ -1488,6 +1829,8 @@ paths:
           description: User not found
           schema:
             $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
       summary: Get user by ID
       tags:
       - Users
@@ -1518,7 +1861,169 @@ paths:
           description: User not found
           schema:
             $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
       summary: Update user
       tags:
       - Users
+  /api/v1/vendors:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all vendor records with pagination
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Sort column (code, name, email, status, created_at, updated_at)
+        in: query
+        name: sort
+        type: string
+      - description: Sort direction (asc, desc)
+        in: query
+        name: order
+        type: string
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved all records.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get all vendors
+      tags:
+      - Vendors
+    post:
+      consumes:
+      - application/json
+      description: Store a new vendor record
+      parameters:
+      - description: Vendor Create Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.VendorCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: A new record has been stored.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Create vendor
+      tags:
+      - Vendors
+  /api/v1/vendors/{id}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: Vendor ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been deleted.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Vendor not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Delete vendor
+      tags:
+      - Vendors
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: Vendor ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved selected record.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Vendor not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get vendor by ID
+      tags:
+      - Vendors
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Vendor ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Vendor Update Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.VendorUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been updated.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Vendor not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Update vendor
+      tags:
+      - Vendors
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

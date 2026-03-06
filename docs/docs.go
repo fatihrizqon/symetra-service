@@ -25,11 +25,6 @@ const docTemplate = `{
     "paths": {
         "/api/v1/auth/login": {
             "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
                 "description": "Authenticate user and return a JWT token in a cookie",
                 "consumes": [
                     "application/json"
@@ -76,7 +71,7 @@ const docTemplate = `{
         },
         "/api/v1/auth/logout": {
             "post": {
-                "description": "Logout user dengan menghapus access_token dan refresh_token dari cookie,\nserta memasukkan refresh token ke blacklist.",
+                "description": "Logout user, blacklist refresh token, clear cookie",
                 "tags": [
                     "Auth"
                 ],
@@ -123,75 +118,18 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/coa": {
+        "/api/v1/companies": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
                 "tags": [
-                    "#ChartofAccounts COA"
+                    "Company"
                 ],
-                "summary": "Get all chart of accounts",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Search keyword",
-                        "name": "search",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page number",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page size",
-                        "name": "page_size",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Sort column (code, name, status, created_at, updated_at)",
-                        "name": "sort",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Sort direction (asc, desc)",
-                        "name": "order",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filter by status",
-                        "name": "status",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successfully retrieved all records.",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
+                "summary": "List all companies (superadmin only)",
+                "responses": {}
             },
             "post": {
                 "security": [
@@ -206,29 +144,23 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "#ChartofAccounts COA"
+                    "Company"
                 ],
-                "summary": "Create chart of account",
+                "summary": "Create a new company",
                 "parameters": [
                     {
-                        "description": "COA Create Request",
+                        "description": "Company Create Request",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.COACreateRequest"
+                            "$ref": "#/definitions/request.CompanyCreateRequest"
                         }
                     }
                 ],
                 "responses": {
                     "201": {
-                        "description": "A new record has been stored.",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad request",
+                        "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/response.JSON"
                         }
@@ -236,46 +168,41 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/coa/{id}": {
+        "/api/v1/companies/mine": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "consumes": [
-                    "application/json"
+                "tags": [
+                    "Company"
                 ],
-                "produces": [
-                    "application/json"
+                "summary": "Get all companies the authenticated user belongs to",
+                "responses": {}
+            }
+        },
+        "/api/v1/companies/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
                 ],
                 "tags": [
-                    "#ChartofAccounts COA"
+                    "Company"
                 ],
-                "summary": "Get chart of account by ID",
+                "summary": "Get company by ID",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "COA ID",
-                        "name": "id",
-                        "in": "path",
+                        "description": "Company ID",
+                        "name": "X-Company-ID",
+                        "in": "header",
                         "required": true
                     }
                 ],
-                "responses": {
-                    "200": {
-                        "description": "Successfully retrieved selected record.",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    },
-                    "404": {
-                        "description": "COA not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
+                "responses": {}
             },
             "put": {
                 "security": [
@@ -283,48 +210,27 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
                 "tags": [
-                    "#ChartofAccounts COA"
+                    "Company"
                 ],
-                "summary": "Update chart of account",
+                "summary": "Update company details",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "COA ID",
-                        "name": "id",
-                        "in": "path",
+                        "description": "Company ID",
+                        "name": "X-Company-ID",
+                        "in": "header",
                         "required": true
                     },
                     {
-                        "description": "COA Update Request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.COAUpdateRequest"
-                        }
+                        "type": "string",
+                        "description": "Company ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
-                "responses": {
-                    "200": {
-                        "description": "Selected record has been updated.",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    },
-                    "404": {
-                        "description": "COA not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
+                "responses": {}
             },
             "delete": {
                 "security": [
@@ -332,110 +238,57 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
                 "tags": [
-                    "#ChartofAccounts COA"
+                    "Company"
                 ],
-                "summary": "Delete chart of account",
+                "summary": "Soft-delete a company (owner only)",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "COA ID",
+                        "description": "Company ID",
+                        "name": "X-Company-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Company ID",
                         "name": "id",
                         "in": "path",
                         "required": true
                     }
                 ],
-                "responses": {
-                    "200": {
-                        "description": "Selected record has been deleted.",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    },
-                    "404": {
-                        "description": "COA not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
+                "responses": {}
             }
         },
-        "/api/v1/coa_groups": {
+        "/api/v1/companies/{id}/members": {
             "get": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
                 "tags": [
-                    "#ChartofAccounts Group"
+                    "Company Members"
                 ],
-                "summary": "Get all chart of account groups",
+                "summary": "List all members of a company",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Search keyword",
-                        "name": "search",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page number",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page size",
-                        "name": "page_size",
-                        "in": "query"
+                        "description": "Company ID",
+                        "name": "X-Company-ID",
+                        "in": "header",
+                        "required": true
                     },
                     {
                         "type": "string",
-                        "description": "Sort column (code, name, normal_balance, status, created_at, updated_at)",
-                        "name": "sort",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Sort direction (asc, desc)",
-                        "name": "order",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filter by status",
-                        "name": "status",
-                        "in": "query"
+                        "description": "Company ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
-                "responses": {
-                    "200": {
-                        "description": "Successfully retrieved all records.",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
+                "responses": {}
             },
             "post": {
                 "security": [
@@ -443,416 +296,101 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
                 "tags": [
-                    "#ChartofAccounts Group"
+                    "Company Members"
                 ],
-                "summary": "Create chart of account group",
+                "summary": "Add a user to a company",
                 "parameters": [
                     {
-                        "description": "COAGroup Create Request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.COAGroupCreateRequest"
-                        }
+                        "type": "string",
+                        "description": "Company ID",
+                        "name": "X-Company-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Company ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
-                "responses": {
-                    "201": {
-                        "description": "A new record has been stored.",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad request",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
+                "responses": {}
             }
         },
-        "/api/v1/coa_groups/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "#ChartofAccounts Group"
-                ],
-                "summary": "Get chart of account group by ID",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "COAGroup ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successfully retrieved selected record.",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    },
-                    "404": {
-                        "description": "COAGroup not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "#ChartofAccounts Group"
-                ],
-                "summary": "Update chart of account group",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "COAGroup ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "COAGroup Update Request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.COAGroupUpdateRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Selected record has been updated.",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    },
-                    "404": {
-                        "description": "COAGroup not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
-            },
+        "/api/v1/companies/{id}/members/{user_id}": {
             "delete": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
                 "tags": [
-                    "#ChartofAccounts Group"
+                    "Company Members"
                 ],
-                "summary": "Delete chart of account group",
+                "summary": "Remove a user from a company",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "COAGroup ID",
+                        "description": "Company ID",
+                        "name": "X-Company-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Company ID",
                         "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "User ID to remove",
+                        "name": "user_id",
                         "in": "path",
                         "required": true
                     }
                 ],
-                "responses": {
-                    "200": {
-                        "description": "Selected record has been deleted.",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    },
-                    "404": {
-                        "description": "COAGroup not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
+                "responses": {}
             }
         },
-        "/api/v1/coa_subgroups": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "#ChartofAccounts SubGroups"
-                ],
-                "summary": "Get all chart of account subgroups",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Search keyword",
-                        "name": "search",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page number",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page size",
-                        "name": "page_size",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Sort column (code, name, status, created_at, updated_at)",
-                        "name": "sort",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Sort direction (asc, desc)",
-                        "name": "order",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filter by status",
-                        "name": "status",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successfully retrieved all records.",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "#ChartofAccounts SubGroups"
-                ],
-                "summary": "Create chart of account subgroup",
-                "parameters": [
-                    {
-                        "description": "COASubGroup Create Request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.COASubGroupCreateRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "A new record has been stored.",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad request",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/coa_subgroups/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "#ChartofAccounts SubGroups"
-                ],
-                "summary": "Get chart of account subgroup by ID",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "COASubGroup ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successfully retrieved selected record.",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    },
-                    "404": {
-                        "description": "COASubGroup not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
-            },
+        "/api/v1/companies/{id}/members/{user_id}/role": {
             "put": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
                 "tags": [
-                    "#ChartofAccounts SubGroups"
+                    "Company Members"
                 ],
-                "summary": "Update chart of account subgroup",
+                "summary": "Change a member's role within a company",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "COASubGroup ID",
+                        "description": "Company ID",
+                        "name": "X-Company-ID",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Company ID",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "COASubGroup Update Request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.COASubGroupUpdateRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Selected record has been updated.",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    },
-                    "404": {
-                        "description": "COASubGroup not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "#ChartofAccounts SubGroups"
-                ],
-                "summary": "Delete chart of account subgroup",
-                "parameters": [
-                    {
                         "type": "string",
-                        "description": "COASubGroup ID",
-                        "name": "id",
+                        "description": "User ID",
+                        "name": "user_id",
                         "in": "path",
                         "required": true
                     }
                 ],
-                "responses": {
-                    "200": {
-                        "description": "Selected record has been deleted.",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    },
-                    "404": {
-                        "description": "COASubGroup not found",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
+                "responses": {}
             }
         },
         "/api/v1/customers": {
@@ -1104,111 +642,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/dropdown/coa": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Dropdowns"
-                ],
-                "summary": "Get COA dropdown options",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Search keyword",
-                        "name": "search",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successfully retrieved dropdown options",
-                        "schema": {
-                            "$ref": "#/definitions/response.SelectJSON"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/dropdown/coa_groups": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Dropdowns"
-                ],
-                "summary": "Get COAGroup dropdown options",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Search keyword",
-                        "name": "search",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successfully retrieved dropdown options",
-                        "schema": {
-                            "$ref": "#/definitions/response.SelectJSON"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/dropdown/coa_subgroups": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Dropdowns"
-                ],
-                "summary": "Get COASubGroup dropdown options",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Search keyword",
-                        "name": "search",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successfully retrieved dropdown options",
-                        "schema": {
-                            "$ref": "#/definitions/response.SelectJSON"
-                        }
-                    }
-                }
-            }
-        },
         "/api/v1/dropdown/customers": {
             "get": {
                 "security": [
@@ -1280,19 +713,176 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/expenses": {
+        "/api/v1/fiscal/periods": {
             "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "Fiscal"
+                ],
+                "summary": "Get all fiscal periods",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter by fiscal year ID",
+                        "name": "fiscal_year_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter by status (open, closed, locked)",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/api/v1/fiscal/periods/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "Fiscal"
+                ],
+                "summary": "Get a fiscal period by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Period ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/api/v1/fiscal/periods/{id}/close": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "Fiscal"
+                ],
+                "summary": "Close an open fiscal period",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Period ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/api/v1/fiscal/periods/{id}/lock": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "Fiscal"
+                ],
+                "summary": "Permanently lock a closed fiscal period",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Period ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/api/v1/fiscal/periods/{id}/logs": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "Fiscal"
+                ],
+                "summary": "Get audit log for a fiscal period",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Period ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/api/v1/fiscal/periods/{id}/reopen": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "tags": [
+                    "Fiscal"
+                ],
+                "summary": "Reopen a closed fiscal period (requires reason)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Period ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Reopen Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/request.FiscalPeriodReopenRequest"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/api/v1/fiscal/years": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Expenses"
+                    "Fiscal"
                 ],
-                "summary": "Get all expense entries",
+                "summary": "Get all fiscal years",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Search keyword",
+                        "description": "Search",
                         "name": "search",
                         "in": "query"
                     },
@@ -1310,239 +900,12 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Filter by status",
+                        "description": "Filter by status (draft, active, closed)",
                         "name": "status",
                         "in": "query"
                     }
                 ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Store a new expense journal entry (type=expense, prefix EX-).",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Expenses"
-                ],
-                "summary": "Create expense entry",
-                "parameters": [
-                    {
-                        "description": "Expense Create Request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.JournalEntryCreateRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/expenses/{id}": {
-            "get": {
-                "tags": [
-                    "Expenses"
-                ],
-                "summary": "Get expense entry by ID",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Entry ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Expenses"
-                ],
-                "summary": "Update expense entry",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Entry ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Expense Update Request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.JournalEntryUpdateRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "tags": [
-                    "Expenses"
-                ],
-                "summary": "Delete expense entry",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Entry ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/expenses/{id}/post": {
-            "put": {
-                "tags": [
-                    "Expenses"
-                ],
-                "summary": "Post expense entry",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Entry ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/expenses/{id}/void": {
-            "put": {
-                "tags": [
-                    "Expenses"
-                ],
-                "summary": "Void expense entry",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Entry ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/journal_entries": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "JournalEntries"
-                ],
-                "summary": "Get all general journal entries",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Search keyword",
-                        "name": "search",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page number",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page size",
-                        "name": "page_size",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filter by status (draft, posted, void)",
-                        "name": "status",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
+                "responses": {}
             },
             "post": {
                 "security": [
@@ -1557,17 +920,17 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "JournalEntries"
+                    "Fiscal"
                 ],
-                "summary": "Create general journal entry",
+                "summary": "Create a new fiscal year",
                 "parameters": [
                     {
-                        "description": "Journal Entry Create Request",
+                        "description": "Fiscal Year Create Request",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.JournalEntryCreateRequest"
+                            "$ref": "#/definitions/request.FiscalYearCreateRequest"
                         }
                     }
                 ],
@@ -1581,32 +944,27 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/journal_entries/{id}": {
+        "/api/v1/fiscal/years/{id}": {
             "get": {
-                "produces": [
-                    "application/json"
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
                 ],
                 "tags": [
-                    "JournalEntries"
+                    "Fiscal"
                 ],
-                "summary": "Get journal entry by ID",
+                "summary": "Get fiscal year by ID (includes periods)",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Journal Entry ID",
+                        "description": "Fiscal Year ID",
                         "name": "id",
                         "in": "path",
                         "required": true
                     }
                 ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
+                "responses": {}
             },
             "put": {
                 "security": [
@@ -1614,115 +972,73 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
                 "tags": [
-                    "JournalEntries"
+                    "Fiscal"
                 ],
-                "summary": "Update journal entry",
+                "summary": "Rename a draft fiscal year",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Journal Entry ID",
+                        "description": "Fiscal Year ID",
                         "name": "id",
                         "in": "path",
                         "required": true
                     },
                     {
-                        "description": "Journal Entry Update Request",
+                        "description": "Update Request",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.JournalEntryUpdateRequest"
+                            "$ref": "#/definitions/request.FiscalYearUpdateRequest"
                         }
                     }
                 ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
+                "responses": {}
             },
             "delete": {
-                "tags": [
-                    "JournalEntries"
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
                 ],
-                "summary": "Delete journal entry",
+                "tags": [
+                    "Fiscal"
+                ],
+                "summary": "Delete a draft fiscal year",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Journal Entry ID",
+                        "description": "Fiscal Year ID",
                         "name": "id",
                         "in": "path",
                         "required": true
                     }
                 ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
+                "responses": {}
             }
         },
-        "/api/v1/journal_entries/{id}/post": {
+        "/api/v1/fiscal/years/{id}/activate": {
             "put": {
-                "tags": [
-                    "JournalEntries"
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
                 ],
-                "summary": "Post journal entry",
+                "tags": [
+                    "Fiscal"
+                ],
+                "summary": "Activate a draft fiscal year",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Journal Entry ID",
+                        "description": "Fiscal Year ID",
                         "name": "id",
                         "in": "path",
                         "required": true
                     }
                 ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/journal_entries/{id}/void": {
-            "put": {
-                "tags": [
-                    "JournalEntries"
-                ],
-                "summary": "Void journal entry",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Journal Entry ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
+                "responses": {}
             }
         },
         "/api/v1/reports/balance-sheet": {
@@ -1872,226 +1188,6 @@ const docTemplate = `{
                         "description": "End date (YYYY-MM-DD)",
                         "name": "end_date",
                         "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/revenues": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Revenue"
-                ],
-                "summary": "Get all revenue entries",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Search keyword",
-                        "name": "search",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page number",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "description": "Page size",
-                        "name": "page_size",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filter by status",
-                        "name": "status",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Store a new revenue journal entry (type=revenue, prefix RV-).",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Revenue"
-                ],
-                "summary": "Create revenue entry",
-                "parameters": [
-                    {
-                        "description": "Revenue Create Request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.JournalEntryCreateRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Created",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/revenues/{id}": {
-            "get": {
-                "tags": [
-                    "Revenue"
-                ],
-                "summary": "Get revenue entry by ID",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Entry ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "consumes": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Revenue"
-                ],
-                "summary": "Update revenue entry",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Entry ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Revenue Update Request",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/request.JournalEntryUpdateRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "tags": [
-                    "Revenue"
-                ],
-                "summary": "Delete revenue entry",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Entry ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/revenues/{id}/post": {
-            "put": {
-                "tags": [
-                    "Revenue"
-                ],
-                "summary": "Post revenue entry",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Entry ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/response.JSON"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/v1/revenues/{id}/void": {
-            "put": {
-                "tags": [
-                    "Revenue"
-                ],
-                "summary": "Void revenue entry",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Entry ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
                     }
                 ],
                 "responses": {
@@ -2607,146 +1703,43 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "request.COACreateRequest": {
+        "request.CompanyCreateRequest": {
             "type": "object",
             "required": [
-                "code",
-                "name",
-                "subgroup_id"
-            ],
-            "properties": {
-                "code": {
-                    "type": "string",
-                    "minLength": 1
-                },
-                "name": {
-                    "type": "string",
-                    "minLength": 1
-                },
-                "subgroup_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "request.COAGroupCreateRequest": {
-            "type": "object",
-            "required": [
-                "code",
-                "name",
-                "normal_balance"
-            ],
-            "properties": {
-                "code": {
-                    "type": "string",
-                    "minLength": 1
-                },
-                "name": {
-                    "type": "string",
-                    "minLength": 1
-                },
-                "normal_balance": {
-                    "type": "string",
-                    "minLength": 1
-                }
-            }
-        },
-        "request.COAGroupUpdateRequest": {
-            "type": "object",
-            "required": [
-                "code",
-                "name",
-                "normal_balance"
-            ],
-            "properties": {
-                "code": {
-                    "type": "string",
-                    "maxLength": 20,
-                    "minLength": 1
-                },
-                "id": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string",
-                    "maxLength": 20,
-                    "minLength": 1
-                },
-                "normal_balance": {
-                    "type": "string",
-                    "minLength": 1
-                }
-            }
-        },
-        "request.COASubGroupCreateRequest": {
-            "type": "object",
-            "required": [
-                "code",
-                "group_id",
                 "name"
             ],
             "properties": {
-                "code": {
-                    "type": "string",
-                    "minLength": 1
-                },
-                "group_id": {
+                "address": {
                     "type": "string"
+                },
+                "currency": {
+                    "type": "string",
+                    "maxLength": 10
+                },
+                "email": {
+                    "type": "string",
+                    "maxLength": 150
+                },
+                "industry": {
+                    "type": "string",
+                    "maxLength": 100
+                },
+                "legal_name": {
+                    "type": "string",
+                    "maxLength": 200
                 },
                 "name": {
                     "type": "string",
+                    "maxLength": 150,
                     "minLength": 1
-                }
-            }
-        },
-        "request.COASubGroupUpdateRequest": {
-            "type": "object",
-            "required": [
-                "code",
-                "group_id",
-                "name"
-            ],
-            "properties": {
-                "code": {
+                },
+                "phone": {
                     "type": "string",
-                    "maxLength": 20,
-                    "minLength": 1
+                    "maxLength": 30
                 },
-                "group_id": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "name": {
+                "tax_id": {
                     "type": "string",
-                    "maxLength": 20,
-                    "minLength": 1
-                }
-            }
-        },
-        "request.COAUpdateRequest": {
-            "type": "object",
-            "required": [
-                "code",
-                "name",
-                "subgroup_id"
-            ],
-            "properties": {
-                "code": {
-                    "type": "string",
-                    "maxLength": 20,
-                    "minLength": 1
-                },
-                "id": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string",
-                    "maxLength": 20,
-                    "minLength": 1
-                },
-                "subgroup_id": {
-                    "type": "string"
+                    "maxLength": 50
                 }
             }
         },
@@ -2810,74 +1803,69 @@ const docTemplate = `{
                 }
             }
         },
-        "request.JournalEntryCreateRequest": {
+        "request.FiscalPeriodReopenRequest": {
             "type": "object",
             "required": [
-                "date",
-                "description",
-                "lines"
+                "reason"
             ],
             "properties": {
-                "date": {
+                "id": {
                     "type": "string"
                 },
-                "description": {
+                "reason": {
                     "type": "string",
-                    "minLength": 1
-                },
-                "lines": {
-                    "type": "array",
-                    "minItems": 2,
-                    "items": {
-                        "$ref": "#/definitions/request.JournalLineRequest"
-                    }
+                    "minLength": 10
                 }
             }
         },
-        "request.JournalEntryUpdateRequest": {
+        "request.FiscalYearCreateRequest": {
             "type": "object",
             "required": [
-                "date",
-                "description",
-                "lines"
+                "end_date",
+                "name",
+                "period_type",
+                "start_date"
             ],
             "properties": {
-                "date": {
+                "end_date": {
+                    "description": "YYYY-MM-DD",
                     "type": "string"
                 },
-                "description": {
+                "name": {
                     "type": "string",
+                    "maxLength": 100,
                     "minLength": 1
                 },
-                "lines": {
-                    "type": "array",
-                    "minItems": 2,
-                    "items": {
-                        "$ref": "#/definitions/request.JournalLineRequest"
-                    }
+                "period_type": {
+                    "type": "string",
+                    "enum": [
+                        "monthly",
+                        "quarterly",
+                        "custom"
+                    ]
+                },
+                "start_date": {
+                    "description": "YYYY-MM-DD",
+                    "type": "string"
+                },
+                "stub_start_date": {
+                    "description": "StubStartDate is optional. If provided, the first period will start from this\ndate instead of the fiscal year start_date. Used when onboarding mid-period.",
+                    "type": "string"
                 }
             }
         },
-        "request.JournalLineRequest": {
+        "request.FiscalYearUpdateRequest": {
             "type": "object",
             "required": [
-                "coa_id",
-                "description"
+                "name"
             ],
             "properties": {
-                "coa_id": {
+                "id": {
                     "type": "string"
                 },
-                "credit": {
-                    "type": "number",
-                    "minimum": 0
-                },
-                "debit": {
-                    "type": "number",
-                    "minimum": 0
-                },
-                "description": {
+                "name": {
                     "type": "string",
+                    "maxLength": 100,
                     "minLength": 1
                 }
             }
@@ -2891,7 +1879,7 @@ const docTemplate = `{
             "properties": {
                 "email": {
                     "type": "string",
-                    "maxLength": 20,
+                    "maxLength": 254,
                     "minLength": 1,
                     "example": "johndoe@example.com"
                 },

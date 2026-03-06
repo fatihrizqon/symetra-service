@@ -25,14 +25,14 @@ var journalSortColumns = map[string]string{
 
 type IJournalEntryRepository interface {
 	Create(entry entity.JournalEntry, lines []entity.JournalLine) (entity.JournalEntry, error)
-	FindAll(qp *util.QueryParams) ([]entity.JournalEntry, int, error)
-	FindById(id uuid.UUID) (entity.JournalEntry, error)
+	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.JournalEntry, int, error)
+	FindById(companyID, id uuid.UUID) (entity.JournalEntry, error)
 	Update(entry entity.JournalEntry, lines []entity.JournalLine) (entity.JournalEntry, error)
-	Delete(id uuid.UUID) error
-	Post(id uuid.UUID) error
-	Void(id uuid.UUID) error
-	GenerateJournalNumber(journalType entity.JournalType) (string, error)
-	HasTransactions(coaId uuid.UUID) (bool, error)
+	Delete(companyID, id uuid.UUID) error
+	Post(companyID, id uuid.UUID) error
+	Void(companyID, id uuid.UUID) error
+	GenerateJournalNumber(companyID uuid.UUID, journalType entity.JournalType) (string, error)
+	HasTransactions(companyID, coaId uuid.UUID) (bool, error)
 }
 
 type JournalEntryRepository struct {
@@ -43,11 +43,9 @@ func NewJournalEntryRepository(db *gorm.DB) IJournalEntryRepository {
 	return &JournalEntryRepository{Db: db}
 }
 
-// GenerateJournalNumber creates a sequential journal number with a type-specific prefix.
-// general → JE-202506-0001
-// revenue → RV-202506-0001
-// expense → EX-202506-0001
-func (r *JournalEntryRepository) GenerateJournalNumber(journalType entity.JournalType) (string, error) {
+// GenerateJournalNumber creates a sequential, company-scoped journal number.
+// Format: JE-202506-0001 (scoped to company so two companies can have the same number)
+func (r *JournalEntryRepository) GenerateJournalNumber(companyID uuid.UUID, journalType entity.JournalType) (string, error) {
 	prefix, ok := entity.JournalNumberPrefix[journalType]
 	if !ok {
 		prefix = "JE"
@@ -58,19 +56,19 @@ func (r *JournalEntryRepository) GenerateJournalNumber(journalType entity.Journa
 
 	var count int64
 	if err := r.Db.Model(&entity.JournalEntry{}).
-		Where("journal_number LIKE ?", monthPrefix+"%").
+		Where("company_id = ? AND journal_number LIKE ?", companyID, monthPrefix+"%").
 		Count(&count).Error; err != nil {
 		return "", err
 	}
-
 	return fmt.Sprintf("%s-%04d", monthPrefix, count+1), nil
 }
 
-// HasTransactions checks if a COA account has been used in any journal line.
-func (r *JournalEntryRepository) HasTransactions(coaId uuid.UUID) (bool, error) {
+// HasTransactions checks if a COA account is used in any journal line within a company.
+func (r *JournalEntryRepository) HasTransactions(companyID, coaId uuid.UUID) (bool, error) {
 	var count int64
 	if err := r.Db.Model(&entity.JournalLine{}).
-		Where("coa_id = ?", coaId).
+		Joins("JOIN journal_entries ON journal_entries.id = journal_lines.journal_entry_id").
+		Where("journal_lines.coa_id = ? AND journal_entries.company_id = ?", coaId, companyID).
 		Count(&count).Error; err != nil {
 		return false, err
 	}
@@ -87,6 +85,7 @@ func (r *JournalEntryRepository) Create(entry entity.JournalEntry, lines []entit
 	}
 
 	for i := range lines {
+		lines[i].Id = uuid.New()
 		lines[i].JournalEntryId = entry.Id
 	}
 
@@ -104,12 +103,11 @@ func (r *JournalEntryRepository) Create(entry entity.JournalEntry, lines []entit
 	return entry, nil
 }
 
-// FindAll retrieves paginated journal entries with optional search, status, and type filters.
-func (r *JournalEntryRepository) FindAll(qp *util.QueryParams) ([]entity.JournalEntry, int, error) {
+func (r *JournalEntryRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.JournalEntry, int, error) {
 	var entities []entity.JournalEntry
 	var totalCount int64
 
-	query := r.Db.Model(&entity.JournalEntry{})
+	query := r.Db.Model(&entity.JournalEntry{}).Where("journal_entries.company_id = ?", companyID)
 	query = util.ApplySearch(query, qp)
 	query = entity.JournalEntry{}.ApplyFilters(query, qp.Filters)
 
@@ -120,28 +118,25 @@ func (r *JournalEntryRepository) FindAll(qp *util.QueryParams) ([]entity.Journal
 		return entities, 0, nil
 	}
 
-	query = util.ApplySort(query, qp, journalSortColumns, "journal_entries.created_at")
+	query = util.ApplySort(query, qp, journalSortColumns, "journal_entries.date")
 	query = util.ApplyPagination(query, qp)
 
-	if err := query.Find(&entities).Error; err != nil {
+	if err := query.Preload("Lines.COA").Find(&entities).Error; err != nil {
 		return nil, 0, err
 	}
-
 	return entities, int(totalCount), nil
 }
 
-// FindById retrieves a single journal entry with all lines preloaded.
-func (r *JournalEntryRepository) FindById(id uuid.UUID) (entity.JournalEntry, error) {
+func (r *JournalEntryRepository) FindById(companyID, id uuid.UUID) (entity.JournalEntry, error) {
 	var entry entity.JournalEntry
-	if err := r.Db.
-		Preload("Lines.COA").
-		First(&entry, "id = ?", id).Error; err != nil {
-		return entry, err
+	if err := r.Db.Preload("Lines.COA").
+		Where("id = ? AND company_id = ?", id, companyID).
+		First(&entry).Error; err != nil {
+		return entry, errors.New("journal entry not found")
 	}
 	return entry, nil
 }
 
-// Update replaces journal entry header + deletes old lines + inserts new lines atomically.
 func (r *JournalEntryRepository) Update(entry entity.JournalEntry, lines []entity.JournalLine) (entity.JournalEntry, error) {
 	tx := r.Db.Begin()
 
@@ -176,12 +171,10 @@ func (r *JournalEntryRepository) Update(entry entity.JournalEntry, lines []entit
 	if err := r.Db.Preload("Lines.COA").First(&entry, "id = ?", entry.Id).Error; err != nil {
 		return entry, err
 	}
-
 	return entry, nil
 }
 
-// Delete removes a draft journal entry and its lines.
-func (r *JournalEntryRepository) Delete(id uuid.UUID) error {
+func (r *JournalEntryRepository) Delete(companyID, id uuid.UUID) error {
 	tx := r.Db.Begin()
 
 	if err := tx.Where("journal_entry_id = ?", id).Delete(&entity.JournalLine{}).Error; err != nil {
@@ -189,7 +182,7 @@ func (r *JournalEntryRepository) Delete(id uuid.UUID) error {
 		return err
 	}
 
-	if err := tx.Where("id = ?", id).Delete(&entity.JournalEntry{}).Error; err != nil {
+	if err := tx.Where("id = ? AND company_id = ?", id, companyID).Delete(&entity.JournalEntry{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -198,15 +191,13 @@ func (r *JournalEntryRepository) Delete(id uuid.UUID) error {
 	return nil
 }
 
-// Post transitions a draft journal entry to posted status.
-func (r *JournalEntryRepository) Post(id uuid.UUID) error {
+func (r *JournalEntryRepository) Post(companyID, id uuid.UUID) error {
 	result := r.Db.Model(&entity.JournalEntry{}).
-		Where("id = ? AND status = ?", id, entity.JournalStatusDraft).
+		Where("id = ? AND company_id = ? AND status = ?", id, companyID, entity.JournalStatusDraft).
 		Updates(map[string]interface{}{
 			"status":     entity.JournalStatusPosted,
 			"updated_at": time.Now(),
 		})
-
 	if result.Error != nil {
 		return result.Error
 	}
@@ -216,15 +207,13 @@ func (r *JournalEntryRepository) Post(id uuid.UUID) error {
 	return nil
 }
 
-// Void transitions a posted journal entry to void status.
-func (r *JournalEntryRepository) Void(id uuid.UUID) error {
+func (r *JournalEntryRepository) Void(companyID, id uuid.UUID) error {
 	result := r.Db.Model(&entity.JournalEntry{}).
-		Where("id = ? AND status = ?", id, entity.JournalStatusPosted).
+		Where("id = ? AND company_id = ? AND status = ?", id, companyID, entity.JournalStatusPosted).
 		Updates(map[string]interface{}{
 			"status":     entity.JournalStatusVoid,
 			"updated_at": time.Now(),
 		})
-
 	if result.Error != nil {
 		return result.Error
 	}

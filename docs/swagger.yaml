@@ -1,108 +1,33 @@
 basePath: /
 definitions:
-  request.COACreateRequest:
+  request.CompanyCreateRequest:
     properties:
-      code:
-        minLength: 1
+      address:
+        type: string
+      currency:
+        maxLength: 10
+        type: string
+      email:
+        maxLength: 150
+        type: string
+      industry:
+        maxLength: 100
+        type: string
+      legal_name:
+        maxLength: 200
         type: string
       name:
+        maxLength: 150
         minLength: 1
         type: string
-      subgroup_id:
+      phone:
+        maxLength: 30
+        type: string
+      tax_id:
+        maxLength: 50
         type: string
     required:
-    - code
     - name
-    - subgroup_id
-    type: object
-  request.COAGroupCreateRequest:
-    properties:
-      code:
-        minLength: 1
-        type: string
-      name:
-        minLength: 1
-        type: string
-      normal_balance:
-        minLength: 1
-        type: string
-    required:
-    - code
-    - name
-    - normal_balance
-    type: object
-  request.COAGroupUpdateRequest:
-    properties:
-      code:
-        maxLength: 20
-        minLength: 1
-        type: string
-      id:
-        type: string
-      name:
-        maxLength: 20
-        minLength: 1
-        type: string
-      normal_balance:
-        minLength: 1
-        type: string
-    required:
-    - code
-    - name
-    - normal_balance
-    type: object
-  request.COASubGroupCreateRequest:
-    properties:
-      code:
-        minLength: 1
-        type: string
-      group_id:
-        type: string
-      name:
-        minLength: 1
-        type: string
-    required:
-    - code
-    - group_id
-    - name
-    type: object
-  request.COASubGroupUpdateRequest:
-    properties:
-      code:
-        maxLength: 20
-        minLength: 1
-        type: string
-      group_id:
-        type: string
-      id:
-        type: string
-      name:
-        maxLength: 20
-        minLength: 1
-        type: string
-    required:
-    - code
-    - group_id
-    - name
-    type: object
-  request.COAUpdateRequest:
-    properties:
-      code:
-        maxLength: 20
-        minLength: 1
-        type: string
-      id:
-        type: string
-      name:
-        maxLength: 20
-        minLength: 1
-        type: string
-      subgroup_id:
-        type: string
-    required:
-    - code
-    - name
-    - subgroup_id
     type: object
   request.CustomerCreateRequest:
     properties:
@@ -146,62 +71,61 @@ definitions:
     - code
     - name
     type: object
-  request.JournalEntryCreateRequest:
+  request.FiscalPeriodReopenRequest:
     properties:
-      date:
+      id:
         type: string
-      description:
-        minLength: 1
+      reason:
+        minLength: 10
         type: string
-      lines:
-        items:
-          $ref: '#/definitions/request.JournalLineRequest'
-        minItems: 2
-        type: array
     required:
-    - date
-    - description
-    - lines
+    - reason
     type: object
-  request.JournalEntryUpdateRequest:
+  request.FiscalYearCreateRequest:
     properties:
-      date:
+      end_date:
+        description: YYYY-MM-DD
         type: string
-      description:
+      name:
+        maxLength: 100
         minLength: 1
         type: string
-      lines:
-        items:
-          $ref: '#/definitions/request.JournalLineRequest'
-        minItems: 2
-        type: array
+      period_type:
+        enum:
+        - monthly
+        - quarterly
+        - custom
+        type: string
+      start_date:
+        description: YYYY-MM-DD
+        type: string
+      stub_start_date:
+        description: |-
+          StubStartDate is optional. If provided, the first period will start from this
+          date instead of the fiscal year start_date. Used when onboarding mid-period.
+        type: string
     required:
-    - date
-    - description
-    - lines
+    - end_date
+    - name
+    - period_type
+    - start_date
     type: object
-  request.JournalLineRequest:
+  request.FiscalYearUpdateRequest:
     properties:
-      coa_id:
+      id:
         type: string
-      credit:
-        minimum: 0
-        type: number
-      debit:
-        minimum: 0
-        type: number
-      description:
+      name:
+        maxLength: 100
         minLength: 1
         type: string
     required:
-    - coa_id
-    - description
+    - name
     type: object
   request.LoginRequest:
     properties:
       email:
         example: johndoe@example.com
-        maxLength: 20
+        maxLength: 254
         minLength: 1
         type: string
       password:
@@ -417,16 +341,12 @@ paths:
           description: Authentication failed
           schema:
             $ref: '#/definitions/response.JSON'
-      security:
-      - BearerAuth: []
       summary: User login
       tags:
       - Auth
   /api/v1/auth/logout:
     post:
-      description: |-
-        Logout user dengan menghapus access_token dan refresh_token dari cookie,
-        serta memasukkan refresh token ke blacklist.
+      description: Logout user, blacklist refresh token, clear cookie
       responses:
         "200":
           description: Successfully logged out
@@ -456,466 +376,179 @@ paths:
       summary: Refresh access token
       tags:
       - Auth
-  /api/v1/coa:
+  /api/v1/companies:
     get:
-      consumes:
-      - application/json
-      parameters:
-      - description: Search keyword
-        in: query
-        name: search
-        type: string
-      - description: Page number
-        in: query
-        name: page
-        type: integer
-      - description: Page size
-        in: query
-        name: page_size
-        type: integer
-      - description: Sort column (code, name, status, created_at, updated_at)
-        in: query
-        name: sort
-        type: string
-      - description: Sort direction (asc, desc)
-        in: query
-        name: order
-        type: string
-      - description: Filter by status
-        in: query
-        name: status
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successfully retrieved all records.
-          schema:
-            $ref: '#/definitions/response.JSON'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/response.JSON'
+      responses: {}
       security:
       - BearerAuth: []
-      summary: Get all chart of accounts
+      summary: List all companies (superadmin only)
       tags:
-      - '#ChartofAccounts COA'
+      - Company
     post:
       consumes:
       - application/json
       parameters:
-      - description: COA Create Request
+      - description: Company Create Request
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/request.COACreateRequest'
+          $ref: '#/definitions/request.CompanyCreateRequest'
       produces:
       - application/json
       responses:
         "201":
-          description: A new record has been stored.
-          schema:
-            $ref: '#/definitions/response.JSON'
-        "400":
-          description: Bad request
+          description: Created
           schema:
             $ref: '#/definitions/response.JSON'
       security:
       - BearerAuth: []
-      summary: Create chart of account
+      summary: Create a new company
       tags:
-      - '#ChartofAccounts COA'
-  /api/v1/coa/{id}:
+      - Company
+  /api/v1/companies/{id}:
     delete:
-      consumes:
-      - application/json
       parameters:
-      - description: COA ID
+      - description: Company ID
+        in: header
+        name: X-Company-ID
+        required: true
+        type: string
+      - description: Company ID
         in: path
         name: id
         required: true
         type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Selected record has been deleted.
-          schema:
-            $ref: '#/definitions/response.JSON'
-        "404":
-          description: COA not found
-          schema:
-            $ref: '#/definitions/response.JSON'
+      responses: {}
       security:
       - BearerAuth: []
-      summary: Delete chart of account
+      summary: Soft-delete a company (owner only)
       tags:
-      - '#ChartofAccounts COA'
+      - Company
     get:
-      consumes:
-      - application/json
       parameters:
-      - description: COA ID
-        in: path
-        name: id
+      - description: Company ID
+        in: header
+        name: X-Company-ID
         required: true
         type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successfully retrieved selected record.
-          schema:
-            $ref: '#/definitions/response.JSON'
-        "404":
-          description: COA not found
-          schema:
-            $ref: '#/definitions/response.JSON'
+      responses: {}
       security:
       - BearerAuth: []
-      summary: Get chart of account by ID
+      summary: Get company by ID
       tags:
-      - '#ChartofAccounts COA'
+      - Company
     put:
-      consumes:
-      - application/json
       parameters:
-      - description: COA ID
+      - description: Company ID
+        in: header
+        name: X-Company-ID
+        required: true
+        type: string
+      - description: Company ID
         in: path
         name: id
         required: true
         type: string
-      - description: COA Update Request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/request.COAUpdateRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Selected record has been updated.
-          schema:
-            $ref: '#/definitions/response.JSON'
-        "404":
-          description: COA not found
-          schema:
-            $ref: '#/definitions/response.JSON'
+      responses: {}
       security:
       - BearerAuth: []
-      summary: Update chart of account
+      summary: Update company details
       tags:
-      - '#ChartofAccounts COA'
-  /api/v1/coa_groups:
+      - Company
+  /api/v1/companies/{id}/members:
     get:
-      consumes:
-      - application/json
       parameters:
-      - description: Search keyword
-        in: query
-        name: search
+      - description: Company ID
+        in: header
+        name: X-Company-ID
+        required: true
         type: string
-      - description: Page number
-        in: query
-        name: page
-        type: integer
-      - description: Page size
-        in: query
-        name: page_size
-        type: integer
-      - description: Sort column (code, name, normal_balance, status, created_at,
-          updated_at)
-        in: query
-        name: sort
+      - description: Company ID
+        in: path
+        name: id
+        required: true
         type: string
-      - description: Sort direction (asc, desc)
-        in: query
-        name: order
-        type: string
-      - description: Filter by status
-        in: query
-        name: status
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successfully retrieved all records.
-          schema:
-            $ref: '#/definitions/response.JSON'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/response.JSON'
+      responses: {}
       security:
       - BearerAuth: []
-      summary: Get all chart of account groups
+      summary: List all members of a company
       tags:
-      - '#ChartofAccounts Group'
+      - Company Members
     post:
-      consumes:
-      - application/json
       parameters:
-      - description: COAGroup Create Request
-        in: body
-        name: request
+      - description: Company ID
+        in: header
+        name: X-Company-ID
         required: true
-        schema:
-          $ref: '#/definitions/request.COAGroupCreateRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: A new record has been stored.
-          schema:
-            $ref: '#/definitions/response.JSON'
-        "400":
-          description: Bad request
-          schema:
-            $ref: '#/definitions/response.JSON'
+        type: string
+      - description: Company ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses: {}
       security:
       - BearerAuth: []
-      summary: Create chart of account group
+      summary: Add a user to a company
       tags:
-      - '#ChartofAccounts Group'
-  /api/v1/coa_groups/{id}:
+      - Company Members
+  /api/v1/companies/{id}/members/{user_id}:
     delete:
-      consumes:
-      - application/json
       parameters:
-      - description: COAGroup ID
+      - description: Company ID
+        in: header
+        name: X-Company-ID
+        required: true
+        type: string
+      - description: Company ID
         in: path
         name: id
         required: true
         type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Selected record has been deleted.
-          schema:
-            $ref: '#/definitions/response.JSON'
-        "404":
-          description: COAGroup not found
-          schema:
-            $ref: '#/definitions/response.JSON'
-      security:
-      - BearerAuth: []
-      summary: Delete chart of account group
-      tags:
-      - '#ChartofAccounts Group'
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: COAGroup ID
+      - description: User ID to remove
         in: path
-        name: id
+        name: user_id
         required: true
         type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successfully retrieved selected record.
-          schema:
-            $ref: '#/definitions/response.JSON'
-        "404":
-          description: COAGroup not found
-          schema:
-            $ref: '#/definitions/response.JSON'
+      responses: {}
       security:
       - BearerAuth: []
-      summary: Get chart of account group by ID
+      summary: Remove a user from a company
       tags:
-      - '#ChartofAccounts Group'
+      - Company Members
+  /api/v1/companies/{id}/members/{user_id}/role:
     put:
-      consumes:
-      - application/json
       parameters:
-      - description: COAGroup ID
+      - description: Company ID
+        in: header
+        name: X-Company-ID
+        required: true
+        type: string
+      - description: Company ID
         in: path
         name: id
         required: true
         type: string
-      - description: COAGroup Update Request
-        in: body
-        name: request
+      - description: User ID
+        in: path
+        name: user_id
         required: true
-        schema:
-          $ref: '#/definitions/request.COAGroupUpdateRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Selected record has been updated.
-          schema:
-            $ref: '#/definitions/response.JSON'
-        "404":
-          description: COAGroup not found
-          schema:
-            $ref: '#/definitions/response.JSON'
+        type: string
+      responses: {}
       security:
       - BearerAuth: []
-      summary: Update chart of account group
+      summary: Change a member's role within a company
       tags:
-      - '#ChartofAccounts Group'
-  /api/v1/coa_subgroups:
+      - Company Members
+  /api/v1/companies/mine:
     get:
-      consumes:
-      - application/json
-      parameters:
-      - description: Search keyword
-        in: query
-        name: search
-        type: string
-      - description: Page number
-        in: query
-        name: page
-        type: integer
-      - description: Page size
-        in: query
-        name: page_size
-        type: integer
-      - description: Sort column (code, name, status, created_at, updated_at)
-        in: query
-        name: sort
-        type: string
-      - description: Sort direction (asc, desc)
-        in: query
-        name: order
-        type: string
-      - description: Filter by status
-        in: query
-        name: status
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successfully retrieved all records.
-          schema:
-            $ref: '#/definitions/response.JSON'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/response.JSON'
+      responses: {}
       security:
       - BearerAuth: []
-      summary: Get all chart of account subgroups
+      summary: Get all companies the authenticated user belongs to
       tags:
-      - '#ChartofAccounts SubGroups'
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: COASubGroup Create Request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/request.COASubGroupCreateRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: A new record has been stored.
-          schema:
-            $ref: '#/definitions/response.JSON'
-        "400":
-          description: Bad request
-          schema:
-            $ref: '#/definitions/response.JSON'
-      security:
-      - BearerAuth: []
-      summary: Create chart of account subgroup
-      tags:
-      - '#ChartofAccounts SubGroups'
-  /api/v1/coa_subgroups/{id}:
-    delete:
-      consumes:
-      - application/json
-      parameters:
-      - description: COASubGroup ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Selected record has been deleted.
-          schema:
-            $ref: '#/definitions/response.JSON'
-        "404":
-          description: COASubGroup not found
-          schema:
-            $ref: '#/definitions/response.JSON'
-      security:
-      - BearerAuth: []
-      summary: Delete chart of account subgroup
-      tags:
-      - '#ChartofAccounts SubGroups'
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: COASubGroup ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successfully retrieved selected record.
-          schema:
-            $ref: '#/definitions/response.JSON'
-        "404":
-          description: COASubGroup not found
-          schema:
-            $ref: '#/definitions/response.JSON'
-      security:
-      - BearerAuth: []
-      summary: Get chart of account subgroup by ID
-      tags:
-      - '#ChartofAccounts SubGroups'
-    put:
-      consumes:
-      - application/json
-      parameters:
-      - description: COASubGroup ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: COASubGroup Update Request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/request.COASubGroupUpdateRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Selected record has been updated.
-          schema:
-            $ref: '#/definitions/response.JSON'
-        "404":
-          description: COASubGroup not found
-          schema:
-            $ref: '#/definitions/response.JSON'
-      security:
-      - BearerAuth: []
-      summary: Update chart of account subgroup
-      tags:
-      - '#ChartofAccounts SubGroups'
+      - Company
   /api/v1/customers:
     get:
       consumes:
@@ -1074,69 +707,6 @@ paths:
       summary: Update customer
       tags:
       - Customers
-  /api/v1/dropdown/coa:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: Search keyword
-        in: query
-        name: search
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successfully retrieved dropdown options
-          schema:
-            $ref: '#/definitions/response.SelectJSON'
-      security:
-      - BearerAuth: []
-      summary: Get COA dropdown options
-      tags:
-      - Dropdowns
-  /api/v1/dropdown/coa_groups:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: Search keyword
-        in: query
-        name: search
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successfully retrieved dropdown options
-          schema:
-            $ref: '#/definitions/response.SelectJSON'
-      security:
-      - BearerAuth: []
-      summary: Get COAGroup dropdown options
-      tags:
-      - Dropdowns
-  /api/v1/dropdown/coa_subgroups:
-    get:
-      consumes:
-      - application/json
-      parameters:
-      - description: Search keyword
-        in: query
-        name: search
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successfully retrieved dropdown options
-          schema:
-            $ref: '#/definitions/response.SelectJSON'
-      security:
-      - BearerAuth: []
-      summary: Get COASubGroup dropdown options
-      tags:
-      - Dropdowns
   /api/v1/dropdown/customers:
     get:
       consumes:
@@ -1180,10 +750,103 @@ paths:
       summary: Get vendor dropdown options
       tags:
       - Dropdowns
-  /api/v1/expenses:
+  /api/v1/fiscal/periods:
     get:
       parameters:
-      - description: Search keyword
+      - description: Filter by fiscal year ID
+        in: query
+        name: fiscal_year_id
+        type: string
+      - description: Filter by status (open, closed, locked)
+        in: query
+        name: status
+        type: string
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Get all fiscal periods
+      tags:
+      - Fiscal
+  /api/v1/fiscal/periods/{id}:
+    get:
+      parameters:
+      - description: Period ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Get a fiscal period by ID
+      tags:
+      - Fiscal
+  /api/v1/fiscal/periods/{id}/close:
+    put:
+      parameters:
+      - description: Period ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Close an open fiscal period
+      tags:
+      - Fiscal
+  /api/v1/fiscal/periods/{id}/lock:
+    put:
+      parameters:
+      - description: Period ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Permanently lock a closed fiscal period
+      tags:
+      - Fiscal
+  /api/v1/fiscal/periods/{id}/logs:
+    get:
+      parameters:
+      - description: Period ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Get audit log for a fiscal period
+      tags:
+      - Fiscal
+  /api/v1/fiscal/periods/{id}/reopen:
+    put:
+      parameters:
+      - description: Period ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Reopen Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.FiscalPeriodReopenRequest'
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Reopen a closed fiscal period (requires reason)
+      tags:
+      - Fiscal
+  /api/v1/fiscal/years:
+    get:
+      parameters:
+      - description: Search
         in: query
         name: search
         type: string
@@ -1195,31 +858,28 @@ paths:
         in: query
         name: page_size
         type: integer
-      - description: Filter by status
+      - description: Filter by status (draft, active, closed)
         in: query
         name: status
         type: string
       produces:
       - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/response.JSON'
-      summary: Get all expense entries
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Get all fiscal years
       tags:
-      - Expenses
+      - Fiscal
     post:
       consumes:
       - application/json
-      description: Store a new expense journal entry (type=expense, prefix EX-).
       parameters:
-      - description: Expense Create Request
+      - description: Fiscal Year Create Request
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/request.JournalEntryCreateRequest'
+          $ref: '#/definitions/request.FiscalYearCreateRequest'
       produces:
       - application/json
       responses:
@@ -1229,240 +889,69 @@ paths:
             $ref: '#/definitions/response.JSON'
       security:
       - BearerAuth: []
-      summary: Create expense entry
+      summary: Create a new fiscal year
       tags:
-      - Expenses
-  /api/v1/expenses/{id}:
+      - Fiscal
+  /api/v1/fiscal/years/{id}:
     delete:
       parameters:
-      - description: Entry ID
+      - description: Fiscal Year ID
         in: path
         name: id
         required: true
         type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/response.JSON'
-      summary: Delete expense entry
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Delete a draft fiscal year
       tags:
-      - Expenses
+      - Fiscal
     get:
       parameters:
-      - description: Entry ID
+      - description: Fiscal Year ID
         in: path
         name: id
         required: true
         type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/response.JSON'
-      summary: Get expense entry by ID
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Get fiscal year by ID (includes periods)
       tags:
-      - Expenses
+      - Fiscal
     put:
-      consumes:
-      - application/json
       parameters:
-      - description: Entry ID
+      - description: Fiscal Year ID
         in: path
         name: id
         required: true
         type: string
-      - description: Expense Update Request
+      - description: Update Request
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/request.JournalEntryUpdateRequest'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/response.JSON'
+          $ref: '#/definitions/request.FiscalYearUpdateRequest'
+      responses: {}
       security:
       - BearerAuth: []
-      summary: Update expense entry
+      summary: Rename a draft fiscal year
       tags:
-      - Expenses
-  /api/v1/expenses/{id}/post:
+      - Fiscal
+  /api/v1/fiscal/years/{id}/activate:
     put:
       parameters:
-      - description: Entry ID
+      - description: Fiscal Year ID
         in: path
         name: id
         required: true
         type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/response.JSON'
-      summary: Post expense entry
-      tags:
-      - Expenses
-  /api/v1/expenses/{id}/void:
-    put:
-      parameters:
-      - description: Entry ID
-        in: path
-        name: id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/response.JSON'
-      summary: Void expense entry
-      tags:
-      - Expenses
-  /api/v1/journal_entries:
-    get:
-      parameters:
-      - description: Search keyword
-        in: query
-        name: search
-        type: string
-      - description: Page number
-        in: query
-        name: page
-        type: integer
-      - description: Page size
-        in: query
-        name: page_size
-        type: integer
-      - description: Filter by status (draft, posted, void)
-        in: query
-        name: status
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/response.JSON'
-      summary: Get all general journal entries
-      tags:
-      - JournalEntries
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Journal Entry Create Request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/request.JournalEntryCreateRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/response.JSON'
+      responses: {}
       security:
       - BearerAuth: []
-      summary: Create general journal entry
+      summary: Activate a draft fiscal year
       tags:
-      - JournalEntries
-  /api/v1/journal_entries/{id}:
-    delete:
-      parameters:
-      - description: Journal Entry ID
-        in: path
-        name: id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/response.JSON'
-      summary: Delete journal entry
-      tags:
-      - JournalEntries
-    get:
-      parameters:
-      - description: Journal Entry ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/response.JSON'
-      summary: Get journal entry by ID
-      tags:
-      - JournalEntries
-    put:
-      consumes:
-      - application/json
-      parameters:
-      - description: Journal Entry ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Journal Entry Update Request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/request.JournalEntryUpdateRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/response.JSON'
-      security:
-      - BearerAuth: []
-      summary: Update journal entry
-      tags:
-      - JournalEntries
-  /api/v1/journal_entries/{id}/post:
-    put:
-      parameters:
-      - description: Journal Entry ID
-        in: path
-        name: id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/response.JSON'
-      summary: Post journal entry
-      tags:
-      - JournalEntries
-  /api/v1/journal_entries/{id}/void:
-    put:
-      parameters:
-      - description: Journal Entry ID
-        in: path
-        name: id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/response.JSON'
-      summary: Void journal entry
-      tags:
-      - JournalEntries
+      - Fiscal
   /api/v1/reports/balance-sheet:
     get:
       parameters:
@@ -1564,146 +1053,6 @@ paths:
       summary: Trial Balance
       tags:
       - Reports
-  /api/v1/revenues:
-    get:
-      parameters:
-      - description: Search keyword
-        in: query
-        name: search
-        type: string
-      - description: Page number
-        in: query
-        name: page
-        type: integer
-      - description: Page size
-        in: query
-        name: page_size
-        type: integer
-      - description: Filter by status
-        in: query
-        name: status
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/response.JSON'
-      summary: Get all revenue entries
-      tags:
-      - Revenue
-    post:
-      consumes:
-      - application/json
-      description: Store a new revenue journal entry (type=revenue, prefix RV-).
-      parameters:
-      - description: Revenue Create Request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/request.JournalEntryCreateRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/response.JSON'
-      security:
-      - BearerAuth: []
-      summary: Create revenue entry
-      tags:
-      - Revenue
-  /api/v1/revenues/{id}:
-    delete:
-      parameters:
-      - description: Entry ID
-        in: path
-        name: id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/response.JSON'
-      summary: Delete revenue entry
-      tags:
-      - Revenue
-    get:
-      parameters:
-      - description: Entry ID
-        in: path
-        name: id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/response.JSON'
-      summary: Get revenue entry by ID
-      tags:
-      - Revenue
-    put:
-      consumes:
-      - application/json
-      parameters:
-      - description: Entry ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Revenue Update Request
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/request.JournalEntryUpdateRequest'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/response.JSON'
-      security:
-      - BearerAuth: []
-      summary: Update revenue entry
-      tags:
-      - Revenue
-  /api/v1/revenues/{id}/post:
-    put:
-      parameters:
-      - description: Entry ID
-        in: path
-        name: id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/response.JSON'
-      summary: Post revenue entry
-      tags:
-      - Revenue
-  /api/v1/revenues/{id}/void:
-    put:
-      parameters:
-      - description: Entry ID
-        in: path
-        name: id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/response.JSON'
-      summary: Void revenue entry
-      tags:
-      - Revenue
   /api/v1/users:
     get:
       consumes:

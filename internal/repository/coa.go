@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"errors"
+
 	"github.com/fatihrizqon/symetra-service/internal/entity"
 	"github.com/fatihrizqon/symetra-service/internal/util"
 	"github.com/google/uuid"
@@ -17,10 +19,11 @@ var coaSortColumns = map[string]string{
 
 type ICOARepository interface {
 	Create(entity.COA) (entity.COA, error)
-	FindAll(qp *util.QueryParams) ([]entity.COA, int, error)
-	FindById(entityId uuid.UUID) (entity.COA, error)
+	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.COA, int, error)
+	FindById(companyID, entityId uuid.UUID) (entity.COA, error)
 	Update(entity.COA) error
-	Delete(entityId uuid.UUID) error
+	Delete(companyID, entityId uuid.UUID) error
+	SelectDropdownList(companyID uuid.UUID) ([]entity.COA, error)
 }
 
 type COARepository struct {
@@ -31,21 +34,24 @@ func NewCOARepository(Db *gorm.DB) ICOARepository {
 	return &COARepository{Db: Db}
 }
 
-func (e *COARepository) Create(c entity.COA) (entity.COA, error) {
-	tx := e.Db.Preload("SubGroup").Begin()
+func (r *COARepository) Create(c entity.COA) (entity.COA, error) {
+	tx := r.Db.Begin()
 	if err := tx.Create(&c).Error; err != nil {
 		tx.Rollback()
+		return c, err
+	}
+	if err := r.Db.Preload("SubGroup").First(&c, "id = ?", c.Id).Error; err != nil {
 		return c, err
 	}
 	tx.Commit()
 	return c, nil
 }
 
-func (e *COARepository) FindAll(qp *util.QueryParams) ([]entity.COA, int, error) {
+func (r *COARepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.COA, int, error) {
 	var entities []entity.COA
 	var totalCount int64
 
-	query := e.Db.Model(&entity.COA{})
+	query := r.Db.Model(&entity.COA{}).Where("coa.company_id = ?", companyID)
 	query = util.ApplySearch(query, qp)
 	query = entity.COA{}.ApplyFilters(query, qp.Filters)
 
@@ -59,32 +65,22 @@ func (e *COARepository) FindAll(qp *util.QueryParams) ([]entity.COA, int, error)
 	query = util.ApplySort(query, qp, coaSortColumns, "coa.created_at")
 	query = util.ApplyPagination(query, qp)
 
-	err := query.
-		Preload("SubGroup", func(db *gorm.DB) *gorm.DB {
-			return db.Select("id", "code", "name", "status", "group_id", "created_at", "updated_at").
-				Preload("Group", func(db2 *gorm.DB) *gorm.DB {
-					return db2.Select("id", "code", "name", "normal_balance", "status", "created_at", "updated_at")
-				})
-		}).
-		Find(&entities).Error
-
-	if err != nil {
+	if err := query.Preload("SubGroup").Find(&entities).Error; err != nil {
 		return nil, 0, err
 	}
-
 	return entities, int(totalCount), nil
 }
 
-func (e *COARepository) FindById(entityId uuid.UUID) (entity.COA, error) {
+func (r *COARepository) FindById(companyID, entityId uuid.UUID) (entity.COA, error) {
 	var c entity.COA
-	if err := e.Db.Preload("SubGroup").Where("id = ?", entityId).First(&c).Error; err != nil {
-		return c, err
+	if err := r.Db.Preload("SubGroup").Where("id = ? AND company_id = ?", entityId, companyID).First(&c).Error; err != nil {
+		return c, errors.New("coa not found")
 	}
 	return c, nil
 }
 
-func (e *COARepository) Update(c entity.COA) error {
-	tx := e.Db.Preload("SubGroup").Begin()
+func (r *COARepository) Update(c entity.COA) error {
+	tx := r.Db.Begin()
 	if err := tx.Model(&c).Updates(c).Error; err != nil {
 		tx.Rollback()
 		return err
@@ -93,12 +89,23 @@ func (e *COARepository) Update(c entity.COA) error {
 	return nil
 }
 
-func (e *COARepository) Delete(entityId uuid.UUID) error {
-	tx := e.Db.Begin()
-	if err := tx.Where("id = ?", entityId).Delete(&entity.COA{}).Error; err != nil {
+func (r *COARepository) Delete(companyID, entityId uuid.UUID) error {
+	tx := r.Db.Begin()
+	if err := tx.Where("id = ? AND company_id = ?", entityId, companyID).Delete(&entity.COA{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 	tx.Commit()
 	return nil
+}
+
+func (r *COARepository) SelectDropdownList(companyID uuid.UUID) ([]entity.COA, error) {
+	var entities []entity.COA
+	if err := r.Db.Preload("SubGroup").
+		Where("coa.company_id = ? AND coa.status = 1 AND coa.active = true", companyID).
+		Order("coa.code ASC").
+		Find(&entities).Error; err != nil {
+		return nil, err
+	}
+	return entities, nil
 }

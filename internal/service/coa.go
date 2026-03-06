@@ -1,6 +1,9 @@
 package service
 
 import (
+	"errors"
+	"fmt"
+
 	"github.com/fatihrizqon/symetra-service/internal/delivery/http/request"
 	"github.com/fatihrizqon/symetra-service/internal/delivery/http/response"
 	"github.com/fatihrizqon/symetra-service/internal/entity"
@@ -11,141 +14,135 @@ import (
 )
 
 type ICOAService interface {
-	Create(req request.COACreateRequest) (entity.COA, error)
-	FindAll(qp *util.QueryParams) ([]response.COAResponse, int, error)
-	FindById(reqId uuid.UUID) (response.COAResponse, error)
-	Update(req request.COAUpdateRequest) (entity.COA, error)
-	Delete(reqId uuid.UUID) (entity.COA, error)
-	SelectDropdownList(qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error)
+	Create(companyID uuid.UUID, req request.COACreateRequest) (entity.COA, error)
+	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]response.COAResponse, int, error)
+	FindById(companyID, reqId uuid.UUID) (response.COAResponse, error)
+	Update(companyID uuid.UUID, req request.COAUpdateRequest) (entity.COA, error)
+	Delete(companyID, reqId uuid.UUID) (entity.COA, error)
+	SelectDropdownList(companyID uuid.UUID) ([]response.SelectDropdownListResponse, error)
 }
 
 type COAService struct {
-	ICOARepository repository.ICOARepository
-	validate       *validator.Validate
+	ICOARepository          repository.ICOARepository
+	IJournalEntryRepository repository.IJournalEntryRepository
+	validate                *validator.Validate
 }
 
 func NewCOAService(repo repository.ICOARepository, validate *validator.Validate) ICOAService {
 	return &COAService{ICOARepository: repo, validate: validate}
 }
 
-func (e *COAService) Create(req request.COACreateRequest) (entity.COA, error) {
-	if err := e.validate.Struct(req); err != nil {
+func (s *COAService) Create(companyID uuid.UUID, req request.COACreateRequest) (entity.COA, error) {
+	if err := s.validate.Struct(req); err != nil {
 		return entity.COA{}, err
 	}
-	c := entity.COA{Code: req.Code, Name: req.Name}
-	return e.ICOARepository.Create(c)
+	c := entity.COA{
+		CompanyId:  companyID,
+		SubgroupId: req.SubgroupId,
+		Code:       req.Code,
+		Name:       req.Name,
+		// CurrencyCode: req.CurrencyCode,
+		// BUG NOTE 06032026: Undefined CurrencyCode di COACreateRequest
+		Active: true,
+	}
+	if c.CurrencyCode == "" {
+		c.CurrencyCode = "IDR"
+	}
+	return s.ICOARepository.Create(c)
 }
 
-func (e *COAService) FindAll(qp *util.QueryParams) ([]response.COAResponse, int, error) {
-	entities, totalCount, err := e.ICOARepository.FindAll(qp)
+func (s *COAService) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]response.COAResponse, int, error) {
+	entities, totalCount, err := s.ICOARepository.FindAll(companyID, qp)
 	if err != nil {
 		return nil, 0, err
 	}
-
 	if totalCount == 0 {
 		return []response.COAResponse{}, 0, nil
 	}
-
 	totalPages := (totalCount + qp.PageSize - 1) / qp.PageSize
 	if qp.Page > totalPages {
 		return nil, totalCount, nil
 	}
-
 	resps := make([]response.COAResponse, 0, len(entities))
-	for _, value := range entities {
-		var groupResp *response.COAGroupResponse
-		if value.SubGroup.Group.Id != uuid.Nil {
-			groupResp = &response.COAGroupResponse{
-				Id:            value.SubGroup.Group.Id,
-				Code:          value.SubGroup.Group.Code,
-				Name:          value.SubGroup.Group.Name,
-				NormalBalance: value.SubGroup.Group.NormalBalance,
-				Status:        value.SubGroup.Group.Status,
-				CreatedAt:     value.SubGroup.Group.CreatedAt,
-				UpdatedAt:     value.SubGroup.Group.UpdatedAt,
-			}
-		}
-
-		var subGroupResp *response.COASubGroupResponse
-		if value.SubGroup.Id != uuid.Nil {
-			subGroupResp = &response.COASubGroupResponse{
-				Id:        value.SubGroup.Id,
-				Code:      value.SubGroup.Code,
-				Name:      value.SubGroup.Name,
-				Status:    value.SubGroup.Status,
-				CreatedAt: value.SubGroup.CreatedAt,
-				UpdatedAt: value.SubGroup.UpdatedAt,
-				GroupId:   value.SubGroup.GroupId,
-				Group:     groupResp,
-			}
-		}
-
-		resps = append(resps, response.COAResponse{
-			Id:            value.Id,
-			Code:          value.Code,
-			Group:         groupResp.Name,
-			SubGroup:      subGroupResp.Name,
-			Name:          value.Name,
-			NormalBalance: groupResp.NormalBalance,
-			Status:        value.Status,
-			CreatedAt:     value.CreatedAt,
-			UpdatedAt:     value.UpdatedAt,
-		})
+	for _, v := range entities {
+		resps = append(resps, mapCOA(v))
 	}
-
 	return resps, totalCount, nil
 }
 
-func (e *COAService) FindById(reqId uuid.UUID) (response.COAResponse, error) {
-	result, err := e.ICOARepository.FindById(reqId)
+func (s *COAService) FindById(companyID, reqId uuid.UUID) (response.COAResponse, error) {
+	result, err := s.ICOARepository.FindById(companyID, reqId)
 	if err != nil {
 		return response.COAResponse{}, err
 	}
-	return response.COAResponse{
-		Id:        result.Id,
-		Name:      result.Name,
-		Code:      result.Code,
-		Status:    result.Status,
-		CreatedAt: result.CreatedAt,
-		UpdatedAt: result.UpdatedAt,
-	}, nil
+	return mapCOA(result), nil
 }
 
-func (e *COAService) Update(req request.COAUpdateRequest) (entity.COA, error) {
-	c, err := e.ICOARepository.FindById(req.Id)
+func (s *COAService) Update(companyID uuid.UUID, req request.COAUpdateRequest) (entity.COA, error) {
+	c, err := s.ICOARepository.FindById(companyID, req.Id)
 	if err != nil {
 		return c, err
 	}
-	c.Name = req.Name
+	c.SubgroupId = req.SubgroupId
 	c.Code = req.Code
-	return c, e.ICOARepository.Update(c)
+	c.Name = req.Name
+	// BUG NOTE 06032026: Undefined CurrencyCode di COACreateRequest
+	// if req.CurrencyCode != "" {
+	// 	c.CurrencyCode = req.CurrencyCode
+	// }
+	return c, s.ICOARepository.Update(c)
 }
 
-func (e *COAService) Delete(reqId uuid.UUID) (entity.COA, error) {
-	c, err := e.ICOARepository.FindById(reqId)
+func (s *COAService) Delete(companyID, reqId uuid.UUID) (entity.COA, error) {
+	c, err := s.ICOARepository.FindById(companyID, reqId)
 	if err != nil {
 		return c, err
 	}
-	return c, e.ICOARepository.Delete(reqId)
+	// Guard: cannot delete if used in transactions
+	if s.IJournalEntryRepository != nil {
+		hasTransactions, err := s.IJournalEntryRepository.HasTransactions(companyID, reqId)
+		if err != nil {
+			return c, err
+		}
+		if hasTransactions {
+			return c, errors.New("cannot delete an account that has been used in journal entries")
+		}
+	}
+	return c, s.ICOARepository.Delete(companyID, reqId)
 }
 
-func (e *COAService) SelectDropdownList(qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error) {
-	entities, totalCount, err := e.ICOARepository.FindAll(qp)
+func (s *COAService) SelectDropdownList(companyID uuid.UUID) ([]response.SelectDropdownListResponse, error) {
+	entities, err := s.ICOARepository.SelectDropdownList(companyID)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
-
-	totalPages := (totalCount + qp.PageSize - 1) / qp.PageSize
-	if totalCount == 0 || qp.Page > totalPages {
-		return []response.SelectDropdownListResponse{}, totalCount, nil
-	}
-
 	resps := make([]response.SelectDropdownListResponse, 0, len(entities))
-	for _, value := range entities {
-		resps = append(resps, response.SelectDropdownListResponse{
-			Value: value.Id,
-			Label: value.Name,
-		})
+	for _, v := range entities {
+		resps = append(resps, response.SelectDropdownListResponse{Value: v.Id, Label: fmt.Sprintf("%s - %s", v.Code, v.Name)})
 	}
-	return resps, totalCount, nil
+	return resps, nil
+}
+
+func mapCOA(v entity.COA) response.COAResponse {
+	r := response.COAResponse{
+		Id:         v.Id,
+		SubgroupId: v.SubgroupId,
+		Code:       v.Code,
+		Name:       v.Name,
+		// BUG NOTE 06032026: Undefined CurrencyCode di COACreateRequest
+		// CurrencyCode: v.CurrencyCode,
+		// BUG NOTE 06032026: unknown field Active in struct literal of type response.COAResponse
+		// Active:    v.Active,
+		Status:    v.Status,
+		CreatedAt: v.CreatedAt,
+		UpdatedAt: v.UpdatedAt,
+	}
+	if v.SubGroup != nil {
+		r.SubGroup = &response.COASubGroupResponse{
+			Id:   v.SubGroup.Id,
+			Code: v.SubGroup.Code,
+			Name: v.SubGroup.Name,
+		}
+	}
+	return r
 }

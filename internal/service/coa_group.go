@@ -11,12 +11,12 @@ import (
 )
 
 type ICOAGroupService interface {
-	Create(req request.COAGroupCreateRequest) (entity.COAGroup, error)
-	FindAll(qp *util.QueryParams) ([]response.COAGroupResponse, int, error)
-	FindById(reqId uuid.UUID) (response.COAGroupResponse, error)
-	Update(req request.COAGroupUpdateRequest) (entity.COAGroup, error)
-	Delete(reqId uuid.UUID) (entity.COAGroup, error)
-	SelectDropdownList(qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error)
+	Create(companyID uuid.UUID, req request.COAGroupCreateRequest) (entity.COAGroup, error)
+	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]response.COAGroupResponse, int, error)
+	FindById(companyID, reqId uuid.UUID) (response.COAGroupResponse, error)
+	Update(companyID uuid.UUID, req request.COAGroupUpdateRequest) (entity.COAGroup, error)
+	Delete(companyID, reqId uuid.UUID) (entity.COAGroup, error)
+	SelectDropdownList(companyID uuid.UUID) ([]response.SelectDropdownListResponse, error)
 }
 
 type COAGroupService struct {
@@ -28,96 +28,80 @@ func NewCOAGroupService(repo repository.ICOAGroupRepository, validate *validator
 	return &COAGroupService{ICOAGroupRepository: repo, validate: validate}
 }
 
-func (e *COAGroupService) Create(req request.COAGroupCreateRequest) (entity.COAGroup, error) {
-	if err := e.validate.Struct(req); err != nil {
+func (s *COAGroupService) Create(companyID uuid.UUID, req request.COAGroupCreateRequest) (entity.COAGroup, error) {
+	if err := s.validate.Struct(req); err != nil {
 		return entity.COAGroup{}, err
 	}
-	g := entity.COAGroup{Code: req.Code, Name: req.Name, NormalBalance: req.NormalBalance}
-	return e.ICOAGroupRepository.Create(g)
+	g := entity.COAGroup{CompanyId: companyID, Code: req.Code, Name: req.Name, NormalBalance: req.NormalBalance}
+	return s.ICOAGroupRepository.Create(g)
 }
 
-func (e *COAGroupService) FindAll(qp *util.QueryParams) ([]response.COAGroupResponse, int, error) {
-	entities, totalCount, err := e.ICOAGroupRepository.FindAll(qp)
+func (s *COAGroupService) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]response.COAGroupResponse, int, error) {
+	entities, totalCount, err := s.ICOAGroupRepository.FindAll(companyID, qp)
 	if err != nil {
 		return nil, 0, err
 	}
-
 	if totalCount == 0 {
 		return []response.COAGroupResponse{}, 0, nil
 	}
-
 	totalPages := (totalCount + qp.PageSize - 1) / qp.PageSize
 	if qp.Page > totalPages {
 		return nil, totalCount, nil
 	}
-
 	resps := make([]response.COAGroupResponse, 0, len(entities))
-	for _, value := range entities {
-		resps = append(resps, response.COAGroupResponse{
-			Id:            value.Id,
-			Code:          value.Code,
-			Name:          value.Name,
-			NormalBalance: value.NormalBalance,
-			Status:        value.Status,
-			CreatedAt:     value.CreatedAt,
-			UpdatedAt:     value.UpdatedAt,
-		})
+	for _, v := range entities {
+		resps = append(resps, mapCOAGroup(v))
 	}
 	return resps, totalCount, nil
 }
 
-func (e *COAGroupService) FindById(reqId uuid.UUID) (response.COAGroupResponse, error) {
-	result, err := e.ICOAGroupRepository.FindById(reqId)
+func (s *COAGroupService) FindById(companyID, reqId uuid.UUID) (response.COAGroupResponse, error) {
+	result, err := s.ICOAGroupRepository.FindById(companyID, reqId)
 	if err != nil {
 		return response.COAGroupResponse{}, err
 	}
-	return response.COAGroupResponse{
-		Id:            result.Id,
-		Code:          result.Code,
-		Name:          result.Name,
-		NormalBalance: result.NormalBalance,
-		Status:        result.Status,
-		CreatedAt:     result.CreatedAt,
-		UpdatedAt:     result.UpdatedAt,
-	}, nil
+	return mapCOAGroup(result), nil
 }
 
-func (e *COAGroupService) Update(req request.COAGroupUpdateRequest) (entity.COAGroup, error) {
-	g, err := e.ICOAGroupRepository.FindById(req.Id)
+func (s *COAGroupService) Update(companyID uuid.UUID, req request.COAGroupUpdateRequest) (entity.COAGroup, error) {
+	g, err := s.ICOAGroupRepository.FindById(companyID, req.Id)
 	if err != nil {
 		return g, err
 	}
-	g.Name = req.Name
 	g.Code = req.Code
+	g.Name = req.Name
 	g.NormalBalance = req.NormalBalance
-	return g, e.ICOAGroupRepository.Update(g)
+	return g, s.ICOAGroupRepository.Update(g)
 }
 
-func (e *COAGroupService) Delete(reqId uuid.UUID) (entity.COAGroup, error) {
-	g, err := e.ICOAGroupRepository.FindById(reqId)
+func (s *COAGroupService) Delete(companyID, reqId uuid.UUID) (entity.COAGroup, error) {
+	g, err := s.ICOAGroupRepository.FindById(companyID, reqId)
 	if err != nil {
 		return g, err
 	}
-	return g, e.ICOAGroupRepository.Delete(reqId)
+	return g, s.ICOAGroupRepository.Delete(companyID, reqId)
 }
 
-func (e *COAGroupService) SelectDropdownList(qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error) {
-	entities, totalCount, err := e.ICOAGroupRepository.FindAll(qp)
+func (s *COAGroupService) SelectDropdownList(companyID uuid.UUID) ([]response.SelectDropdownListResponse, error) {
+	entities, err := s.ICOAGroupRepository.SelectDropdownList(companyID)
 	if err != nil {
-		return nil, 0, err
+		return nil, err
 	}
-
-	totalPages := (totalCount + qp.PageSize - 1) / qp.PageSize
-	if totalCount == 0 || qp.Page > totalPages {
-		return []response.SelectDropdownListResponse{}, totalCount, nil
-	}
-
 	resps := make([]response.SelectDropdownListResponse, 0, len(entities))
-	for _, value := range entities {
-		resps = append(resps, response.SelectDropdownListResponse{
-			Value: value.Id,
-			Label: value.Name,
-		})
+	for _, v := range entities {
+		resps = append(resps, response.SelectDropdownListResponse{Value: v.Id, Label: v.Name})
 	}
-	return resps, totalCount, nil
+	return resps, nil
+}
+
+func mapCOAGroup(v entity.COAGroup) response.COAGroupResponse {
+	return response.COAGroupResponse{
+		Id:            v.Id,
+		Code:          v.Code,
+		Name:          v.Name,
+		NormalBalance: v.NormalBalance,
+		Status:        v.Status,
+		CreatedAt:     v.CreatedAt,
+		UpdatedAt:     v.UpdatedAt,
+	}
 }

@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"errors"
+
 	"github.com/fatihrizqon/symetra-service/internal/entity"
 	"github.com/fatihrizqon/symetra-service/internal/util"
 	"github.com/google/uuid"
@@ -17,10 +19,11 @@ var coaSubGroupSortColumns = map[string]string{
 
 type ICOASubGroupRepository interface {
 	Create(entity.COASubGroup) (entity.COASubGroup, error)
-	FindAll(qp *util.QueryParams) ([]entity.COASubGroup, int, error)
-	FindById(entityId uuid.UUID) (entity.COASubGroup, error)
+	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.COASubGroup, int, error)
+	FindById(companyID, entityId uuid.UUID) (entity.COASubGroup, error)
 	Update(entity.COASubGroup) error
-	Delete(entityId uuid.UUID) error
+	Delete(companyID, entityId uuid.UUID) error
+	SelectDropdownList(companyID uuid.UUID) ([]entity.COASubGroup, error)
 }
 
 type COASubGroupRepository struct {
@@ -31,21 +34,24 @@ func NewCOASubGroupRepository(Db *gorm.DB) ICOASubGroupRepository {
 	return &COASubGroupRepository{Db: Db}
 }
 
-func (e *COASubGroupRepository) Create(sg entity.COASubGroup) (entity.COASubGroup, error) {
-	tx := e.Db.Preload("Group").Begin()
+func (r *COASubGroupRepository) Create(sg entity.COASubGroup) (entity.COASubGroup, error) {
+	tx := r.Db.Begin()
 	if err := tx.Create(&sg).Error; err != nil {
 		tx.Rollback()
+		return sg, err
+	}
+	if err := r.Db.Preload("Group").First(&sg, "id = ?", sg.Id).Error; err != nil {
 		return sg, err
 	}
 	tx.Commit()
 	return sg, nil
 }
 
-func (e *COASubGroupRepository) FindAll(qp *util.QueryParams) ([]entity.COASubGroup, int, error) {
+func (r *COASubGroupRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.COASubGroup, int, error) {
 	var entities []entity.COASubGroup
 	var totalCount int64
 
-	query := e.Db.Preload("Group").Model(&entity.COASubGroup{})
+	query := r.Db.Preload("Group").Model(&entity.COASubGroup{}).Where("coa_subgroups.company_id = ?", companyID)
 	query = util.ApplySearch(query, qp)
 	query = entity.COASubGroup{}.ApplyFilters(query, qp.Filters)
 
@@ -62,20 +68,19 @@ func (e *COASubGroupRepository) FindAll(qp *util.QueryParams) ([]entity.COASubGr
 	if err := query.Find(&entities).Error; err != nil {
 		return nil, 0, err
 	}
-
 	return entities, int(totalCount), nil
 }
 
-func (e *COASubGroupRepository) FindById(entityId uuid.UUID) (entity.COASubGroup, error) {
+func (r *COASubGroupRepository) FindById(companyID, entityId uuid.UUID) (entity.COASubGroup, error) {
 	var sg entity.COASubGroup
-	if err := e.Db.Preload("Group").Where("id = ?", entityId).First(&sg).Error; err != nil {
-		return sg, err
+	if err := r.Db.Preload("Group").Where("id = ? AND company_id = ?", entityId, companyID).First(&sg).Error; err != nil {
+		return sg, errors.New("coa subgroup not found")
 	}
 	return sg, nil
 }
 
-func (e *COASubGroupRepository) Update(sg entity.COASubGroup) error {
-	tx := e.Db.Preload("Group").Begin()
+func (r *COASubGroupRepository) Update(sg entity.COASubGroup) error {
+	tx := r.Db.Begin()
 	if err := tx.Model(&sg).Updates(sg).Error; err != nil {
 		tx.Rollback()
 		return err
@@ -84,12 +89,23 @@ func (e *COASubGroupRepository) Update(sg entity.COASubGroup) error {
 	return nil
 }
 
-func (e *COASubGroupRepository) Delete(entityId uuid.UUID) error {
-	tx := e.Db.Begin()
-	if err := tx.Where("id = ?", entityId).Delete(&entity.COASubGroup{}).Error; err != nil {
+func (r *COASubGroupRepository) Delete(companyID, entityId uuid.UUID) error {
+	tx := r.Db.Begin()
+	if err := tx.Where("id = ? AND company_id = ?", entityId, companyID).Delete(&entity.COASubGroup{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
 	tx.Commit()
 	return nil
+}
+
+func (r *COASubGroupRepository) SelectDropdownList(companyID uuid.UUID) ([]entity.COASubGroup, error) {
+	var entities []entity.COASubGroup
+	if err := r.Db.Preload("Group").
+		Where("coa_subgroups.company_id = ? AND coa_subgroups.status = 1", companyID).
+		Order("coa_subgroups.code ASC").
+		Find(&entities).Error; err != nil {
+		return nil, err
+	}
+	return entities, nil
 }

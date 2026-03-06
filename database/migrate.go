@@ -12,21 +12,29 @@ func Migrate(db *gorm.DB) {
 		&entity.Session{},
 		&entity.Credential{},
 
-		// ── Chart of Accounts hierarchy ───────────────────────────────────────
+		// ── Company (must precede all company-scoped tables) ──────────────────
+		&entity.Company{},
+		&entity.CompanyMember{},
+
+		// ── Chart of Accounts hierarchy (now company-scoped) ──────────────────
 		&entity.COAGroup{},
 		&entity.COASubGroup{},
 		&entity.COA{},
 
-		// ── Fiscal ────────────────────────────────────────────────────────────
-		// FiscalYear must come before FiscalPeriod (FK dependency)
-		// FiscalPeriodLog must come after FiscalPeriod
+		// ── Transactional data (company-scoped) ───────────────────────────────
+		&entity.JournalEntry{},
+		&entity.JournalLine{},
+
+		// ── Fiscal (company-scoped) ───────────────────────────────────────────
 		&entity.FiscalYear{},
 		&entity.FiscalPeriod{},
 		&entity.FiscalPeriodLog{},
 
-		// ── Transactions ──────────────────────────────────────────────────────
-		&entity.JournalEntry{},
-		&entity.JournalLine{},
+		// ── Parties (company-scoped) ──────────────────────────────────────────
+		// Customer and Vendor handlers will be added in a subsequent phase.
+		// Entities are migrated now so foreign keys resolve correctly.
+		&entity.Customer{},
+		&entity.Vendor{},
 	)
 
 	seedDefaultData(db)

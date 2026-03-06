@@ -7,13 +7,12 @@ import (
 	"gorm.io/gorm"
 )
 
-func (Vendor) TableName() string {
-	return "vendors"
-}
+func (Vendor) TableName() string { return "vendors" }
 
 type Vendor struct {
 	Id        uuid.UUID  `gorm:"type:uuid;primaryKey;default:gen_random_uuid();" json:"id"`
-	Code      string     `gorm:"type:character varying;not null;unique;" json:"code"`
+	CompanyId uuid.UUID  `gorm:"type:uuid;not null;index;" json:"company_id"` // ← NEW
+	Code      string     `gorm:"type:character varying;not null;" json:"code"`
 	Name      string     `gorm:"type:character varying;not null;" json:"name"`
 	Email     string     `gorm:"type:character varying;" json:"email"`
 	Phone     string     `gorm:"type:character varying;" json:"phone"`
@@ -25,12 +24,8 @@ type Vendor struct {
 	UpdatedAt time.Time  `gorm:"autoUpdateTime;" json:"updated_at"`
 }
 
-func (Vendor) SearchableFields() []string {
-	return []string{"code", "name", "email", "phone"}
-}
+func (Vendor) SearchableFields() []string { return []string{"code", "name", "email", "phone"} }
 
-// ApplyFilters applies Vendor-specific filter logic to the given GORM query.
-// Supports multi-value filters via repeated params (e.g. ?status=1&status=2).
 func (Vendor) ApplyFilters(db *gorm.DB, filters map[string][]string) *gorm.DB {
 	if values, ok := filters["status"]; ok {
 		db = db.Where("status IN ?", values)

@@ -20,7 +20,8 @@
         "Origin",
         "Content-Type",
         "Accept",
-        "Authorization"
+        "Authorization",
+        "X-COMPANY-ID"
       ],
       "allow_credentials": true
     }

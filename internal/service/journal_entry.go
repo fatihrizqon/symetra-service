@@ -15,13 +15,13 @@ import (
 )
 
 type IJournalEntryService interface {
-	Create(req request.JournalEntryCreateRequest, createdBy uuid.UUID, journalType entity.JournalType) (response.JournalEntryResponse, error)
-	FindAll(qp *util.QueryParams) ([]response.JournalEntryResponse, int, error)
-	FindById(id uuid.UUID) (response.JournalEntryResponse, error)
-	Update(req request.JournalEntryUpdateRequest) (response.JournalEntryResponse, error)
-	Delete(id uuid.UUID) error
-	Post(id uuid.UUID) error
-	Void(id uuid.UUID) error
+	Create(companyID uuid.UUID, req request.JournalEntryCreateRequest, createdBy uuid.UUID, journalType entity.JournalType) (response.JournalEntryResponse, error)
+	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]response.JournalEntryResponse, int, error)
+	FindById(companyID, id uuid.UUID) (response.JournalEntryResponse, error)
+	Update(companyID uuid.UUID, req request.JournalEntryUpdateRequest) (response.JournalEntryResponse, error)
+	Delete(companyID, id uuid.UUID) error
+	Post(companyID, id uuid.UUID) error
+	Void(companyID, id uuid.UUID) error
 }
 
 type JournalEntryService struct {
@@ -36,7 +36,6 @@ func NewJournalEntryService(repo repository.IJournalEntryRepository, validate *v
 	}
 }
 
-// toJournalResponse maps a JournalEntry entity to its response DTO.
 func toJournalResponse(e entity.JournalEntry) response.JournalEntryResponse {
 	lines := make([]response.JournalLineResponse, 0, len(e.Lines))
 	for _, l := range e.Lines {
@@ -54,7 +53,6 @@ func toJournalResponse(e entity.JournalEntry) response.JournalEntryResponse {
 		}
 		lines = append(lines, lr)
 	}
-
 	return response.JournalEntryResponse{
 		Id:            e.Id,
 		JournalNumber: e.JournalNumber,
@@ -71,7 +69,6 @@ func toJournalResponse(e entity.JournalEntry) response.JournalEntryResponse {
 	}
 }
 
-// validateBalance enforces that total debit equals total credit.
 func validateBalance(lines []request.JournalLineRequest) error {
 	var totalDebit, totalCredit float64
 	for _, l := range lines {
@@ -88,7 +85,6 @@ func validateBalance(lines []request.JournalLineRequest) error {
 	return nil
 }
 
-// parseDate converts a date string (YYYY-MM-DD) to time.Time.
 func parseDate(s string) (time.Time, error) {
 	t, err := time.Parse("2006-01-02", s)
 	if err != nil {
@@ -97,11 +93,9 @@ func parseDate(s string) (time.Time, error) {
 	return t, nil
 }
 
-// buildLines converts request line DTOs to entity lines and computes totals.
 func buildLines(reqLines []request.JournalLineRequest) ([]entity.JournalLine, float64, float64) {
 	lines := make([]entity.JournalLine, 0, len(reqLines))
 	var totalDebit, totalCredit float64
-
 	for _, rl := range reqLines {
 		lines = append(lines, entity.JournalLine{
 			Id:          uuid.New(),
@@ -113,17 +107,13 @@ func buildLines(reqLines []request.JournalLineRequest) ([]entity.JournalLine, fl
 		totalDebit += rl.Debit
 		totalCredit += rl.Credit
 	}
-
 	return lines, totalDebit, totalCredit
 }
 
-// Create creates a new draft journal entry with the given type.
-// journalType controls the journal number prefix (JE/RV/EX) and is stored on the entry.
-func (s *JournalEntryService) Create(req request.JournalEntryCreateRequest, createdBy uuid.UUID, journalType entity.JournalType) (response.JournalEntryResponse, error) {
+func (s *JournalEntryService) Create(companyID uuid.UUID, req request.JournalEntryCreateRequest, createdBy uuid.UUID, journalType entity.JournalType) (response.JournalEntryResponse, error) {
 	if err := s.validate.Struct(req); err != nil {
 		return response.JournalEntryResponse{}, err
 	}
-
 	if err := validateBalance(req.Lines); err != nil {
 		return response.JournalEntryResponse{}, err
 	}
@@ -133,14 +123,13 @@ func (s *JournalEntryService) Create(req request.JournalEntryCreateRequest, crea
 		return response.JournalEntryResponse{}, err
 	}
 
-	// Validate journalType — default to general if unrecognised
 	if journalType != entity.JournalTypeGeneral &&
 		journalType != entity.JournalTypeRevenue &&
 		journalType != entity.JournalTypeExpense {
 		journalType = entity.JournalTypeGeneral
 	}
 
-	journalNumber, err := s.IJournalEntryRepository.GenerateJournalNumber(journalType)
+	journalNumber, err := s.IJournalEntryRepository.GenerateJournalNumber(companyID, journalType)
 	if err != nil {
 		return response.JournalEntryResponse{}, err
 	}
@@ -148,6 +137,7 @@ func (s *JournalEntryService) Create(req request.JournalEntryCreateRequest, crea
 	lines, totalDebit, totalCredit := buildLines(req.Lines)
 
 	entry := entity.JournalEntry{
+		CompanyId:     companyID,
 		JournalNumber: journalNumber,
 		Type:          journalType,
 		Date:          date,
@@ -162,97 +152,79 @@ func (s *JournalEntryService) Create(req request.JournalEntryCreateRequest, crea
 	if err != nil {
 		return response.JournalEntryResponse{}, err
 	}
-
 	return toJournalResponse(created), nil
 }
 
-// FindAll retrieves paginated journal entries.
-func (s *JournalEntryService) FindAll(qp *util.QueryParams) ([]response.JournalEntryResponse, int, error) {
-	entities, totalCount, err := s.IJournalEntryRepository.FindAll(qp)
+func (s *JournalEntryService) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]response.JournalEntryResponse, int, error) {
+	entities, totalCount, err := s.IJournalEntryRepository.FindAll(companyID, qp)
 	if err != nil {
 		return nil, 0, err
 	}
-
 	if totalCount == 0 {
 		return []response.JournalEntryResponse{}, 0, nil
 	}
-
 	totalPages := (totalCount + qp.PageSize - 1) / qp.PageSize
 	if qp.Page > totalPages {
 		return nil, totalCount, nil
 	}
-
 	resps := make([]response.JournalEntryResponse, 0, len(entities))
 	for _, e := range entities {
 		resps = append(resps, toJournalResponse(e))
 	}
-
 	return resps, totalCount, nil
 }
 
-// FindById retrieves a single journal entry by ID.
-func (s *JournalEntryService) FindById(id uuid.UUID) (response.JournalEntryResponse, error) {
-	entry, err := s.IJournalEntryRepository.FindById(id)
+func (s *JournalEntryService) FindById(companyID, id uuid.UUID) (response.JournalEntryResponse, error) {
+	entry, err := s.IJournalEntryRepository.FindById(companyID, id)
 	if err != nil {
 		return response.JournalEntryResponse{}, err
 	}
 	return toJournalResponse(entry), nil
 }
 
-// Update replaces the header and lines of a draft journal entry.
-func (s *JournalEntryService) Update(req request.JournalEntryUpdateRequest) (response.JournalEntryResponse, error) {
-	existing, err := s.IJournalEntryRepository.FindById(req.Id)
+func (s *JournalEntryService) Update(companyID uuid.UUID, req request.JournalEntryUpdateRequest) (response.JournalEntryResponse, error) {
+	existing, err := s.IJournalEntryRepository.FindById(companyID, req.Id)
 	if err != nil {
 		return response.JournalEntryResponse{}, err
 	}
-
 	if existing.Status != entity.JournalStatusDraft {
 		return response.JournalEntryResponse{}, errors.New("only draft journal entries can be edited")
 	}
-
 	if err := s.validate.Struct(req); err != nil {
 		return response.JournalEntryResponse{}, err
 	}
-
 	if err := validateBalance(req.Lines); err != nil {
 		return response.JournalEntryResponse{}, err
 	}
-
 	date, err := parseDate(req.Date)
 	if err != nil {
 		return response.JournalEntryResponse{}, err
 	}
-
 	lines, totalDebit, totalCredit := buildLines(req.Lines)
-
 	existing.Date = date
 	existing.Description = req.Description
 	existing.TotalDebit = totalDebit
 	existing.TotalCredit = totalCredit
-
 	updated, err := s.IJournalEntryRepository.Update(existing, lines)
 	if err != nil {
 		return response.JournalEntryResponse{}, err
 	}
-
 	return toJournalResponse(updated), nil
 }
 
-// Delete removes a draft journal entry.
-func (s *JournalEntryService) Delete(id uuid.UUID) error {
-	existing, err := s.IJournalEntryRepository.FindById(id)
+func (s *JournalEntryService) Delete(companyID, id uuid.UUID) error {
+	existing, err := s.IJournalEntryRepository.FindById(companyID, id)
 	if err != nil {
 		return err
 	}
 	if existing.Status != entity.JournalStatusDraft {
 		return errors.New("only draft journal entries can be deleted")
 	}
-	return s.IJournalEntryRepository.Delete(id)
+	return s.IJournalEntryRepository.Delete(companyID, id)
 }
 
-// Post transitions a balanced draft entry to posted.
-func (s *JournalEntryService) Post(id uuid.UUID) error {
-	existing, err := s.IJournalEntryRepository.FindById(id)
+func (s *JournalEntryService) Post(companyID, id uuid.UUID) error {
+	existing, err := s.IJournalEntryRepository.FindById(companyID, id)
 	if err != nil {
 		return err
 	}
@@ -263,17 +235,16 @@ func (s *JournalEntryService) Post(id uuid.UUID) error {
 	if diff > 0.001 {
 		return errors.New("cannot post an unbalanced journal entry")
 	}
-	return s.IJournalEntryRepository.Post(id)
+	return s.IJournalEntryRepository.Post(companyID, id)
 }
 
-// Void transitions a posted entry to void.
-func (s *JournalEntryService) Void(id uuid.UUID) error {
-	existing, err := s.IJournalEntryRepository.FindById(id)
+func (s *JournalEntryService) Void(companyID, id uuid.UUID) error {
+	existing, err := s.IJournalEntryRepository.FindById(companyID, id)
 	if err != nil {
 		return err
 	}
 	if existing.Status != entity.JournalStatusPosted {
 		return errors.New("only posted journal entries can be voided")
 	}
-	return s.IJournalEntryRepository.Void(id)
+	return s.IJournalEntryRepository.Void(companyID, id)
 }

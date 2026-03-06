@@ -21,6 +21,7 @@ type RouteConfig struct {
 	RevenueHandler      *handler.RevenueHandler
 	ExpenseHandler      *handler.ExpenseHandler
 	ReportHandler       *handler.ReportHandler
+	FiscalHandler       *handler.FiscalHandler // ← NEW
 }
 
 func (rc *RouteConfig) Setup() {
@@ -31,18 +32,18 @@ func (rc *RouteConfig) Setup() {
 func (rc *RouteConfig) SetupGuestRoute() {
 	rc.App.Post("/api/v1/auth/login", rc.AuthHandler.Login)
 	rc.App.Post("/api/v1/auth/refresh", rc.AuthHandler.Refresh)
-	// Users Registration
+	// Public: user self-registration
 	rc.App.Post("/api/v1/users", rc.UserHandler.Create)
 	rc.App.Get("/swagger/*", swagger.HandlerDefault)
 }
 
 func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Use(rc.AuthMiddleware)
+
 	rc.App.Post("/api/v1/auth/logout", rc.AuthHandler.Logout)
 	rc.App.Get("/api/v1/dashboard/overview", rc.DashboardHandler.Overview)
 
-	// Users
-	rc.App.Post("/api/v1/users", rc.UserHandler.Create)
+	// Users (admin)
 	rc.App.Get("/api/v1/users", rc.UserHandler.FindAll)
 	rc.App.Get("/api/v1/users/:id", rc.UserHandler.FindById)
 	rc.App.Put("/api/v1/users/:id", rc.UserHandler.Update)
@@ -70,7 +71,7 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Delete("/api/v1/coa/:id", rc.COAHandler.Delete)
 	rc.App.Get("/api/v1/dropdown/coa", rc.COAHandler.SelectDropdownList)
 
-	// Journal
+	// Journal Entries
 	rc.App.Post("/api/v1/journal_entries", rc.JournalEntryHandler.Create)
 	rc.App.Get("/api/v1/journal_entries", rc.JournalEntryHandler.FindAll)
 	rc.App.Get("/api/v1/journal_entries/:id", rc.JournalEntryHandler.FindById)
@@ -79,6 +80,7 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Put("/api/v1/journal_entries/:id/post", rc.JournalEntryHandler.Post)
 	rc.App.Put("/api/v1/journal_entries/:id/void", rc.JournalEntryHandler.Void)
 
+	// Revenues
 	rc.App.Post("/api/v1/revenues", rc.RevenueHandler.Create)
 	rc.App.Get("/api/v1/revenues", rc.RevenueHandler.FindAll)
 	rc.App.Get("/api/v1/revenues/:id", rc.RevenueHandler.FindById)
@@ -87,6 +89,7 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Put("/api/v1/revenues/:id/post", rc.RevenueHandler.Post)
 	rc.App.Put("/api/v1/revenues/:id/void", rc.RevenueHandler.Void)
 
+	// Expenses
 	rc.App.Post("/api/v1/expenses", rc.ExpenseHandler.Create)
 	rc.App.Get("/api/v1/expenses", rc.ExpenseHandler.FindAll)
 	rc.App.Get("/api/v1/expenses/:id", rc.ExpenseHandler.FindById)
@@ -101,4 +104,21 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Get("/api/v1/reports/balance-sheet", rc.ReportHandler.BalanceSheet)
 	rc.App.Get("/api/v1/reports/cash-flow", rc.ReportHandler.CashFlow)
 	rc.App.Get("/api/v1/reports/equity-statement", rc.ReportHandler.EquityStatement)
+
+	// ── Fiscal Module ─────────────────────────────────────────────────────────
+	// Fiscal Years
+	rc.App.Post("/api/v1/fiscal/years", rc.FiscalHandler.CreateFiscalYear)
+	rc.App.Get("/api/v1/fiscal/years", rc.FiscalHandler.FindAllFiscalYears)
+	rc.App.Get("/api/v1/fiscal/years/:id", rc.FiscalHandler.FindFiscalYearById)
+	rc.App.Put("/api/v1/fiscal/years/:id", rc.FiscalHandler.UpdateFiscalYear)
+	rc.App.Put("/api/v1/fiscal/years/:id/activate", rc.FiscalHandler.ActivateFiscalYear)
+	rc.App.Delete("/api/v1/fiscal/years/:id", rc.FiscalHandler.DeleteFiscalYear)
+
+	// Fiscal Periods
+	rc.App.Get("/api/v1/fiscal/periods", rc.FiscalHandler.FindAllPeriods)
+	rc.App.Get("/api/v1/fiscal/periods/:id", rc.FiscalHandler.FindPeriodById)
+	rc.App.Put("/api/v1/fiscal/periods/:id/close", rc.FiscalHandler.ClosePeriod)
+	rc.App.Put("/api/v1/fiscal/periods/:id/reopen", rc.FiscalHandler.ReopenPeriod)
+	rc.App.Put("/api/v1/fiscal/periods/:id/lock", rc.FiscalHandler.LockPeriod)
+	rc.App.Get("/api/v1/fiscal/periods/:id/logs", rc.FiscalHandler.FindPeriodLogs)
 }

@@ -35,6 +35,8 @@ func Bootstrap(config *BootstrapConfig) {
 	coaRepository := repository.NewCOARepository(config.DB)
 	journalEntryRepository := repository.NewJournalEntryRepository(config.DB)
 	reportRepository := repository.NewReportRepository(config.DB)
+	fiscalYearRepository := repository.NewFiscalYearRepository(config.DB)   // ← NEW
+	fiscalPeriodRepository := repository.NewFiscalPeriodRepository(config.DB) // ← NEW
 
 	// ── Services ──────────────────────────────────────────────────────────────
 	userService := service.NewUserService(userRepository, config.Validate)
@@ -45,6 +47,7 @@ func Bootstrap(config *BootstrapConfig) {
 	coaService := service.NewCOAService(coaRepository, config.Validate)
 	journalEntryService := service.NewJournalEntryService(journalEntryRepository, config.Validate)
 	reportService := service.NewReportService(reportRepository)
+	fiscalService := service.NewFiscalService(fiscalYearRepository, fiscalPeriodRepository, config.Validate) // ← NEW
 
 	// ── Handlers ──────────────────────────────────────────────────────────────
 	userHandler := handler.NewUserHandler(userService)
@@ -57,6 +60,7 @@ func Bootstrap(config *BootstrapConfig) {
 	revenueHandler := handler.NewRevenueHandler(journalEntryService)
 	expenseHandler := handler.NewExpenseHandler(journalEntryService)
 	reportHandler := handler.NewReportHandler(reportService)
+	fiscalHandler := handler.NewFiscalHandler(fiscalService) // ← NEW
 
 	authMiddleware := middleware.NewAuth(tokenRepository)
 
@@ -74,6 +78,7 @@ func Bootstrap(config *BootstrapConfig) {
 		RevenueHandler:      revenueHandler,
 		ExpenseHandler:      expenseHandler,
 		ReportHandler:       reportHandler,
+		FiscalHandler:       fiscalHandler, // ← NEW
 	}
 
 	routeConfig.Setup()

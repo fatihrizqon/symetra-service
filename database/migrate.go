@@ -17,7 +17,14 @@ func Migrate(db *gorm.DB) {
 		&entity.COASubGroup{},
 		&entity.COA{},
 
-		// ── Legacy (kept for backward compat, will migrate to ledger system) ──
+		// ── Fiscal ────────────────────────────────────────────────────────────
+		// FiscalYear must come before FiscalPeriod (FK dependency)
+		// FiscalPeriodLog must come after FiscalPeriod
+		&entity.FiscalYear{},
+		&entity.FiscalPeriod{},
+		&entity.FiscalPeriodLog{},
+
+		// ── Transactions ──────────────────────────────────────────────────────
 		&entity.JournalEntry{},
 		&entity.JournalLine{},
 	)

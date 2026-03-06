@@ -75,12 +75,15 @@ func (e *AuthService) Login(req request.LoginRequest) (AuthResult, error) {
 		return res, fmt.Errorf("failed to generate refresh token: %w", err)
 	}
 
+	// ExpiresAt harus match durasi JWT refresh token (7 hari).
+	// Sebelumnya 15 menit menyebabkan FindCredentialByToken gagal setelah 15 menit
+	// meski JWT masih valid, sehingga /refresh selalu return 401 setelah 15 menit.
 	credential := entity.Credential{
 		ID:           util.GenerateUUID(),
 		SessionID:    session.ID,
 		Type:         "REFRESH_TOKEN",
 		RefreshToken: refreshToken,
-		ExpiresAt:    time.Now().Add(15 * time.Minute),
+		ExpiresAt:    time.Now().Add(7 * 24 * time.Hour),
 	}
 
 	if err := e.ITokenRepository.CreateCredential(credential); err != nil {
@@ -120,7 +123,7 @@ func (e *AuthService) RefreshToken(refreshToken string) (AuthResult, error) {
 		SessionID:    session.ID,
 		Type:         "REFRESH_TOKEN",
 		RefreshToken: newRefreshToken,
-		ExpiresAt:    time.Now().Add(15 * time.Minute),
+		ExpiresAt:    time.Now().Add(7 * 24 * time.Hour), // match JWT refresh token duration
 	}
 
 	if err := e.ITokenRepository.RevokeCredentialByID(oldCredential.ID); err != nil {

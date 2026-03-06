@@ -63,7 +63,21 @@ func (h *CompanyHandler) CreateCompany(ctx *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /api/v1/companies [get]
 func (h *CompanyHandler) FindAllCompanies(ctx *fiber.Ctx) error {
-	// Superadmin check happens in route (RequirePermission middleware)
+	// Guard: endpoint ini tidak pakai CompanyMiddleware (tidak ada X-Company-ID),
+	// jadi superadmin check dilakukan langsung di handler via ICompanyService.
+	callerID, err := util.GetCallerID(ctx)
+	if err != nil {
+		util.HandleError(ctx, fiber.StatusUnauthorized, err)
+		return nil
+	}
+
+	if err := h.ICompanyService.AssertSuperadmin(callerID); err != nil {
+		return ctx.Status(fiber.StatusForbidden).JSON(response.JSON{
+			Status:  403,
+			Message: "access denied: superadmin only",
+		})
+	}
+
 	qp := util.ParseQueryParams(ctx, entity.Company{}.SearchableFields())
 
 	entities, totalCount, err := h.ICompanyService.FindAll(qp)

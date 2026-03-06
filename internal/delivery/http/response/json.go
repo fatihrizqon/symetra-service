@@ -15,6 +15,7 @@ type UserInfo struct {
 	Name            string    `json:"name"`
 	Email           string    `json:"email"`
 	Status          int       `json:"status"`
+	IsSuperadmin    bool      `json:"is_superadmin"`
 	EmailVerifiedAt string    `json:"email_verified_at"`
 	Roles           []string  `json:"roles"`
 	Permissions     []string  `json:"permissions"`

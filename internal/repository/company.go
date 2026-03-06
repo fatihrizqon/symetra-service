@@ -208,16 +208,15 @@ func (r *CompanyMemberRepository) RemoveMember(userID, companyID uuid.UUID) erro
 		Delete(&entity.CompanyMember{}).Error
 }
 
-// IsSuperadmin checks if a user has the superadmin platform role.
-// Superadmin is stored as a special company_member record with company_id = uuid.Nil
-// OR as a boolean field on the user — we use a dedicated platform membership row:
-// company_id = '00000000-0000-0000-0000-000000000000', role = 'superadmin'
+// IsSuperadmin checks if a user has the superadmin platform flag.
+// Reads directly from users.is_superadmin — set manually via DB or admin tool.
 func (r *CompanyMemberRepository) IsSuperadmin(userID uuid.UUID) (bool, error) {
-	var count int64
-	err := r.Db.Model(&entity.CompanyMember{}).
-		Where("user_id = ? AND role = ?", userID, entity.RoleSuperadmin).
-		Count(&count).Error
-	return count > 0, err
+	var user entity.User
+	err := r.Db.Select("is_superadmin").Where("id = ?", userID).First(&user).Error
+	if err != nil {
+		return false, err
+	}
+	return user.IsSuperadmin, nil
 }
 
 func (r *CompanyMemberRepository) CountOwners(companyID uuid.UUID) (int64, error) {

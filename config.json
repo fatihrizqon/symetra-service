@@ -21,7 +21,7 @@
         "Content-Type",
         "Accept",
         "Authorization",
-        "X-COMPANY-ID"
+        "X-Company-ID"
       ],
       "allow_credentials": true
     }

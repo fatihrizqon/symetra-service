@@ -59,11 +59,10 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Post("/api/v1/companies", rc.CompanyHandler.CreateCompany)
 	// List MY companies — returns companies the caller belongs to
 	rc.App.Get("/api/v1/companies/mine", rc.CompanyHandler.FindMyCompanies)
-	// List ALL companies — superadmin only (permission gate in handler)
-	rc.App.Get("/api/v1/companies",
-		middleware.NewRequirePermission("*"),
-		rc.CompanyHandler.FindAllCompanies,
-	)
+	// List ALL companies — superadmin only.
+	// NewRequirePermission TIDAK bisa dipakai di sini karena CompanyMiddleware tidak dipasang
+	// (endpoint ini tidak butuh X-Company-ID). Superadmin check dilakukan di handler langsung.
+	rc.App.Get("/api/v1/companies", rc.CompanyHandler.FindAllCompanies)
 
 	// Routes below require X-Company-ID — apply CompanyMiddleware as group prefix
 	// Pattern: rc.App.Method(path, rc.CompanyMiddleware, [permMiddleware,] handler)

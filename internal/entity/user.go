@@ -18,6 +18,7 @@ type User struct {
 	Name            string    `gorm:"type:character varying; not null;" json:"name"`
 	Email           string    `gorm:"type:character varying; not null; unique;" json:"email"`
 	Status          int       `gorm:"type:int; not null; default:1;" json:"status"`
+	IsSuperadmin    bool      `gorm:"type:boolean; not null; default:false;" json:"is_superadmin"`
 	EmailVerifiedAt time.Time `gorm:"autoCreateTime;" json:"email_verified_at"`
 	Password        string    `gorm:"type:character varying; not null;" json:"password"`
 	CreatedAt       time.Time `gorm:"autoCreateTime;" json:"created_at"`

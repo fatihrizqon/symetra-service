@@ -19,7 +19,12 @@ func (c RefreshCookie) Set(ctx *fiber.Ctx, name string, token string) {
 		Path:     "/",
 		HTTPOnly: true,
 		Secure:   c.Production,
-		SameSite: fiber.CookieSameSiteStrictMode,
+		// SameSite=Lax (bukan Strict) agar cookie terkirim pada cross-origin request
+		// dari frontend (localhost:5173) ke backend (localhost:3000).
+		// SameSite=Strict memblokir cookie pada request cross-origin meskipun
+		// masih same-site (localhost), sehingga /api/v1/auth/refresh selalu 401.
+		// Di production (Secure=true + same domain), Lax sudah cukup aman.
+		SameSite: fiber.CookieSameSiteLaxMode,
 		MaxAge:   int(c.TTL.Seconds()),
 	})
 }

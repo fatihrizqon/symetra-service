@@ -27,6 +27,11 @@ type ICompanyService interface {
 	FindMembers(companyID uuid.UUID) ([]response.CompanyMemberResponse, error)
 	UpdateMemberRole(req request.UpdateMemberRoleRequest, callerID uuid.UUID) error
 	RemoveMember(companyID, targetUserID, callerID uuid.UUID) error
+
+	// Platform guards
+	// AssertSuperadmin returns error jika user bukan superadmin.
+	// Digunakan oleh handler yang tidak bisa menggunakan CompanyMiddleware.
+	AssertSuperadmin(userID uuid.UUID) error
 }
 
 type CompanyService struct {
@@ -304,4 +309,17 @@ func mapCompany(c entity.Company) response.CompanyResponse {
 		CreatedAt: c.CreatedAt,
 		UpdatedAt: c.UpdatedAt,
 	}
+}
+
+// AssertSuperadmin memverifikasi bahwa userID adalah superadmin platform.
+// Digunakan di handler yang tidak bisa menggunakan CompanyMiddleware.
+func (s *CompanyService) AssertSuperadmin(userID uuid.UUID) error {
+	ok, err := s.memberRepo.IsSuperadmin(userID)
+	if err != nil {
+		return errors.New("failed to verify superadmin status")
+	}
+	if !ok {
+		return errors.New("superadmin access required")
+	}
+	return nil
 }

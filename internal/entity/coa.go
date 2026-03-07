@@ -11,7 +11,7 @@ func (COA) TableName() string { return "coa" }
 
 type COA struct {
 	Id           uuid.UUID    `gorm:"type:uuid;primaryKey;default:gen_random_uuid();" json:"id"`
-	CompanyId    uuid.UUID    `gorm:"type:uuid;not null;index;" json:"company_id"` // ← NEW
+	CompanyId    uuid.UUID    `gorm:"type:uuid;not null;index;" json:"company_id"`
 	SubgroupId   uuid.UUID    `gorm:"type:uuid;not null;index;" json:"subgroup_id"`
 	SubGroup     *COASubGroup `gorm:"foreignKey:SubgroupId;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;" json:"subgroup,omitempty"`
 	Code         string       `gorm:"type:character varying;not null;" json:"code"`

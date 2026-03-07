@@ -65,7 +65,7 @@ func (r *COARepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]en
 	query = util.ApplySort(query, qp, coaSortColumns, "coa.created_at")
 	query = util.ApplyPagination(query, qp)
 
-	if err := query.Preload("SubGroup").Find(&entities).Error; err != nil {
+	if err := query.Preload("SubGroup").Preload("SubGroup.Group").Find(&entities).Error; err != nil {
 		return nil, 0, err
 	}
 	return entities, int(totalCount), nil

@@ -142,6 +142,12 @@ func mapCOA(v entity.COA) response.COAResponse {
 			Id:   v.SubGroup.Id,
 			Code: v.SubGroup.Code,
 			Name: v.SubGroup.Name,
+			Group: &response.COAGroupResponse{
+				Id:            v.SubGroup.Group.Id,
+				Code:          v.SubGroup.Group.Code,
+				Name:          v.SubGroup.Group.Name,
+				NormalBalance: v.SubGroup.Group.NormalBalance,
+			},
 		}
 	}
 	return r

@@ -22,8 +22,9 @@ func seedAdminUser(db *gorm.DB) {
 		hash, _ := bcrypt.GenerateFromPassword([]byte("password"), bcrypt.DefaultCost)
 		db.Create(&entity.User{
 			Username: "admin", Name: "System Administrator",
-			Email:    "admin@symetra.id",
-			Password: string(hash), Status: 1,
+			Email:        "admin@symetra.id",
+			IsSuperadmin: true,
+			Password:     string(hash), Status: 1,
 		})
 		log.Println("[SEED] Admin user created: admin@symetra.id / password")
 	}

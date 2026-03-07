@@ -115,3 +115,62 @@ type EquityStatementResponse struct {
 	NetProfit     float64          `json:"net_profit"`
 	ClosingEquity float64          `json:"closing_equity"`
 }
+
+// ─── 6. General Ledger (Buku Besar) ──────────────────────────────────────────
+
+type GeneralLedgerLine struct {
+	Date          string  `json:"date"`
+	JournalNumber string  `json:"journal_number"`
+	Description   string  `json:"description"`
+	Debit         float64 `json:"debit"`
+	Credit        float64 `json:"credit"`
+	Balance       float64 `json:"balance"`
+}
+
+type GeneralLedgerAccount struct {
+	AccountCode    string               `json:"account_code"`
+	AccountName    string               `json:"account_name"`
+	GroupName      string               `json:"group_name"`
+	SubgroupName   string               `json:"subgroup_name"`
+	OpeningBalance float64              `json:"opening_balance"`
+	Lines          []GeneralLedgerLine  `json:"lines"`
+	TotalDebit     float64              `json:"total_debit"`
+	TotalCredit    float64              `json:"total_credit"`
+	ClosingBalance float64              `json:"closing_balance"`
+}
+
+type GeneralLedgerResponse struct {
+	GeneratedAt time.Time              `json:"generated_at"`
+	StartDate   string                 `json:"start_date"`
+	EndDate     string                 `json:"end_date"`
+	Accounts    []GeneralLedgerAccount `json:"accounts"`
+}
+
+// ─── 7. Journal Book (Jurnal Umum) ───────────────────────────────────────────
+
+type JournalBookLine struct {
+	AccountCode string  `json:"account_code"`
+	AccountName string  `json:"account_name"`
+	Debit       float64 `json:"debit"`
+	Credit      float64 `json:"credit"`
+}
+
+type JournalBookEntry struct {
+	Date          string            `json:"date"`
+	JournalNumber string            `json:"journal_number"`
+	Type          string            `json:"type"`
+	Description   string            `json:"description"`
+	Lines         []JournalBookLine `json:"lines"`
+	TotalDebit    float64           `json:"total_debit"`
+	TotalCredit   float64           `json:"total_credit"`
+}
+
+type JournalBookResponse struct {
+	GeneratedAt  time.Time          `json:"generated_at"`
+	StartDate    string             `json:"start_date"`
+	EndDate      string             `json:"end_date"`
+	Entries      []JournalBookEntry `json:"entries"`
+	TotalDebit   float64            `json:"total_debit"`
+	TotalCredit  float64            `json:"total_credit"`
+	EntryCount   int                `json:"entry_count"`
+}

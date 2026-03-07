@@ -164,3 +164,54 @@ func (h *ReportHandler) EquityStatement(ctx *fiber.Ctx) error {
 
 	return ctx.JSON(response.JSON{Status: 200, Message: "Equity statement generated.", Data: result})
 }
+
+// GeneralLedger godoc
+// @Summary General Ledger (Buku Besar)
+// @Tags Reports
+// @Produce json
+// @Param start_date query string false "Start date (YYYY-MM-DD)"
+// @Param end_date   query string false "End date (YYYY-MM-DD)"
+// @Param coa_id     query string false "Filter by specific COA account UUID (optional)"
+// @Success 200 {object} response.JSON
+// @Router /api/v1/reports/general-ledger [get]
+func (h *ReportHandler) GeneralLedger(ctx *fiber.Ctx) error {
+	start, end, err := parseDateRange(ctx)
+	if err != nil {
+		return err
+	}
+
+	coaID := ctx.Query("coa_id", "")
+
+	result, err := h.IReportService.GeneralLedger(start, end, coaID)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
+			Status: 500, Message: err.Error(),
+		})
+	}
+
+	return ctx.JSON(response.JSON{Status: 200, Message: "General ledger generated.", Data: result})
+}
+
+// JournalBook godoc
+// @Summary Journal Book (Jurnal Umum)
+// @Tags Reports
+// @Produce json
+// @Param start_date query string false "Start date (YYYY-MM-DD)"
+// @Param end_date   query string false "End date (YYYY-MM-DD)"
+// @Success 200 {object} response.JSON
+// @Router /api/v1/reports/journal-book [get]
+func (h *ReportHandler) JournalBook(ctx *fiber.Ctx) error {
+	start, end, err := parseDateRange(ctx)
+	if err != nil {
+		return err
+	}
+
+	result, err := h.IReportService.JournalBook(start, end)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
+			Status: 500, Message: err.Error(),
+		})
+	}
+
+	return ctx.JSON(response.JSON{Status: 200, Message: "Journal book generated.", Data: result})
+}

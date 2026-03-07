@@ -37,6 +37,8 @@ type IReportService interface {
 	BalanceSheet(asOf time.Time) (response.BalanceSheetResponse, error)
 	CashFlow(start, end time.Time) (response.CashFlowResponse, error)
 	EquityStatement(start, end time.Time) (response.EquityStatementResponse, error)
+	GeneralLedger(start, end time.Time, coaID string) (response.GeneralLedgerResponse, error)
+	JournalBook(start, end time.Time) (response.JournalBookResponse, error)
 }
 
 type ReportService struct {
@@ -445,4 +447,159 @@ func sectionsToSlice(m map[string]*response.ReportSection) []response.ReportSect
 		result = append(result, *sec)
 	}
 	return result
+}
+
+// ─── 6. General Ledger (Buku Besar) ──────────────────────────────────────────
+// Per-account transaction history with running balance.
+// coaID = "" → all accounts; coaID = "<uuid>" → single account.
+
+func (s *ReportService) GeneralLedger(start, end time.Time, coaID string) (response.GeneralLedgerResponse, error) {
+	rows, err := s.IReportRepository.GetGeneralLedger(start, end, coaID)
+	if err != nil {
+		return response.GeneralLedgerResponse{}, err
+	}
+
+	// Group rows by account
+	type accountKey struct{ code, name, group, subgroup string }
+	type accBucket struct {
+		key   accountKey
+		lines []response.GeneralLedgerLine
+		td    float64
+		tc    float64
+	}
+
+	orderMap := []accountKey{}
+	buckets  := map[accountKey]*accBucket{}
+
+	for _, r := range rows {
+		k := accountKey{r.AccountCode, r.AccountName, r.GroupName, r.SubgroupName}
+		if _, ok := buckets[k]; !ok {
+			buckets[k] = &accBucket{key: k}
+			orderMap = append(orderMap, k)
+		}
+		b := buckets[k]
+		b.lines = append(b.lines, response.GeneralLedgerLine{
+			Date:          r.Date,
+			JournalNumber: r.JournalNumber,
+			Description:   r.Description,
+			Debit:         r.Debit,
+			Credit:        r.Credit,
+			// Running balance computed below
+		})
+		b.td += r.Debit
+		b.tc += r.Credit
+	}
+
+	var accounts []response.GeneralLedgerAccount
+
+	for _, k := range orderMap {
+		b := buckets[k]
+
+		// Determine normal balance sign by group
+		g := normalizeGroup(k.group)
+		isDebitNormal := isGroup(g, groupAssets) || isGroup(g, groupExpense)
+
+		// Opening balance: cumulative net before period start for this account.
+		// Raw value is always (debit - credit); flip sign for credit-normal accounts.
+		openRaw, _ := s.IReportRepository.GetOpeningBalance(start, k.code)
+		var opening float64
+		if isDebitNormal {
+			opening = openRaw
+		} else {
+			opening = -openRaw
+		}
+
+		// Compute running balance
+		runningBalance := opening
+		for i := range b.lines {
+			ln := &b.lines[i]
+			if isDebitNormal {
+				runningBalance += ln.Debit - ln.Credit
+			} else {
+				runningBalance += ln.Credit - ln.Debit
+			}
+			ln.Balance = runningBalance
+		}
+
+		closingBalance := opening
+		if isDebitNormal {
+			closingBalance += b.td - b.tc
+		} else {
+			closingBalance += b.tc - b.td
+		}
+
+		accounts = append(accounts, response.GeneralLedgerAccount{
+			AccountCode:    k.code,
+			AccountName:    k.name,
+			GroupName:      k.group,
+			SubgroupName:   k.subgroup,
+			OpeningBalance: opening,
+			Lines:          b.lines,
+			TotalDebit:     b.td,
+			TotalCredit:    b.tc,
+			ClosingBalance: closingBalance,
+		})
+	}
+
+	return response.GeneralLedgerResponse{
+		GeneratedAt: time.Now(),
+		StartDate:   start.Format("2006-01-02"),
+		EndDate:     end.Format("2006-01-02"),
+		Accounts:    accounts,
+	}, nil
+}
+
+// ─── 7. Journal Book (Jurnal Umum) ───────────────────────────────────────────
+// All posted journal entries for the period, grouped by entry with their lines.
+
+func (s *ReportService) JournalBook(start, end time.Time) (response.JournalBookResponse, error) {
+	rows, err := s.IReportRepository.GetJournalBook(start, end)
+	if err != nil {
+		return response.JournalBookResponse{}, err
+	}
+
+	// Group lines by journal number
+	type entryKey struct{ date, number, jtype, desc string }
+	orderSlice := []entryKey{}
+	entryMap   := map[entryKey]*response.JournalBookEntry{}
+
+	for _, r := range rows {
+		k := entryKey{r.Date, r.JournalNumber, r.JournalType, r.Description}
+		if _, ok := entryMap[k]; !ok {
+			entryMap[k] = &response.JournalBookEntry{
+				Date:          r.Date,
+				JournalNumber: r.JournalNumber,
+				Type:          r.JournalType,
+				Description:   r.Description,
+				TotalDebit:    r.TotalDebit,
+				TotalCredit:   r.TotalCredit,
+			}
+			orderSlice = append(orderSlice, k)
+		}
+		entryMap[k].Lines = append(entryMap[k].Lines, response.JournalBookLine{
+			AccountCode: r.AccountCode,
+			AccountName: r.AccountName,
+			Debit:       r.Debit,
+			Credit:      r.Credit,
+		})
+	}
+
+	var entries []response.JournalBookEntry
+	var grandDebit, grandCredit float64
+	for _, k := range orderSlice {
+		e := entryMap[k]
+		entries = append(entries, *e)
+		grandDebit  += e.TotalDebit
+		grandCredit += e.TotalCredit
+	}
+
+	return response.JournalBookResponse{
+		GeneratedAt: time.Now(),
+		StartDate:   start.Format("2006-01-02"),
+		EndDate:     end.Format("2006-01-02"),
+		Entries:     entries,
+		TotalDebit:  grandDebit,
+		TotalCredit: grandCredit,
+		EntryCount:  len(entries),
+	}, nil
 }

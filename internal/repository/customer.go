@@ -17,11 +17,11 @@ var customerSortColumns = map[string]string{
 }
 
 type ICustomerRepository interface {
-	Create(entity.Customer) (entity.Customer, error)
-	FindAll(qp *util.QueryParams) ([]entity.Customer, int, error)
-	FindById(id uuid.UUID) (entity.Customer, error)
-	Update(entity.Customer) error
-	Delete(id uuid.UUID) error
+	Create(c entity.Customer) (entity.Customer, error)
+	FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]entity.Customer, int, error)
+	FindById(companyId, id uuid.UUID) (entity.Customer, error)
+	Update(c entity.Customer) error
+	Delete(companyId, id uuid.UUID) error
 }
 
 type CustomerRepository struct {
@@ -33,20 +33,19 @@ func NewCustomerRepository(db *gorm.DB) ICustomerRepository {
 }
 
 func (r *CustomerRepository) Create(c entity.Customer) (entity.Customer, error) {
-	tx := r.Db.Begin()
-	if err := tx.Create(&c).Error; err != nil {
-		tx.Rollback()
+	c.Id = uuid.New()
+	if err := r.Db.Create(&c).Error; err != nil {
 		return c, err
 	}
-	tx.Commit()
-	return c, nil
+	return r.FindById(c.CompanyId, c.Id)
 }
 
-func (r *CustomerRepository) FindAll(qp *util.QueryParams) ([]entity.Customer, int, error) {
+func (r *CustomerRepository) FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]entity.Customer, int, error) {
 	var entities []entity.Customer
 	var totalCount int64
 
-	query := r.Db.Preload("COA").Model(&entity.Customer{})
+	query := r.Db.Preload("COA").Model(&entity.Customer{}).
+		Where("customers.company_id = ?", companyId)
 	query = util.ApplySearch(query, qp)
 	query = entity.Customer{}.ApplyFilters(query, qp.Filters)
 
@@ -63,34 +62,24 @@ func (r *CustomerRepository) FindAll(qp *util.QueryParams) ([]entity.Customer, i
 	if err := query.Find(&entities).Error; err != nil {
 		return nil, 0, err
 	}
-
 	return entities, int(totalCount), nil
 }
 
-func (r *CustomerRepository) FindById(id uuid.UUID) (entity.Customer, error) {
+func (r *CustomerRepository) FindById(companyId, id uuid.UUID) (entity.Customer, error) {
 	var c entity.Customer
-	if err := r.Db.Preload("COA").Where("id = ?", id).First(&c).Error; err != nil {
+	if err := r.Db.Preload("COA").
+		Where("id = ? AND company_id = ?", id, companyId).
+		First(&c).Error; err != nil {
 		return c, err
 	}
 	return c, nil
 }
 
 func (r *CustomerRepository) Update(c entity.Customer) error {
-	tx := r.Db.Begin()
-	if err := tx.Model(&c).Updates(c).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-	tx.Commit()
-	return nil
+	return r.Db.Save(&c).Error
 }
 
-func (r *CustomerRepository) Delete(id uuid.UUID) error {
-	tx := r.Db.Begin()
-	if err := tx.Where("id = ?", id).Delete(&entity.Customer{}).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-	tx.Commit()
-	return nil
+func (r *CustomerRepository) Delete(companyId, id uuid.UUID) error {
+	return r.Db.Where("id = ? AND company_id = ?", id, companyId).
+		Delete(&entity.Customer{}).Error
 }

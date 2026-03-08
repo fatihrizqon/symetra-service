@@ -3,7 +3,6 @@ package service
 import (
 	"errors"
 	"math"
-	"time"
 
 	"github.com/fatihrizqon/symetra-service/internal/delivery/http/request"
 	"github.com/fatihrizqon/symetra-service/internal/delivery/http/response"
@@ -83,14 +82,6 @@ func validateBalance(lines []request.JournalLineRequest) error {
 		return errors.New("journal entry is not balanced: total debit must equal total credit")
 	}
 	return nil
-}
-
-func parseDate(s string) (time.Time, error) {
-	t, err := time.Parse("2006-01-02", s)
-	if err != nil {
-		return time.Time{}, errors.New("invalid date format, expected YYYY-MM-DD")
-	}
-	return t, nil
 }
 
 func buildLines(reqLines []request.JournalLineRequest) ([]entity.JournalLine, float64, float64) {

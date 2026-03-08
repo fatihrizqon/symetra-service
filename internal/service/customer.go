@@ -1,6 +1,8 @@
 package service
 
 import (
+	"errors"
+
 	"github.com/fatihrizqon/symetra-service/internal/delivery/http/request"
 	"github.com/fatihrizqon/symetra-service/internal/delivery/http/response"
 	"github.com/fatihrizqon/symetra-service/internal/entity"
@@ -11,21 +13,21 @@ import (
 )
 
 type ICustomerService interface {
-	Create(req request.CustomerCreateRequest) (entity.Customer, error)
-	FindAll(qp *util.QueryParams) ([]response.CustomerResponse, int, error)
-	FindById(id uuid.UUID) (response.CustomerResponse, error)
-	Update(req request.CustomerUpdateRequest) (entity.Customer, error)
-	Delete(id uuid.UUID) (entity.Customer, error)
-	SelectDropdownList(qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error)
+	Create(companyId uuid.UUID, req request.CustomerCreateRequest) (response.CustomerResponse, error)
+	FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]response.CustomerResponse, int, error)
+	FindById(companyId, id uuid.UUID) (response.CustomerResponse, error)
+	Update(companyId uuid.UUID, req request.CustomerUpdateRequest) (response.CustomerResponse, error)
+	Delete(companyId, id uuid.UUID) error
+	SelectDropdownList(companyId uuid.UUID, qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error)
 }
 
 type CustomerService struct {
-	ICustomerRepository repository.ICustomerRepository
-	validate            *validator.Validate
+	repo     repository.ICustomerRepository
+	validate *validator.Validate
 }
 
 func NewCustomerService(repo repository.ICustomerRepository, validate *validator.Validate) ICustomerService {
-	return &CustomerService{ICustomerRepository: repo, validate: validate}
+	return &CustomerService{repo: repo, validate: validate}
 }
 
 func toCustomerResponse(c entity.Customer) response.CustomerResponse {
@@ -48,32 +50,35 @@ func toCustomerResponse(c entity.Customer) response.CustomerResponse {
 	return r
 }
 
-func (s *CustomerService) Create(req request.CustomerCreateRequest) (entity.Customer, error) {
+func (s *CustomerService) Create(companyId uuid.UUID, req request.CustomerCreateRequest) (response.CustomerResponse, error) {
 	if err := s.validate.Struct(req); err != nil {
-		return entity.Customer{}, err
+		return response.CustomerResponse{}, err
 	}
 	c := entity.Customer{
-		Code:    req.Code,
-		Name:    req.Name,
-		Email:   req.Email,
-		Phone:   req.Phone,
-		Address: req.Address,
-		CoaId:   req.CoaId,
+		CompanyId: companyId,
+		Code:      req.Code,
+		Name:      req.Name,
+		Email:     req.Email,
+		Phone:     req.Phone,
+		Address:   req.Address,
+		CoaId:     req.CoaId,
+		Status:    1,
 	}
-	return s.ICustomerRepository.Create(c)
+	created, err := s.repo.Create(c)
+	if err != nil {
+		return response.CustomerResponse{}, err
+	}
+	return toCustomerResponse(created), nil
 }
 
-func (s *CustomerService) FindAll(qp *util.QueryParams) ([]response.CustomerResponse, int, error) {
-	entities, total, err := s.ICustomerRepository.FindAll(qp)
+func (s *CustomerService) FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]response.CustomerResponse, int, error) {
+	entities, total, err := s.repo.FindAll(companyId, qp)
 	if err != nil {
 		return nil, 0, err
 	}
-
-	totalPages := (total + qp.PageSize - 1) / qp.PageSize
-	if total == 0 || qp.Page > totalPages {
-		return []response.CustomerResponse{}, total, nil
+	if total == 0 {
+		return []response.CustomerResponse{}, 0, nil
 	}
-
 	resps := make([]response.CustomerResponse, 0, len(entities))
 	for _, c := range entities {
 		resps = append(resps, toCustomerResponse(c))
@@ -81,21 +86,21 @@ func (s *CustomerService) FindAll(qp *util.QueryParams) ([]response.CustomerResp
 	return resps, total, nil
 }
 
-func (s *CustomerService) FindById(id uuid.UUID) (response.CustomerResponse, error) {
-	c, err := s.ICustomerRepository.FindById(id)
+func (s *CustomerService) FindById(companyId, id uuid.UUID) (response.CustomerResponse, error) {
+	c, err := s.repo.FindById(companyId, id)
 	if err != nil {
-		return response.CustomerResponse{}, err
+		return response.CustomerResponse{}, errors.New("customer not found")
 	}
 	return toCustomerResponse(c), nil
 }
 
-func (s *CustomerService) Update(req request.CustomerUpdateRequest) (entity.Customer, error) {
-	c, err := s.ICustomerRepository.FindById(req.Id)
+func (s *CustomerService) Update(companyId uuid.UUID, req request.CustomerUpdateRequest) (response.CustomerResponse, error) {
+	c, err := s.repo.FindById(companyId, req.Id)
 	if err != nil {
-		return c, err
+		return response.CustomerResponse{}, errors.New("customer not found")
 	}
 	if err := s.validate.Struct(req); err != nil {
-		return c, err
+		return response.CustomerResponse{}, err
 	}
 	c.Code = req.Code
 	c.Name = req.Name
@@ -103,34 +108,32 @@ func (s *CustomerService) Update(req request.CustomerUpdateRequest) (entity.Cust
 	c.Phone = req.Phone
 	c.Address = req.Address
 	c.CoaId = req.CoaId
-	if err := s.ICustomerRepository.Update(c); err != nil {
-		return c, err
+	if err := s.repo.Update(c); err != nil {
+		return response.CustomerResponse{}, err
 	}
-	return c, nil
-}
-
-func (s *CustomerService) Delete(id uuid.UUID) (entity.Customer, error) {
-	c, err := s.ICustomerRepository.FindById(id)
+	updated, err := s.repo.FindById(companyId, req.Id)
 	if err != nil {
-		return c, err
+		return response.CustomerResponse{}, err
 	}
-	return c, s.ICustomerRepository.Delete(id)
+	return toCustomerResponse(updated), nil
 }
 
-// SelectDropdownList reuses FindAll with the same QueryParams.
-// The handler should set qp.Filters to empty to avoid applying status filters
-// on dropdown (show all active records only by convention).
-func (s *CustomerService) SelectDropdownList(qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error) {
-	entities, total, err := s.ICustomerRepository.FindAll(qp)
+func (s *CustomerService) Delete(companyId, id uuid.UUID) error {
+	_, err := s.repo.FindById(companyId, id)
+	if err != nil {
+		return errors.New("customer not found")
+	}
+	return s.repo.Delete(companyId, id)
+}
+
+func (s *CustomerService) SelectDropdownList(companyId uuid.UUID, qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error) {
+	entities, total, err := s.repo.FindAll(companyId, qp)
 	if err != nil {
 		return nil, 0, err
 	}
-
-	totalPages := (total + qp.PageSize - 1) / qp.PageSize
-	if total == 0 || qp.Page > totalPages {
-		return []response.SelectDropdownListResponse{}, total, nil
+	if total == 0 {
+		return []response.SelectDropdownListResponse{}, 0, nil
 	}
-
 	resps := make([]response.SelectDropdownListResponse, 0, len(entities))
 	for _, c := range entities {
 		resps = append(resps, response.SelectDropdownListResponse{

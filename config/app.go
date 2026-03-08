@@ -37,8 +37,12 @@ func Bootstrap(config *BootstrapConfig) {
 	reportRepository := repository.NewReportRepository(config.DB)
 	fiscalYearRepository := repository.NewFiscalYearRepository(config.DB)
 	fiscalPeriodRepository := repository.NewFiscalPeriodRepository(config.DB)
-	companyRepository := repository.NewCompanyRepository(config.DB)             // ← NEW
-	companyMemberRepository := repository.NewCompanyMemberRepository(config.DB) // ← NEW
+	companyRepository := repository.NewCompanyRepository(config.DB)                    // ← NEW
+	companyMemberRepository := repository.NewCompanyMemberRepository(config.DB)        // ← NEW
+	companyConfigRepository := repository.NewCompanyConfigurationRepository(config.DB) // ← NEW
+	customerRepository := repository.NewCustomerRepository(config.DB)                  // ← NEW
+	quotationRepository := repository.NewQuotationRepository(config.DB)                // ← NEW
+	invoiceRepository := repository.NewInvoiceRepository(config.DB)                    // ← NEW
 
 	// ── Services ──────────────────────────────────────────────────────────────
 	userService := service.NewUserService(userRepository, config.Validate)
@@ -56,6 +60,13 @@ func Bootstrap(config *BootstrapConfig) {
 		userRepository,
 		config.Validate,
 	)
+	companyConfigService := service.NewCompanyConfigurationService(companyConfigRepository, config.Validate)       // ← NEW
+	customerService := service.NewCustomerService(customerRepository, config.Validate)                             // ← NEW
+	quotationService := service.NewQuotationService(quotationRepository, companyConfigRepository, config.Validate) // ← NEW
+	invoiceService := service.NewInvoiceService(                                                                   // ← NEW
+		invoiceRepository, quotationRepository, companyConfigRepository,
+		journalEntryRepository, fiscalPeriodRepository, config.Validate,
+	)
 
 	// ── Handlers ──────────────────────────────────────────────────────────────
 	userHandler := handler.NewUserHandler(userService)
@@ -69,7 +80,11 @@ func Bootstrap(config *BootstrapConfig) {
 	expenseHandler := handler.NewExpenseHandler(journalEntryService)
 	reportHandler := handler.NewReportHandler(reportService)
 	fiscalHandler := handler.NewFiscalHandler(fiscalService)
-	companyHandler := handler.NewCompanyHandler(companyService) // ← NEW
+	companyHandler := handler.NewCompanyHandler(companyService)                          // ← NEW
+	companyConfigHandler := handler.NewCompanyConfigurationHandler(companyConfigService) // ← NEW
+	customerHandler := handler.NewCustomerHandler(customerService)                       // ← NEW
+	quotationHandler := handler.NewQuotationHandler(quotationService)                    // ← NEW
+	invoiceHandler := handler.NewInvoiceHandler(invoiceService)                          // ← NEW
 
 	// ── Middleware ────────────────────────────────────────────────────────────
 	authMiddleware := middleware.NewAuth(tokenRepository)
@@ -81,18 +96,22 @@ func Bootstrap(config *BootstrapConfig) {
 		AuthMiddleware:    authMiddleware,
 		CompanyMiddleware: companyMiddleware, // ← NEW
 
-		UserHandler:         userHandler,
-		AuthHandler:         authHandler,
-		DashboardHandler:    dashboardHandler,
-		COAGroupHandler:     coaGroupHandler,
-		COASubGroupHandler:  coaSubGroupHandler,
-		COAHandler:          coaHandler,
-		JournalEntryHandler: journalEntryHandler,
-		RevenueHandler:      revenueHandler,
-		ExpenseHandler:      expenseHandler,
-		ReportHandler:       reportHandler,
-		FiscalHandler:       fiscalHandler,
-		CompanyHandler:      companyHandler, // ← NEW
+		UserHandler:          userHandler,
+		AuthHandler:          authHandler,
+		DashboardHandler:     dashboardHandler,
+		COAGroupHandler:      coaGroupHandler,
+		COASubGroupHandler:   coaSubGroupHandler,
+		COAHandler:           coaHandler,
+		JournalEntryHandler:  journalEntryHandler,
+		RevenueHandler:       revenueHandler,
+		ExpenseHandler:       expenseHandler,
+		ReportHandler:        reportHandler,
+		FiscalHandler:        fiscalHandler,
+		CompanyHandler:       companyHandler,       // ← NEW
+		CompanyConfigHandler: companyConfigHandler, // ← NEW
+		CustomerHandler:      customerHandler,      // ← NEW
+		QuotationHandler:     quotationHandler,     // ← NEW
+		InvoiceHandler:       invoiceHandler,       // ← NEW
 	}
 
 	routeConfig.Setup()

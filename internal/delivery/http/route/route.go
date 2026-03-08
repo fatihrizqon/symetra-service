@@ -15,18 +15,22 @@ type RouteConfig struct {
 	// Apply this to any route that reads/writes company-scoped data.
 	CompanyMiddleware fiber.Handler
 
-	UserHandler         *handler.UserHandler
-	AuthHandler         *handler.AuthHandler
-	DashboardHandler    *handler.DashboardHandler
-	COAGroupHandler     *handler.COAGroupHandler
-	COASubGroupHandler  *handler.COASubGroupHandler
-	COAHandler          *handler.COAHandler
-	JournalEntryHandler *handler.JournalEntryHandler
-	RevenueHandler      *handler.RevenueHandler
-	ExpenseHandler      *handler.ExpenseHandler
-	ReportHandler       *handler.ReportHandler
-	FiscalHandler       *handler.FiscalHandler
-	CompanyHandler      *handler.CompanyHandler // ← NEW
+	UserHandler          *handler.UserHandler
+	AuthHandler          *handler.AuthHandler
+	DashboardHandler     *handler.DashboardHandler
+	COAGroupHandler      *handler.COAGroupHandler
+	COASubGroupHandler   *handler.COASubGroupHandler
+	COAHandler           *handler.COAHandler
+	JournalEntryHandler  *handler.JournalEntryHandler
+	RevenueHandler       *handler.RevenueHandler
+	ExpenseHandler       *handler.ExpenseHandler
+	ReportHandler        *handler.ReportHandler
+	FiscalHandler        *handler.FiscalHandler
+	CompanyHandler       *handler.CompanyHandler              // ← NEW
+	CompanyConfigHandler *handler.CompanyConfigurationHandler // ← NEW
+	CustomerHandler      *handler.CustomerHandler             // ← NEW
+	QuotationHandler     *handler.QuotationHandler            // ← NEW
+	InvoiceHandler       *handler.InvoiceHandler              // ← NEW
 }
 
 func (rc *RouteConfig) Setup() {
@@ -175,4 +179,45 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Put("/api/v1/fiscal/periods/:id/reopen", rc.CompanyMiddleware, middleware.NewRequirePermission("fiscal:manage"), rc.FiscalHandler.ReopenPeriod)
 	rc.App.Put("/api/v1/fiscal/periods/:id/lock", rc.CompanyMiddleware, middleware.NewRequirePermission("fiscal:manage"), rc.FiscalHandler.LockPeriod)
 	rc.App.Get("/api/v1/fiscal/periods/:id/logs", rc.CompanyMiddleware, middleware.NewRequirePermission("fiscal:read"), rc.FiscalHandler.FindPeriodLogs)
+
+	// ── Company Configuration (company-scoped) ────────────────────────────────
+	rc.App.Get("/api/v1/companies/:id/configuration",
+		rc.CompanyMiddleware,
+		middleware.NewRequirePermission("company:read"),
+		rc.CompanyConfigHandler.Get,
+	)
+	rc.App.Put("/api/v1/companies/:id/configuration",
+		rc.CompanyMiddleware,
+		middleware.NewRequirePermission("company:update"),
+		rc.CompanyConfigHandler.Upsert,
+	)
+
+	// ── Customers (company-scoped) ───────────────────────────────────────────
+	rc.App.Post("/api/v1/customers", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.CustomerHandler.Create)
+	rc.App.Get("/api/v1/customers", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.CustomerHandler.FindAll)
+	rc.App.Get("/api/v1/customers/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.CustomerHandler.FindById)
+	rc.App.Put("/api/v1/customers/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.CustomerHandler.Update)
+	rc.App.Delete("/api/v1/customers/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.CustomerHandler.Delete)
+	rc.App.Get("/api/v1/dropdown/customers", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.CustomerHandler.SelectDropdownList)
+
+	// ── Quotations (company-scoped) ───────────────────────────────────────────
+	rc.App.Post("/api/v1/quotations", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.QuotationHandler.Create)
+	rc.App.Get("/api/v1/quotations", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.QuotationHandler.FindAll)
+	rc.App.Get("/api/v1/quotations/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.QuotationHandler.FindById)
+	rc.App.Put("/api/v1/quotations/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.QuotationHandler.Update)
+	rc.App.Delete("/api/v1/quotations/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.QuotationHandler.Delete)
+	rc.App.Put("/api/v1/quotations/:id/send", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.QuotationHandler.Send)
+	rc.App.Put("/api/v1/quotations/:id/accept", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.QuotationHandler.Accept)
+	rc.App.Put("/api/v1/quotations/:id/decline", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.QuotationHandler.Decline)
+
+	// ── Invoices (company-scoped) ─────────────────────────────────────────────
+	rc.App.Post("/api/v1/invoices", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.InvoiceHandler.Create)
+	rc.App.Post("/api/v1/quotations/:quotation_id/convert", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.InvoiceHandler.CreateFromQuotation)
+	rc.App.Get("/api/v1/invoices", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.InvoiceHandler.FindAll)
+	rc.App.Get("/api/v1/invoices/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.InvoiceHandler.FindById)
+	rc.App.Put("/api/v1/invoices/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.InvoiceHandler.Update)
+	rc.App.Delete("/api/v1/invoices/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.InvoiceHandler.Delete)
+	rc.App.Put("/api/v1/invoices/:id/confirm", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:post"), rc.InvoiceHandler.Confirm)
+	rc.App.Put("/api/v1/invoices/:id/pay", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:post"), rc.InvoiceHandler.MarkPaid)
+	rc.App.Put("/api/v1/invoices/:id/cancel", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:post"), rc.InvoiceHandler.Cancel)
 }

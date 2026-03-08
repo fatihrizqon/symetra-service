@@ -35,6 +35,15 @@ func Migrate(db *gorm.DB) {
 		// Entities are migrated now so foreign keys resolve correctly.
 		&entity.Customer{},
 		&entity.Vendor{},
+
+		// ── Company Configuration ─────────────────────────────────────────────
+		&entity.CompanyConfiguration{},
+
+		// ── Sales (company-scoped) ────────────────────────────────────────────
+		&entity.Quotation{},
+		&entity.QuotationItem{},
+		&entity.Invoice{},
+		&entity.InvoiceItem{},
 	)
 
 	seedDefaultData(db)

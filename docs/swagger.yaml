@@ -286,6 +286,8 @@ definitions:
         type: string
       id:
         type: string
+      is_superadmin:
+        type: boolean
       name:
         type: string
       permissions:
@@ -1009,6 +1011,52 @@ paths:
           schema:
             $ref: '#/definitions/response.JSON'
       summary: Equity Statement
+      tags:
+      - Reports
+  /api/v1/reports/general-ledger:
+    get:
+      parameters:
+      - description: Start date (YYYY-MM-DD)
+        in: query
+        name: start_date
+        type: string
+      - description: End date (YYYY-MM-DD)
+        in: query
+        name: end_date
+        type: string
+      - description: Filter by specific COA account UUID (optional)
+        in: query
+        name: coa_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: General Ledger (Buku Besar)
+      tags:
+      - Reports
+  /api/v1/reports/journal-book:
+    get:
+      parameters:
+      - description: Start date (YYYY-MM-DD)
+        in: query
+        name: start_date
+        type: string
+      - description: End date (YYYY-MM-DD)
+        in: query
+        name: end_date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Journal Book (Jurnal Umum)
       tags:
       - Reports
   /api/v1/reports/profit-loss:

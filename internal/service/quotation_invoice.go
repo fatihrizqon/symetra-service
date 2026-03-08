@@ -689,7 +689,18 @@ func (s *InvoiceService) Delete(companyId, id uuid.UUID) error {
 	if existing.InvoiceStatus != entity.InvoiceStatusDraft {
 		return errors.New("only draft invoices can be deleted")
 	}
-	return s.invoiceRepo.Delete(companyId, id)
+
+	if err := s.invoiceRepo.Delete(companyId, id); err != nil {
+		return err
+	}
+
+	// Kembalikan quotation ke accepted jika invoice ini hasil convert
+	if existing.QuotationId != nil {
+		s.quotationRepo.UpdateStatus(companyId, *existing.QuotationId, entity.QuotationStatusAccepted)
+		s.quotationRepo.ClearConvertedInvoice(companyId, *existing.QuotationId)
+	}
+
+	return nil
 }
 
 // Confirm — Draft → Confirmed. Creates AR journal entry (auto-posted).
@@ -939,6 +950,13 @@ func (s *InvoiceService) Cancel(companyId, id uuid.UUID, createdBy uuid.UUID) (r
 	inv.InvoiceStatus = entity.InvoiceStatusCancelled
 	inv.TaxStatus = entity.TaxStatusCancelled
 	s.invoiceRepo.Save(inv)
+
+	// Kembalikan quotation ke accepted supaya bisa di-convert ulang atau di-decline secara eksplisit
+	if inv.QuotationId != nil {
+		s.quotationRepo.UpdateStatus(companyId, *inv.QuotationId, entity.QuotationStatusAccepted)
+		// Reset ConvertedInvoiceId di quotation
+		s.quotationRepo.ClearConvertedInvoice(companyId, *inv.QuotationId)
+	}
 
 	return toInvoiceResponse(inv), nil
 }

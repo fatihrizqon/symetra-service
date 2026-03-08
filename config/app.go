@@ -51,7 +51,7 @@ func Bootstrap(config *BootstrapConfig) {
 	coaGroupService := service.NewCOAGroupService(coaGroupRepository, config.Validate)
 	coaSubGroupService := service.NewCOASubGroupService(coaSubGroupRepository, config.Validate)
 	coaService := service.NewCOAService(coaRepository, config.Validate)
-	journalEntryService := service.NewJournalEntryService(journalEntryRepository, config.Validate)
+	journalEntryService := service.NewJournalEntryService(journalEntryRepository, invoiceRepository, config.Validate)
 	reportService := service.NewReportService(reportRepository)
 	fiscalService := service.NewFiscalService(fiscalYearRepository, fiscalPeriodRepository, config.Validate)
 	companyService := service.NewCompanyService( // ← NEW

@@ -89,6 +89,7 @@ type IQuotationRepository interface {
 	Update(q entity.Quotation, items []entity.QuotationItem) (entity.Quotation, error)
 	Delete(companyId, id uuid.UUID) error
 	UpdateStatus(companyId, id uuid.UUID, status entity.QuotationStatus) error
+	ClearConvertedInvoice(companyId, id uuid.UUID) error
 	GenerateQuotationNumber(companyId uuid.UUID, prefix string) (string, error)
 }
 
@@ -212,6 +213,7 @@ type IInvoiceRepository interface {
 	Delete(companyId, id uuid.UUID) error
 	Save(inv entity.Invoice) error
 	GenerateInvoiceNumber(companyId uuid.UUID, prefix string) (string, error)
+	IsLinkedToJournal(journalId uuid.UUID) bool
 }
 
 type InvoiceRepository struct {
@@ -311,4 +313,23 @@ func (r *InvoiceRepository) Delete(companyId, id uuid.UUID) error {
 
 func (r *InvoiceRepository) Save(inv entity.Invoice) error {
 	return r.Db.Save(&inv).Error
+}
+
+// IsLinkedToJournal cek apakah journal_id dipakai sebagai journal_entry_id atau payment_journal_id di invoice mana pun.
+// Dipakai untuk mencegah void manual jurnal yang dibuat otomatis dari invoice.
+func (r *InvoiceRepository) IsLinkedToJournal(journalId uuid.UUID) bool {
+	var count int64
+	r.Db.Model(&entity.Invoice{}).
+		Where("journal_entry_id = ? OR payment_journal_id = ?", journalId, journalId).
+		Count(&count)
+	return count > 0
+}
+
+// ClearConvertedInvoice reset converted_invoice_id di quotation setelah invoice dibatalkan.
+func (r *QuotationRepository) ClearConvertedInvoice(companyId, id uuid.UUID) error {
+	return r.Db.Model(&entity.Quotation{}).
+		Where("id = ? AND company_id = ?", id, companyId).
+		Updates(map[string]interface{}{
+			"converted_invoice_id": nil,
+		}).Error
 }

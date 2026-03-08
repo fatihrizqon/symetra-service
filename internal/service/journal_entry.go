@@ -25,12 +25,14 @@ type IJournalEntryService interface {
 
 type JournalEntryService struct {
 	IJournalEntryRepository repository.IJournalEntryRepository
+	IInvoiceRepository      repository.IInvoiceRepository
 	validate                *validator.Validate
 }
 
-func NewJournalEntryService(repo repository.IJournalEntryRepository, validate *validator.Validate) IJournalEntryService {
+func NewJournalEntryService(repo repository.IJournalEntryRepository, invoiceRepo repository.IInvoiceRepository, validate *validator.Validate) IJournalEntryService {
 	return &JournalEntryService{
 		IJournalEntryRepository: repo,
+		IInvoiceRepository:      invoiceRepo,
 		validate:                validate,
 	}
 }
@@ -236,6 +238,11 @@ func (s *JournalEntryService) Void(companyID, id uuid.UUID) error {
 	}
 	if existing.Status != entity.JournalStatusPosted {
 		return errors.New("only posted journal entries can be voided")
+	}
+	// Guard: jurnal yang terikat ke invoice tidak boleh di-void manual.
+	// Batalkan lewat workflow Cancel Invoice.
+	if s.IInvoiceRepository.IsLinkedToJournal(id) {
+		return errors.New("jurnal ini terikat ke invoice dan tidak dapat di-void secara manual — batalkan lewat menu Cancel Invoice")
 	}
 	return s.IJournalEntryRepository.Void(companyID, id)
 }

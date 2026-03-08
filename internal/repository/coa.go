@@ -40,10 +40,12 @@ func (r *COARepository) Create(c entity.COA) (entity.COA, error) {
 		tx.Rollback()
 		return c, err
 	}
-	if err := r.Db.Preload("SubGroup").First(&c, "id = ?", c.Id).Error; err != nil {
+	if err := tx.Commit().Error; err != nil {
 		return c, err
 	}
-	tx.Commit()
+	if err := r.Db.Preload("SubGroup").Preload("SubGroup.Group").First(&c, "id = ?", c.Id).Error; err != nil {
+		return c, err
+	}
 	return c, nil
 }
 
@@ -62,7 +64,7 @@ func (r *COARepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]en
 		return entities, 0, nil
 	}
 
-	query = util.ApplySort(query, qp, coaSortColumns, "coa.created_at")
+	query = util.ApplySort(query, qp, coaSortColumns, "coa.code")
 	query = util.ApplyPagination(query, qp)
 
 	if err := query.Preload("SubGroup").Preload("SubGroup.Group").Find(&entities).Error; err != nil {

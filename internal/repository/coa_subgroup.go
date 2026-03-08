@@ -36,14 +36,21 @@ func NewCOASubGroupRepository(Db *gorm.DB) ICOASubGroupRepository {
 
 func (r *COASubGroupRepository) Create(sg entity.COASubGroup) (entity.COASubGroup, error) {
 	tx := r.Db.Begin()
+	if tx.Error != nil {
+		return sg, tx.Error
+	}
 	if err := tx.Create(&sg).Error; err != nil {
 		tx.Rollback()
 		return sg, err
 	}
+	// Commit FIRST. Only after commit is the row visible to other connections.
+	if err := tx.Commit().Error; err != nil {
+		return sg, err
+	}
+	// Preload AFTER commit — safe to use main connection now.
 	if err := r.Db.Preload("Group").First(&sg, "id = ?", sg.Id).Error; err != nil {
 		return sg, err
 	}
-	tx.Commit()
 	return sg, nil
 }
 

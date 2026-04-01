@@ -33,7 +33,7 @@
     "username": "postgres",
     "password": "password",
     "host": "localhost",
-    "port": 2025,
+    "port": 5432,
     "name": "symetra",
     "pool": {
       "idle": 25,

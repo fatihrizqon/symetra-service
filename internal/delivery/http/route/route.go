@@ -31,6 +31,8 @@ type RouteConfig struct {
 	CustomerHandler      *handler.CustomerHandler             // ← NEW
 	QuotationHandler     *handler.QuotationHandler            // ← NEW
 	InvoiceHandler       *handler.InvoiceHandler              // ← NEW
+	PurchaseOrderHandler *handler.PurchaseOrderHandler        // ← NEW
+	BillHandler          *handler.BillHandler                 // ← NEW
 }
 
 func (rc *RouteConfig) Setup() {
@@ -220,4 +222,25 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Put("/api/v1/invoices/:id/confirm", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:post"), rc.InvoiceHandler.Confirm)
 	rc.App.Put("/api/v1/invoices/:id/pay", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:post"), rc.InvoiceHandler.MarkPaid)
 	rc.App.Put("/api/v1/invoices/:id/cancel", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:post"), rc.InvoiceHandler.Cancel)
+
+	// ── Purchase Orders (company-scoped) ──────────────────────────────────────
+	rc.App.Post("/api/v1/purchase-orders", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.PurchaseOrderHandler.Create)
+	rc.App.Get("/api/v1/purchase-orders", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.PurchaseOrderHandler.FindAll)
+	rc.App.Get("/api/v1/purchase-orders/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.PurchaseOrderHandler.FindById)
+	rc.App.Put("/api/v1/purchase-orders/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.PurchaseOrderHandler.Update)
+	rc.App.Delete("/api/v1/purchase-orders/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.PurchaseOrderHandler.Delete)
+	rc.App.Put("/api/v1/purchase-orders/:id/send", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.PurchaseOrderHandler.Send)
+	rc.App.Put("/api/v1/purchase-orders/:id/approve", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.PurchaseOrderHandler.Approve)
+	rc.App.Put("/api/v1/purchase-orders/:id/decline", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.PurchaseOrderHandler.Decline)
+
+	// ── Bills (company-scoped) ────────────────────────────────────────────────
+	rc.App.Post("/api/v1/bills", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.BillHandler.Create)
+	rc.App.Post("/api/v1/bills/from-purchase-order/:po_id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.BillHandler.CreateFromPO)
+	rc.App.Get("/api/v1/bills", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.BillHandler.FindAll)
+	rc.App.Get("/api/v1/bills/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.BillHandler.FindById)
+	rc.App.Put("/api/v1/bills/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.BillHandler.Update)
+	rc.App.Delete("/api/v1/bills/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.BillHandler.Delete)
+	rc.App.Put("/api/v1/bills/:id/confirm", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:post"), rc.BillHandler.Confirm)
+	rc.App.Post("/api/v1/bills/:id/pay", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:post"), rc.BillHandler.AddPayment)
+	rc.App.Put("/api/v1/bills/:id/cancel", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:post"), rc.BillHandler.Cancel)
 }

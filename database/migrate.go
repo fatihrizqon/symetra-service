@@ -44,6 +44,13 @@ func Migrate(db *gorm.DB) {
 		&entity.QuotationItem{},
 		&entity.Invoice{},
 		&entity.InvoiceItem{},
+
+		// ── Purchases (company-scoped) ────────────────────────────────────────
+		&entity.PurchaseOrder{},
+		&entity.PurchaseOrderItem{},
+		&entity.Bill{},
+		&entity.BillItem{},
+		&entity.BillPayment{},
 	)
 
 	seedDefaultData(db)

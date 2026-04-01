@@ -43,6 +43,8 @@ func Bootstrap(config *BootstrapConfig) {
 	customerRepository := repository.NewCustomerRepository(config.DB)                  // ← NEW
 	quotationRepository := repository.NewQuotationRepository(config.DB)                // ← NEW
 	invoiceRepository := repository.NewInvoiceRepository(config.DB)                    // ← NEW
+	purchaseOrderRepository := repository.NewPurchaseOrderRepository(config.DB)        // ← NEW
+	billRepository := repository.NewBillRepository(config.DB)                          // ← NEW
 
 	// ── Services ──────────────────────────────────────────────────────────────
 	userService := service.NewUserService(userRepository, config.Validate)
@@ -67,6 +69,11 @@ func Bootstrap(config *BootstrapConfig) {
 		invoiceRepository, quotationRepository, companyConfigRepository,
 		journalEntryRepository, fiscalPeriodRepository, config.Validate,
 	)
+	purchaseOrderService := service.NewPurchaseOrderService(purchaseOrderRepository, companyConfigRepository, config.Validate) // ← NEW
+	billService := service.NewBillService(                                                                                     // ← NEW
+		billRepository, purchaseOrderRepository, companyConfigRepository,
+		journalEntryRepository, fiscalPeriodRepository, config.Validate,
+	)
 
 	// ── Handlers ──────────────────────────────────────────────────────────────
 	userHandler := handler.NewUserHandler(userService)
@@ -85,6 +92,8 @@ func Bootstrap(config *BootstrapConfig) {
 	customerHandler := handler.NewCustomerHandler(customerService)                       // ← NEW
 	quotationHandler := handler.NewQuotationHandler(quotationService)                    // ← NEW
 	invoiceHandler := handler.NewInvoiceHandler(invoiceService)                          // ← NEW
+	purchaseOrderHandler := handler.NewPurchaseOrderHandler(purchaseOrderService)        // ← NEW
+	billHandler := handler.NewBillHandler(billService)                                   // ← NEW
 
 	// ── Middleware ────────────────────────────────────────────────────────────
 	authMiddleware := middleware.NewAuth(tokenRepository)
@@ -112,6 +121,8 @@ func Bootstrap(config *BootstrapConfig) {
 		CustomerHandler:      customerHandler,      // ← NEW
 		QuotationHandler:     quotationHandler,     // ← NEW
 		InvoiceHandler:       invoiceHandler,       // ← NEW
+		PurchaseOrderHandler: purchaseOrderHandler, // ← NEW
+		BillHandler:          billHandler,          // ← NEW
 	}
 
 	routeConfig.Setup()

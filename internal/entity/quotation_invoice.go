@@ -40,6 +40,13 @@ type CompanyConfiguration struct {
 	QuotationPrefix string `gorm:"type:character varying;not null;default:'QUO';" json:"quotation_prefix"`
 	InvoiceDueDays  int    `gorm:"type:integer;not null;default:30;" json:"invoice_due_days"`
 
+	// Purchases
+	DefaultExpenseAccountId *uuid.UUID `gorm:"type:uuid;" json:"default_expense_account_id"`
+	DefaultExpenseAccount   *COA       `gorm:"foreignKey:DefaultExpenseAccountId;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"default_expense_account,omitempty"`
+	PurchaseOrderPrefix     string     `gorm:"type:character varying;not null;default:'PO';" json:"purchase_order_prefix"`
+	BillPrefix              string     `gorm:"type:character varying;not null;default:'BILL';" json:"bill_prefix"`
+	BillDueDays             int        `gorm:"type:integer;not null;default:30;" json:"bill_due_days"`
+
 	CreatedAt time.Time `gorm:"autoCreateTime;" json:"created_at"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime;" json:"updated_at"`
 }

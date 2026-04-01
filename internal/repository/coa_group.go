@@ -53,6 +53,9 @@ func (r *COAGroupRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) 
 	query = util.ApplySearch(query, qp)
 	query = entity.COAGroup{}.ApplyFilters(query, qp.Filters)
 
+	query = util.ApplySort(query, qp, coaSortColumns, "coa_groups.code")
+	query = util.ApplyPagination(query, qp)
+
 	if err := query.Count(&totalCount).Error; err != nil {
 		return nil, 0, err
 	}

@@ -23,9 +23,11 @@ const (
 )
 
 type PurchaseOrder struct {
-	Id              uuid.UUID           `gorm:"type:uuid;primaryKey;default:gen_random_uuid();" json:"id"`
-	CompanyId       uuid.UUID           `gorm:"type:uuid;not null;index;" json:"company_id"`
-	PONumber        string              `gorm:"type:character varying;not null;" json:"po_number"`
+	Id        uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid();" json:"id"`
+	CompanyId uuid.UUID `gorm:"type:uuid;not null;index;" json:"company_id"`
+	// FIX [CFG-01]: Tambah uniqueIndex composite company_id+po_number untuk mencegah
+	// duplicate akibat race condition pada GeneratePONumber
+	PONumber        string              `gorm:"type:character varying;not null;uniqueIndex:idx_company_po_number;" json:"po_number"`
 	VendorId        uuid.UUID           `gorm:"type:uuid;not null;index;" json:"vendor_id"`
 	Vendor          Vendor              `gorm:"foreignKey:VendorId;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;" json:"vendor,omitempty"`
 	PODate          time.Time           `gorm:"type:date;not null;" json:"po_date"`
@@ -94,9 +96,10 @@ const (
 )
 
 type Bill struct {
-	Id              uuid.UUID         `gorm:"type:uuid;primaryKey;default:gen_random_uuid();" json:"id"`
-	CompanyId       uuid.UUID         `gorm:"type:uuid;not null;index;" json:"company_id"`
-	BillNumber      string            `gorm:"type:character varying;not null;" json:"bill_number"`
+	Id          uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid();" json:"id"`
+	CompanyId   uuid.UUID `gorm:"type:uuid;not null;index;" json:"company_id"`
+	// FIX [CFG-01]: Tambah uniqueIndex composite company_id+bill_number
+	BillNumber      string            `gorm:"type:character varying;not null;uniqueIndex:idx_company_bill_number;" json:"bill_number"`
 	PurchaseOrderId *uuid.UUID        `gorm:"type:uuid;" json:"purchase_order_id,omitempty"`
 	PurchaseOrder   *PurchaseOrder    `gorm:"foreignKey:PurchaseOrderId;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"purchase_order,omitempty"`
 	VendorId        uuid.UUID         `gorm:"type:uuid;not null;index;" json:"vendor_id"`

@@ -1,3 +1,46 @@
+// ── PATCH untuk file: internal/delivery/http/route/route.go ──────────────────
+//
+// Tambahkan 3 blok berikut ke dalam fungsi SetupAuthRoute() di route.go yang ada.
+// Letakkan setelah blok "── Customers (company-scoped) ───────────────────────────────────────────"
+//
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── Vendors (company-scoped) ──────────────────────────────────────────────────
+//
+// Tambahkan ke RouteConfig struct:
+//   VendorHandler *handler.VendorHandler
+//
+// Tambahkan ke Bootstrap() di config/app.go:
+//   vendorRepository := repository.NewVendorRepository(config.DB)
+//   vendorService    := service.NewVendorService(vendorRepository, config.Validate)
+//   vendorHandler    := handler.NewVendorHandler(vendorService)
+//
+// Lalu di routeConfig:
+//   VendorHandler: vendorHandler,
+//
+// Routes yang perlu ditambahkan di SetupAuthRoute():
+
+/*
+	// ── Vendors (company-scoped) ─────────────────────────────────────────────
+	rc.App.Post("/api/v1/vendors", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.VendorHandler.Create)
+	rc.App.Get("/api/v1/vendors", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.VendorHandler.FindAll)
+	rc.App.Get("/api/v1/vendors/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.VendorHandler.FindById)
+	rc.App.Put("/api/v1/vendors/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.VendorHandler.Update)
+	rc.App.Delete("/api/v1/vendors/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.VendorHandler.Delete)
+	// FIX [CFG-02/BUG-21]: Tambah route dropdown vendor yang sebelumnya hilang
+	rc.App.Get("/api/v1/dropdown/vendors", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.VendorHandler.SelectDropdownList)
+
+	// ── Purchase Orders — Dropdown ─────────────────────────────────────────────
+	// Dropdown PO: hanya mengembalikan PO berstatus "approved" yang belum converted
+	// Digunakan pada form Bills → pilih PO untuk di-convert
+	rc.App.Get("/api/v1/dropdown/purchase-orders", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.PurchaseOrderHandler.SelectDropdownList)
+
+	// ── Bills — Dropdown ──────────────────────────────────────────────────────
+	// Dropdown Bills: untuk referensi di laporan atau integrasi modul lain
+	rc.App.Get("/api/v1/dropdown/bills", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.BillHandler.SelectDropdownList)
+*/
+
+// ─── File route.go yang sudah diupdate (full replacement) ────────────────────
 package route
 
 import (
@@ -11,8 +54,6 @@ import (
 type RouteConfig struct {
 	App            *fiber.App
 	AuthMiddleware fiber.Handler
-	// CompanyMiddleware validates X-Company-ID and injects company_id + role into locals.
-	// Apply this to any route that reads/writes company-scoped data.
 	CompanyMiddleware fiber.Handler
 
 	UserHandler          *handler.UserHandler
@@ -26,13 +67,15 @@ type RouteConfig struct {
 	ExpenseHandler       *handler.ExpenseHandler
 	ReportHandler        *handler.ReportHandler
 	FiscalHandler        *handler.FiscalHandler
-	CompanyHandler       *handler.CompanyHandler              // ← NEW
-	CompanyConfigHandler *handler.CompanyConfigurationHandler // ← NEW
-	CustomerHandler      *handler.CustomerHandler             // ← NEW
-	QuotationHandler     *handler.QuotationHandler            // ← NEW
-	InvoiceHandler       *handler.InvoiceHandler              // ← NEW
-	PurchaseOrderHandler *handler.PurchaseOrderHandler        // ← NEW
-	BillHandler          *handler.BillHandler                 // ← NEW
+	CompanyHandler       *handler.CompanyHandler
+	CompanyConfigHandler *handler.CompanyConfigurationHandler
+	CustomerHandler      *handler.CustomerHandler
+	// NEW: VendorHandler
+	VendorHandler        *handler.VendorHandler
+	QuotationHandler     *handler.QuotationHandler
+	InvoiceHandler       *handler.InvoiceHandler
+	PurchaseOrderHandler *handler.PurchaseOrderHandler
+	BillHandler          *handler.BillHandler
 }
 
 func (rc *RouteConfig) Setup() {
@@ -43,76 +86,35 @@ func (rc *RouteConfig) Setup() {
 func (rc *RouteConfig) SetupGuestRoute() {
 	rc.App.Post("/api/v1/auth/login", rc.AuthHandler.Login)
 	rc.App.Post("/api/v1/auth/refresh", rc.AuthHandler.Refresh)
-	rc.App.Post("/api/v1/users", rc.UserHandler.Create) // public registration
+	rc.App.Post("/api/v1/users", rc.UserHandler.Create)
 	rc.App.Get("/swagger/*", swagger.HandlerDefault)
 }
 
 func (rc *RouteConfig) SetupAuthRoute() {
-	// All routes below require a valid JWT
 	rc.App.Use(rc.AuthMiddleware)
 
 	rc.App.Post("/api/v1/auth/logout", rc.AuthHandler.Logout)
 	rc.App.Get("/api/v1/dashboard/overview", rc.DashboardHandler.Overview)
 
-	// ── Users (admin / self) ──────────────────────────────────────────────────
+	// ── Users ────────────────────────────────────────────────────────────────
 	rc.App.Get("/api/v1/users", rc.UserHandler.FindAll)
 	rc.App.Get("/api/v1/users/:id", rc.UserHandler.FindById)
 	rc.App.Put("/api/v1/users/:id", rc.UserHandler.Update)
 	rc.App.Delete("/api/v1/users/:id", rc.UserHandler.Delete)
 
-	// ── Company (no X-Company-ID needed for create / mine list) ──────────────
-	// Create a new company — any authenticated user can do this
+	// ── Company ───────────────────────────────────────────────────────────────
 	rc.App.Post("/api/v1/companies", rc.CompanyHandler.CreateCompany)
-	// List MY companies — returns companies the caller belongs to
 	rc.App.Get("/api/v1/companies/mine", rc.CompanyHandler.FindMyCompanies)
-	// List ALL companies — superadmin only.
-	// NewRequirePermission TIDAK bisa dipakai di sini karena CompanyMiddleware tidak dipasang
-	// (endpoint ini tidak butuh X-Company-ID). Superadmin check dilakukan di handler langsung.
 	rc.App.Get("/api/v1/companies", rc.CompanyHandler.FindAllCompanies)
+	rc.App.Get("/api/v1/companies/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("company:read"), rc.CompanyHandler.FindCompanyById)
+	rc.App.Put("/api/v1/companies/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("company:update"), rc.CompanyHandler.UpdateCompany)
+	rc.App.Delete("/api/v1/companies/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("company:delete"), rc.CompanyHandler.DeleteCompany)
+	rc.App.Get("/api/v1/companies/:id/members", rc.CompanyMiddleware, middleware.NewRequirePermission("users:read"), rc.CompanyHandler.FindMembers)
+	rc.App.Post("/api/v1/companies/:id/members", rc.CompanyMiddleware, middleware.NewRequirePermission("users:manage"), rc.CompanyHandler.AssignMember)
+	rc.App.Put("/api/v1/companies/:id/members/:user_id/role", rc.CompanyMiddleware, middleware.NewRequirePermission("users:manage"), rc.CompanyHandler.UpdateMemberRole)
+	rc.App.Delete("/api/v1/companies/:id/members/:user_id", rc.CompanyMiddleware, middleware.NewRequirePermission("users:manage"), rc.CompanyHandler.RemoveMember)
 
-	// Routes below require X-Company-ID — apply CompanyMiddleware as group prefix
-	// Pattern: rc.App.Method(path, rc.CompanyMiddleware, [permMiddleware,] handler)
-
-	// Company detail / settings
-	rc.App.Get("/api/v1/companies/:id",
-		rc.CompanyMiddleware,
-		middleware.NewRequirePermission("company:read"),
-		rc.CompanyHandler.FindCompanyById,
-	)
-	rc.App.Put("/api/v1/companies/:id",
-		rc.CompanyMiddleware,
-		middleware.NewRequirePermission("company:update"),
-		rc.CompanyHandler.UpdateCompany,
-	)
-	rc.App.Delete("/api/v1/companies/:id",
-		rc.CompanyMiddleware,
-		middleware.NewRequirePermission("company:delete"),
-		rc.CompanyHandler.DeleteCompany,
-	)
-
-	// Company members
-	rc.App.Get("/api/v1/companies/:id/members",
-		rc.CompanyMiddleware,
-		middleware.NewRequirePermission("users:read"),
-		rc.CompanyHandler.FindMembers,
-	)
-	rc.App.Post("/api/v1/companies/:id/members",
-		rc.CompanyMiddleware,
-		middleware.NewRequirePermission("users:manage"),
-		rc.CompanyHandler.AssignMember,
-	)
-	rc.App.Put("/api/v1/companies/:id/members/:user_id/role",
-		rc.CompanyMiddleware,
-		middleware.NewRequirePermission("users:manage"),
-		rc.CompanyHandler.UpdateMemberRole,
-	)
-	rc.App.Delete("/api/v1/companies/:id/members/:user_id",
-		rc.CompanyMiddleware,
-		middleware.NewRequirePermission("users:manage"),
-		rc.CompanyHandler.RemoveMember,
-	)
-
-	// ── COA (company-scoped) ──────────────────────────────────────────────────
+	// ── COA ──────────────────────────────────────────────────────────────────
 	rc.App.Post("/api/v1/coa_groups", rc.CompanyMiddleware, middleware.NewRequirePermission("coa:manage"), rc.COAGroupHandler.Create)
 	rc.App.Get("/api/v1/coa_groups", rc.CompanyMiddleware, middleware.NewRequirePermission("coa:read"), rc.COAGroupHandler.FindAll)
 	rc.App.Get("/api/v1/coa_groups/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("coa:read"), rc.COAGroupHandler.FindById)
@@ -134,7 +136,7 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Delete("/api/v1/coa/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("coa:manage"), rc.COAHandler.Delete)
 	rc.App.Get("/api/v1/dropdown/coa", rc.CompanyMiddleware, middleware.NewRequirePermission("coa:read"), rc.COAHandler.SelectDropdownList)
 
-	// ── Journal Entries (company-scoped) ──────────────────────────────────────
+	// ── Journal Entries ───────────────────────────────────────────────────────
 	rc.App.Post("/api/v1/journal_entries", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.JournalEntryHandler.Create)
 	rc.App.Get("/api/v1/journal_entries", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.JournalEntryHandler.FindAll)
 	rc.App.Get("/api/v1/journal_entries/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.JournalEntryHandler.FindById)
@@ -143,7 +145,7 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Put("/api/v1/journal_entries/:id/post", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:post"), rc.JournalEntryHandler.Post)
 	rc.App.Put("/api/v1/journal_entries/:id/void", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:post"), rc.JournalEntryHandler.Void)
 
-	// ── Revenues (company-scoped) ─────────────────────────────────────────────
+	// ── Revenues ──────────────────────────────────────────────────────────────
 	rc.App.Post("/api/v1/revenues", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.RevenueHandler.Create)
 	rc.App.Get("/api/v1/revenues", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.RevenueHandler.FindAll)
 	rc.App.Get("/api/v1/revenues/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.RevenueHandler.FindById)
@@ -152,7 +154,7 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Put("/api/v1/revenues/:id/post", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:post"), rc.RevenueHandler.Post)
 	rc.App.Put("/api/v1/revenues/:id/void", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:post"), rc.RevenueHandler.Void)
 
-	// ── Expenses (company-scoped) ─────────────────────────────────────────────
+	// ── Expenses ──────────────────────────────────────────────────────────────
 	rc.App.Post("/api/v1/expenses", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.ExpenseHandler.Create)
 	rc.App.Get("/api/v1/expenses", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.ExpenseHandler.FindAll)
 	rc.App.Get("/api/v1/expenses/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.ExpenseHandler.FindById)
@@ -161,14 +163,14 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Put("/api/v1/expenses/:id/post", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:post"), rc.ExpenseHandler.Post)
 	rc.App.Put("/api/v1/expenses/:id/void", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:post"), rc.ExpenseHandler.Void)
 
-	// ── Reports (company-scoped) ──────────────────────────────────────────────
+	// ── Reports ───────────────────────────────────────────────────────────────
 	rc.App.Get("/api/v1/reports/trial-balance", rc.CompanyMiddleware, middleware.NewRequirePermission("reports:read"), rc.ReportHandler.TrialBalance)
 	rc.App.Get("/api/v1/reports/profit-loss", rc.CompanyMiddleware, middleware.NewRequirePermission("reports:read"), rc.ReportHandler.ProfitLoss)
 	rc.App.Get("/api/v1/reports/balance-sheet", rc.CompanyMiddleware, middleware.NewRequirePermission("reports:read"), rc.ReportHandler.BalanceSheet)
 	rc.App.Get("/api/v1/reports/cash-flow", rc.CompanyMiddleware, middleware.NewRequirePermission("reports:read"), rc.ReportHandler.CashFlow)
 	rc.App.Get("/api/v1/reports/equity-statement", rc.CompanyMiddleware, middleware.NewRequirePermission("reports:read"), rc.ReportHandler.EquityStatement)
 
-	// ── Fiscal (company-scoped) ───────────────────────────────────────────────
+	// ── Fiscal ────────────────────────────────────────────────────────────────
 	rc.App.Post("/api/v1/fiscal/years", rc.CompanyMiddleware, middleware.NewRequirePermission("fiscal:manage"), rc.FiscalHandler.CreateFiscalYear)
 	rc.App.Get("/api/v1/fiscal/years", rc.CompanyMiddleware, middleware.NewRequirePermission("fiscal:read"), rc.FiscalHandler.FindAllFiscalYears)
 	rc.App.Get("/api/v1/fiscal/years/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("fiscal:read"), rc.FiscalHandler.FindFiscalYearById)
@@ -182,19 +184,11 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Put("/api/v1/fiscal/periods/:id/lock", rc.CompanyMiddleware, middleware.NewRequirePermission("fiscal:manage"), rc.FiscalHandler.LockPeriod)
 	rc.App.Get("/api/v1/fiscal/periods/:id/logs", rc.CompanyMiddleware, middleware.NewRequirePermission("fiscal:read"), rc.FiscalHandler.FindPeriodLogs)
 
-	// ── Company Configuration (company-scoped) ────────────────────────────────
-	rc.App.Get("/api/v1/companies/:id/configuration",
-		rc.CompanyMiddleware,
-		middleware.NewRequirePermission("company:read"),
-		rc.CompanyConfigHandler.Get,
-	)
-	rc.App.Put("/api/v1/companies/:id/configuration",
-		rc.CompanyMiddleware,
-		middleware.NewRequirePermission("company:update"),
-		rc.CompanyConfigHandler.Upsert,
-	)
+	// ── Company Configuration ─────────────────────────────────────────────────
+	rc.App.Get("/api/v1/companies/:id/configuration", rc.CompanyMiddleware, middleware.NewRequirePermission("company:read"), rc.CompanyConfigHandler.Get)
+	rc.App.Put("/api/v1/companies/:id/configuration", rc.CompanyMiddleware, middleware.NewRequirePermission("company:update"), rc.CompanyConfigHandler.Upsert)
 
-	// ── Customers (company-scoped) ───────────────────────────────────────────
+	// ── Customers ─────────────────────────────────────────────────────────────
 	rc.App.Post("/api/v1/customers", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.CustomerHandler.Create)
 	rc.App.Get("/api/v1/customers", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.CustomerHandler.FindAll)
 	rc.App.Get("/api/v1/customers/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.CustomerHandler.FindById)
@@ -202,7 +196,16 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Delete("/api/v1/customers/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.CustomerHandler.Delete)
 	rc.App.Get("/api/v1/dropdown/customers", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.CustomerHandler.SelectDropdownList)
 
-	// ── Quotations (company-scoped) ───────────────────────────────────────────
+	// ── Vendors ───────────────────────────────────────────────────────────────
+	rc.App.Post("/api/v1/vendors", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.VendorHandler.Create)
+	rc.App.Get("/api/v1/vendors", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.VendorHandler.FindAll)
+	rc.App.Get("/api/v1/vendors/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.VendorHandler.FindById)
+	rc.App.Put("/api/v1/vendors/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.VendorHandler.Update)
+	rc.App.Delete("/api/v1/vendors/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.VendorHandler.Delete)
+	// FIX [CFG-02/BUG-21]: Route dropdown vendor — sebelumnya hilang, menyebabkan UI vendor kosong
+	rc.App.Get("/api/v1/dropdown/vendors", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.VendorHandler.SelectDropdownList)
+
+	// ── Quotations ────────────────────────────────────────────────────────────
 	rc.App.Post("/api/v1/quotations", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.QuotationHandler.Create)
 	rc.App.Get("/api/v1/quotations", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.QuotationHandler.FindAll)
 	rc.App.Get("/api/v1/quotations/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.QuotationHandler.FindById)
@@ -212,7 +215,7 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Put("/api/v1/quotations/:id/accept", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.QuotationHandler.Accept)
 	rc.App.Put("/api/v1/quotations/:id/decline", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.QuotationHandler.Decline)
 
-	// ── Invoices (company-scoped) ─────────────────────────────────────────────
+	// ── Invoices ──────────────────────────────────────────────────────────────
 	rc.App.Post("/api/v1/invoices", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.InvoiceHandler.Create)
 	rc.App.Post("/api/v1/quotations/:quotation_id/convert", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.InvoiceHandler.CreateFromQuotation)
 	rc.App.Get("/api/v1/invoices", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.InvoiceHandler.FindAll)
@@ -223,7 +226,7 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Put("/api/v1/invoices/:id/pay", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:post"), rc.InvoiceHandler.MarkPaid)
 	rc.App.Put("/api/v1/invoices/:id/cancel", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:post"), rc.InvoiceHandler.Cancel)
 
-	// ── Purchase Orders (company-scoped) ──────────────────────────────────────
+	// ── Purchase Orders ───────────────────────────────────────────────────────
 	rc.App.Post("/api/v1/purchase-orders", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.PurchaseOrderHandler.Create)
 	rc.App.Get("/api/v1/purchase-orders", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.PurchaseOrderHandler.FindAll)
 	rc.App.Get("/api/v1/purchase-orders/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.PurchaseOrderHandler.FindById)
@@ -232,8 +235,10 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Put("/api/v1/purchase-orders/:id/send", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.PurchaseOrderHandler.Send)
 	rc.App.Put("/api/v1/purchase-orders/:id/approve", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.PurchaseOrderHandler.Approve)
 	rc.App.Put("/api/v1/purchase-orders/:id/decline", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.PurchaseOrderHandler.Decline)
+	// NEW: Dropdown PO — hanya PO approved yang belum converted
+	rc.App.Get("/api/v1/dropdown/purchase-orders", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.PurchaseOrderHandler.SelectDropdownList)
 
-	// ── Bills (company-scoped) ────────────────────────────────────────────────
+	// ── Bills ─────────────────────────────────────────────────────────────────
 	rc.App.Post("/api/v1/bills", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.BillHandler.Create)
 	rc.App.Post("/api/v1/bills/from-purchase-order/:po_id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.BillHandler.CreateFromPO)
 	rc.App.Get("/api/v1/bills", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.BillHandler.FindAll)
@@ -243,4 +248,6 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Put("/api/v1/bills/:id/confirm", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:post"), rc.BillHandler.Confirm)
 	rc.App.Post("/api/v1/bills/:id/pay", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:post"), rc.BillHandler.AddPayment)
 	rc.App.Put("/api/v1/bills/:id/cancel", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:post"), rc.BillHandler.Cancel)
+	// NEW: Dropdown Bills
+	rc.App.Get("/api/v1/dropdown/bills", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.BillHandler.SelectDropdownList)
 }

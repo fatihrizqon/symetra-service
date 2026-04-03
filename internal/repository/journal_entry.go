@@ -25,6 +25,10 @@ var journalSortColumns = map[string]string{
 
 type IJournalEntryRepository interface {
 	Create(entry entity.JournalEntry, lines []entity.JournalLine) (entity.JournalEntry, error)
+	// CreateTx — same as Create but uses a caller-supplied transaction.
+	// Use this when the journal creation must be atomic with other operations
+	// (e.g. Bill.Confirm, Bill.AddPayment, Bill.Cancel).
+	CreateTx(tx *gorm.DB, entry entity.JournalEntry, lines []entity.JournalLine) (entity.JournalEntry, error)
 	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.JournalEntry, int, error)
 	FindById(companyID, id uuid.UUID) (entity.JournalEntry, error)
 	Update(entry entity.JournalEntry, lines []entity.JournalLine) (entity.JournalEntry, error)
@@ -97,6 +101,30 @@ func (r *JournalEntryRepository) Create(entry entity.JournalEntry, lines []entit
 	tx.Commit()
 
 	if err := r.Db.Preload("Lines.COA").First(&entry, "id = ?", entry.Id).Error; err != nil {
+		return entry, err
+	}
+
+	return entry, nil
+}
+
+// CreateTx — like Create but participates in the caller's transaction.
+// The caller is responsible for Commit/Rollback.
+func (r *JournalEntryRepository) CreateTx(tx *gorm.DB, entry entity.JournalEntry, lines []entity.JournalLine) (entity.JournalEntry, error) {
+	if err := tx.Create(&entry).Error; err != nil {
+		return entry, err
+	}
+
+	for i := range lines {
+		lines[i].Id = uuid.New()
+		lines[i].JournalEntryId = entry.Id
+	}
+
+	if err := tx.Create(&lines).Error; err != nil {
+		return entry, err
+	}
+
+	// Re-fetch using the same tx so the caller sees the data within the transaction
+	if err := tx.Preload("Lines.COA").First(&entry, "id = ?", entry.Id).Error; err != nil {
 		return entry, err
 	}
 

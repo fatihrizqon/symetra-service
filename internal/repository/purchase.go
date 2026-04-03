@@ -14,11 +14,11 @@ import (
 // ─── Purchase Order Repository ────────────────────────────────────────────────
 
 var poSortColumns = map[string]string{
-	"po_number":  "purchase_orders.po_number",
-	"po_date":    "purchase_orders.po_date",
+	"po_number":   "purchase_orders.po_number",
+	"po_date":     "purchase_orders.po_date",
 	"grand_total": "purchase_orders.grand_total",
-	"status":     "purchase_orders.status",
-	"created_at": "purchase_orders.created_at",
+	"status":      "purchase_orders.status",
+	"created_at":  "purchase_orders.created_at",
 }
 
 type IPurchaseOrderRepository interface {
@@ -30,6 +30,8 @@ type IPurchaseOrderRepository interface {
 	UpdateStatus(companyId, id uuid.UUID, status entity.PurchaseOrderStatus) error
 	Save(po entity.PurchaseOrder) error
 	GeneratePONumber(companyId uuid.UUID, prefix string) (string, error)
+	// SelectDropdown untuk keperluan dropdown PO (bills/from-purchase-order)
+	SelectDropdown(companyId uuid.UUID, qp *util.QueryParams) ([]entity.PurchaseOrder, int, error)
 }
 
 type PurchaseOrderRepository struct {
@@ -84,6 +86,28 @@ func (r *PurchaseOrderRepository) FindAll(companyId uuid.UUID, qp *util.QueryPar
 		return entities, 0, nil
 	}
 	query = util.ApplySort(query, qp, poSortColumns, "purchase_orders.created_at")
+	query = util.ApplyPagination(query, qp)
+	if err := query.Find(&entities).Error; err != nil {
+		return nil, 0, err
+	}
+	return entities, int(totalCount), nil
+}
+
+// SelectDropdown — hanya PO dengan status approved (belum converted), untuk keperluan
+// dropdown "Convert PO ke Bill"
+func (r *PurchaseOrderRepository) SelectDropdown(companyId uuid.UUID, qp *util.QueryParams) ([]entity.PurchaseOrder, int, error) {
+	var entities []entity.PurchaseOrder
+	var totalCount int64
+	query := r.Db.Model(&entity.PurchaseOrder{}).
+		Preload("Vendor").
+		Where("purchase_orders.company_id = ? AND purchase_orders.status = ?", companyId, entity.POStatusApproved)
+	query = util.ApplySearch(query, qp)
+	if err := query.Count(&totalCount).Error; err != nil {
+		return nil, 0, err
+	}
+	if totalCount == 0 {
+		return entities, 0, nil
+	}
 	query = util.ApplyPagination(query, qp)
 	if err := query.Find(&entities).Error; err != nil {
 		return nil, 0, err
@@ -152,13 +176,20 @@ var billSortColumns = map[string]string{
 type IBillRepository interface {
 	Create(bill entity.Bill, items []entity.BillItem) (entity.Bill, error)
 	FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]entity.Bill, int, error)
+	// FIX [BUG-06]: FindByIdForUpdate menggunakan SELECT FOR UPDATE untuk mencegah race condition
+	FindByIdForUpdate(tx *gorm.DB, companyId, id uuid.UUID) (entity.Bill, error)
 	FindById(companyId, id uuid.UUID) (entity.Bill, error)
 	Update(bill entity.Bill, items []entity.BillItem) (entity.Bill, error)
 	Delete(companyId, id uuid.UUID) error
 	Save(bill entity.Bill) error
+	SaveTx(tx *gorm.DB, bill entity.Bill) error
 	AddPayment(payment entity.BillPayment) (entity.BillPayment, error)
+	AddPaymentTx(tx *gorm.DB, payment entity.BillPayment) (entity.BillPayment, error)
 	GenerateBillNumber(companyId uuid.UUID, prefix string) (string, error)
+	// FIX [BUG-22]: IsLinkedToJournal kini juga cek BillPayment.JournalEntryId
 	IsLinkedToJournal(journalId uuid.UUID) bool
+	// DB() untuk mengakses raw *gorm.DB untuk transaksi di service layer
+	DB() *gorm.DB
 }
 
 type BillRepository struct {
@@ -167,6 +198,11 @@ type BillRepository struct {
 
 func NewBillRepository(db *gorm.DB) IBillRepository {
 	return &BillRepository{Db: db}
+}
+
+// DB — expose raw gorm.DB untuk kebutuhan Begin() di service layer (BUG-01, BUG-02, BUG-03)
+func (r *BillRepository) DB() *gorm.DB {
+	return r.Db
 }
 
 func (r *BillRepository) GenerateBillNumber(companyId uuid.UUID, prefix string) (string, error) {
@@ -236,6 +272,19 @@ func (r *BillRepository) FindById(companyId, id uuid.UUID) (entity.Bill, error) 
 	return bill, nil
 }
 
+// FIX [BUG-06]: FindByIdForUpdate — SELECT ... FOR UPDATE untuk mencegah race condition
+// pada AddPayment. Harus dipanggil dalam konteks transaksi yang sudah dimulai.
+func (r *BillRepository) FindByIdForUpdate(tx *gorm.DB, companyId, id uuid.UUID) (entity.Bill, error) {
+	var bill entity.Bill
+	err := tx.Set("gorm:query_option", "FOR UPDATE").
+		Where("id = ? AND company_id = ?", id, companyId).
+		First(&bill).Error
+	if err != nil {
+		return bill, errors.New("bill not found")
+	}
+	return bill, nil
+}
+
 func (r *BillRepository) Update(bill entity.Bill, items []entity.BillItem) (entity.Bill, error) {
 	tx := r.Db.Begin()
 	if err := tx.Save(&bill).Error; err != nil {
@@ -266,6 +315,11 @@ func (r *BillRepository) Save(bill entity.Bill) error {
 	return r.Db.Save(&bill).Error
 }
 
+// SaveTx — Save dalam konteks transaksi yang sedang berjalan
+func (r *BillRepository) SaveTx(tx *gorm.DB, bill entity.Bill) error {
+	return tx.Save(&bill).Error
+}
+
 func (r *BillRepository) AddPayment(payment entity.BillPayment) (entity.BillPayment, error) {
 	payment.Id = uuid.New()
 	if err := r.Db.Create(&payment).Error; err != nil {
@@ -274,9 +328,30 @@ func (r *BillRepository) AddPayment(payment entity.BillPayment) (entity.BillPaym
 	return payment, nil
 }
 
+// AddPaymentTx — AddPayment dalam konteks transaksi yang sedang berjalan
+func (r *BillRepository) AddPaymentTx(tx *gorm.DB, payment entity.BillPayment) (entity.BillPayment, error) {
+	payment.Id = uuid.New()
+	if err := tx.Create(&payment).Error; err != nil {
+		return payment, err
+	}
+	return payment, nil
+}
+
+// FIX [BUG-22]: IsLinkedToJournal kini juga memeriksa BillPayment.JournalEntryId
+// agar journal pembayaran tidak bisa di-void manual melalui halaman Journal Entry
 func (r *BillRepository) IsLinkedToJournal(journalId uuid.UUID) bool {
 	var count int64
+
+	// Cek di Bill.JournalEntryId (jurnal konfirmasi)
 	r.Db.Model(&entity.Bill{}).
+		Where("journal_entry_id = ?", journalId).
+		Count(&count)
+	if count > 0 {
+		return true
+	}
+
+	// FIX [BUG-22]: Cek juga di BillPayment.JournalEntryId (jurnal pembayaran)
+	r.Db.Model(&entity.BillPayment{}).
 		Where("journal_entry_id = ?", journalId).
 		Count(&count)
 	return count > 0

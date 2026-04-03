@@ -152,6 +152,33 @@ func (h *PurchaseOrderHandler) Decline(ctx *fiber.Ctx) error {
 	return ctx.Status(200).JSON(response.JSON{Status: 200, Message: "Purchase order declined."})
 }
 
+// SelectDropdownList — GET /api/v1/dropdown/purchase-orders
+// Mengembalikan daftar PO dengan status "approved" untuk form Bills → Convert dari PO
+//
+// @Summary Get purchase order dropdown options
+// @Tags Dropdowns
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param search query string false "Search keyword"
+// @Success 200 {object} response.SelectJSON "Successfully retrieved dropdown options"
+// @Router /api/v1/dropdown/purchase-orders [get]
+func (h *PurchaseOrderHandler) SelectDropdownList(ctx *fiber.Ctx) error {
+	companyId, err := util.GetCompanyID(ctx)
+	if err != nil {
+		return ctx.Status(400).JSON(response.JSON{Status: 400, Message: err.Error()})
+	}
+	qp := util.ParseQueryParams(ctx, entity.PurchaseOrder{}.SearchableFields())
+	items, totalCount, err := h.svc.SelectDropdownList(companyId, qp)
+	if err != nil {
+		return ctx.Status(500).JSON(response.JSON{Status: 500, Message: err.Error()})
+	}
+	if totalCount == 0 {
+		return ctx.Status(200).JSON(response.SelectJSON{Data: []response.SelectDropdownListResponse{}})
+	}
+	return ctx.Status(200).JSON(response.SelectJSON{Data: items})
+}
+
 // ─── Bill Handler ─────────────────────────────────────────────────────────────
 
 type BillHandler struct {
@@ -319,4 +346,31 @@ func (h *BillHandler) Cancel(ctx *fiber.Ctx) error {
 		return ctx.Status(400).JSON(response.JSON{Status: 400, Message: err.Error()})
 	}
 	return ctx.Status(200).JSON(response.JSON{Status: 200, Message: "Bill cancelled.", Data: result})
+}
+
+// SelectDropdownList — GET /api/v1/dropdown/bills
+// Mengembalikan daftar Bills untuk dropdown referensi
+//
+// @Summary Get bill dropdown options
+// @Tags Dropdowns
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param search query string false "Search keyword"
+// @Success 200 {object} response.SelectJSON "Successfully retrieved dropdown options"
+// @Router /api/v1/dropdown/bills [get]
+func (h *BillHandler) SelectDropdownList(ctx *fiber.Ctx) error {
+	companyId, err := util.GetCompanyID(ctx)
+	if err != nil {
+		return ctx.Status(400).JSON(response.JSON{Status: 400, Message: err.Error()})
+	}
+	qp := util.ParseQueryParams(ctx, entity.Bill{}.SearchableFields())
+	items, totalCount, err := h.svc.SelectDropdownList(companyId, qp)
+	if err != nil {
+		return ctx.Status(500).JSON(response.JSON{Status: 500, Message: err.Error()})
+	}
+	if totalCount == 0 {
+		return ctx.Status(200).JSON(response.SelectJSON{Data: []response.SelectDropdownListResponse{}})
+	}
+	return ctx.Status(200).JSON(response.SelectJSON{Data: items})
 }

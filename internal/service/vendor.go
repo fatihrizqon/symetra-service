@@ -11,12 +11,12 @@ import (
 )
 
 type IVendorService interface {
-	Create(req request.VendorCreateRequest) (entity.Vendor, error)
-	FindAll(qp *util.QueryParams) ([]response.VendorResponse, int, error)
-	FindById(id uuid.UUID) (response.VendorResponse, error)
-	Update(req request.VendorUpdateRequest) (entity.Vendor, error)
-	Delete(id uuid.UUID) (entity.Vendor, error)
-	SelectDropdownList(qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error)
+	Create(companyId uuid.UUID, req request.VendorCreateRequest) (entity.Vendor, error)
+	FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]response.VendorResponse, int, error)
+	FindById(companyId, id uuid.UUID) (response.VendorResponse, error)
+	Update(companyId uuid.UUID, req request.VendorUpdateRequest) (entity.Vendor, error)
+	Delete(companyId, id uuid.UUID) (entity.Vendor, error)
+	SelectDropdownList(companyId uuid.UUID, qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error)
 }
 
 type VendorService struct {
@@ -48,23 +48,24 @@ func toVendorResponse(v entity.Vendor) response.VendorResponse {
 	return r
 }
 
-func (s *VendorService) Create(req request.VendorCreateRequest) (entity.Vendor, error) {
+func (s *VendorService) Create(companyId uuid.UUID, req request.VendorCreateRequest) (entity.Vendor, error) {
 	if err := s.validate.Struct(req); err != nil {
 		return entity.Vendor{}, err
 	}
 	v := entity.Vendor{
-		Code:    req.Code,
-		Name:    req.Name,
-		Email:   req.Email,
-		Phone:   req.Phone,
-		Address: req.Address,
-		CoaId:   req.CoaId,
+		CompanyId: companyId,
+		Code:      req.Code,
+		Name:      req.Name,
+		Email:     req.Email,
+		Phone:     req.Phone,
+		Address:   req.Address,
+		CoaId:     req.CoaId,
 	}
 	return s.IVendorRepository.Create(v)
 }
 
-func (s *VendorService) FindAll(qp *util.QueryParams) ([]response.VendorResponse, int, error) {
-	entities, total, err := s.IVendorRepository.FindAll(qp)
+func (s *VendorService) FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]response.VendorResponse, int, error) {
+	entities, total, err := s.IVendorRepository.FindAll(companyId, qp)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -81,16 +82,16 @@ func (s *VendorService) FindAll(qp *util.QueryParams) ([]response.VendorResponse
 	return resps, total, nil
 }
 
-func (s *VendorService) FindById(id uuid.UUID) (response.VendorResponse, error) {
-	v, err := s.IVendorRepository.FindById(id)
+func (s *VendorService) FindById(companyId, id uuid.UUID) (response.VendorResponse, error) {
+	v, err := s.IVendorRepository.FindById(companyId, id)
 	if err != nil {
 		return response.VendorResponse{}, err
 	}
 	return toVendorResponse(v), nil
 }
 
-func (s *VendorService) Update(req request.VendorUpdateRequest) (entity.Vendor, error) {
-	v, err := s.IVendorRepository.FindById(req.Id)
+func (s *VendorService) Update(companyId uuid.UUID, req request.VendorUpdateRequest) (entity.Vendor, error) {
+	v, err := s.IVendorRepository.FindById(companyId, req.Id)
 	if err != nil {
 		return v, err
 	}
@@ -109,16 +110,16 @@ func (s *VendorService) Update(req request.VendorUpdateRequest) (entity.Vendor, 
 	return v, nil
 }
 
-func (s *VendorService) Delete(id uuid.UUID) (entity.Vendor, error) {
-	v, err := s.IVendorRepository.FindById(id)
+func (s *VendorService) Delete(companyId, id uuid.UUID) (entity.Vendor, error) {
+	v, err := s.IVendorRepository.FindById(companyId, id)
 	if err != nil {
 		return v, err
 	}
-	return v, s.IVendorRepository.Delete(id)
+	return v, s.IVendorRepository.Delete(companyId, id)
 }
 
-func (s *VendorService) SelectDropdownList(qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error) {
-	entities, total, err := s.IVendorRepository.FindAll(qp)
+func (s *VendorService) SelectDropdownList(companyId uuid.UUID, qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error) {
+	entities, total, err := s.IVendorRepository.FindAll(companyId, qp)
 	if err != nil {
 		return nil, 0, err
 	}

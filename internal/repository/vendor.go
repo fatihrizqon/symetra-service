@@ -18,10 +18,10 @@ var vendorSortColumns = map[string]string{
 
 type IVendorRepository interface {
 	Create(entity.Vendor) (entity.Vendor, error)
-	FindAll(qp *util.QueryParams) ([]entity.Vendor, int, error)
-	FindById(id uuid.UUID) (entity.Vendor, error)
+	FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]entity.Vendor, int, error)
+	FindById(companyId, id uuid.UUID) (entity.Vendor, error)
 	Update(entity.Vendor) error
-	Delete(id uuid.UUID) error
+	Delete(companyId, id uuid.UUID) error
 }
 
 type VendorRepository struct {
@@ -33,20 +33,19 @@ func NewVendorRepository(db *gorm.DB) IVendorRepository {
 }
 
 func (r *VendorRepository) Create(v entity.Vendor) (entity.Vendor, error) {
-	tx := r.Db.Begin()
-	if err := tx.Create(&v).Error; err != nil {
-		tx.Rollback()
+	v.Id = uuid.New()
+	if err := r.Db.Create(&v).Error; err != nil {
 		return v, err
 	}
-	tx.Commit()
-	return v, nil
+	return r.FindById(v.CompanyId, v.Id)
 }
 
-func (r *VendorRepository) FindAll(qp *util.QueryParams) ([]entity.Vendor, int, error) {
+func (r *VendorRepository) FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]entity.Vendor, int, error) {
 	var entities []entity.Vendor
 	var totalCount int64
 
-	query := r.Db.Preload("COA").Model(&entity.Vendor{})
+	query := r.Db.Preload("COA").Model(&entity.Vendor{}).
+		Where("vendors.company_id = ?", companyId)
 	query = util.ApplySearch(query, qp)
 	query = entity.Vendor{}.ApplyFilters(query, qp.Filters)
 
@@ -63,34 +62,24 @@ func (r *VendorRepository) FindAll(qp *util.QueryParams) ([]entity.Vendor, int, 
 	if err := query.Find(&entities).Error; err != nil {
 		return nil, 0, err
 	}
-
 	return entities, int(totalCount), nil
 }
 
-func (r *VendorRepository) FindById(id uuid.UUID) (entity.Vendor, error) {
+func (r *VendorRepository) FindById(companyId, id uuid.UUID) (entity.Vendor, error) {
 	var v entity.Vendor
-	if err := r.Db.Preload("COA").Where("id = ?", id).First(&v).Error; err != nil {
+	if err := r.Db.Preload("COA").
+		Where("id = ? AND company_id = ?", id, companyId).
+		First(&v).Error; err != nil {
 		return v, err
 	}
 	return v, nil
 }
 
 func (r *VendorRepository) Update(v entity.Vendor) error {
-	tx := r.Db.Begin()
-	if err := tx.Model(&v).Updates(v).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-	tx.Commit()
-	return nil
+	return r.Db.Save(&v).Error
 }
 
-func (r *VendorRepository) Delete(id uuid.UUID) error {
-	tx := r.Db.Begin()
-	if err := tx.Where("id = ?", id).Delete(&entity.Vendor{}).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-	tx.Commit()
-	return nil
+func (r *VendorRepository) Delete(companyId, id uuid.UUID) error {
+	return r.Db.Where("id = ? AND company_id = ?", id, companyId).
+		Delete(&entity.Vendor{}).Error
 }

@@ -101,6 +101,10 @@ func toConfigResponse(cfg entity.CompanyConfiguration) response.CompanyConfigura
 		InvoicePrefix:           cfg.InvoicePrefix,
 		QuotationPrefix:         cfg.QuotationPrefix,
 		InvoiceDueDays:          cfg.InvoiceDueDays,
+		DefaultExpenseAccountId: cfg.DefaultExpenseAccountId,
+		PurchaseOrderPrefix:     cfg.PurchaseOrderPrefix,
+		BillPrefix:              cfg.BillPrefix,
+		BillDueDays:             cfg.BillDueDays,
 		CreatedAt:               cfg.CreatedAt,
 		UpdatedAt:               cfg.UpdatedAt,
 	}
@@ -127,6 +131,9 @@ func toConfigResponse(cfg entity.CompanyConfiguration) response.CompanyConfigura
 	}
 	if cfg.CashAccount != nil {
 		r.CashAccountName = cfg.CashAccount.Name
+	}
+	if cfg.DefaultExpenseAccount != nil {
+		r.DefaultExpenseAccountName = cfg.DefaultExpenseAccount.Name
 	}
 	return r
 }
@@ -156,6 +163,18 @@ func (s *CompanyConfigurationService) Upsert(companyId uuid.UUID, req request.Co
 	if taxRate <= 0 {
 		taxRate = 0.11
 	}
+	poPrefix := req.PurchaseOrderPrefix
+	if poPrefix == "" {
+		poPrefix = "PO"
+	}
+	billPrefix := req.BillPrefix
+	if billPrefix == "" {
+		billPrefix = "BILL"
+	}
+	billDueDays := req.BillDueDays
+	if billDueDays <= 0 {
+		billDueDays = 30
+	}
 	cfg := entity.CompanyConfiguration{
 		CompanyId:               companyId,
 		EnableTax:               req.EnableTax,
@@ -171,6 +190,10 @@ func (s *CompanyConfigurationService) Upsert(companyId uuid.UUID, req request.Co
 		InvoicePrefix:           prefix,
 		QuotationPrefix:         qprefix,
 		InvoiceDueDays:          dueDays,
+		DefaultExpenseAccountId: req.DefaultExpenseAccountId,
+		PurchaseOrderPrefix:     poPrefix,
+		BillPrefix:              billPrefix,
+		BillDueDays:             billDueDays,
 	}
 	saved, err := s.repo.Upsert(cfg)
 	if err != nil {

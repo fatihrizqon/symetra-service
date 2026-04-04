@@ -30,25 +30,19 @@ func NewVendorHandler(svc service.IVendorService) *VendorHandler {
 // @Failure 400 {object} response.JSON "Bad request"
 // @Router /api/v1/vendors [post]
 func (h *VendorHandler) Create(ctx *fiber.Ctx) error {
+	companyId, err := util.GetCompanyID(ctx)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
+	}
 	req := request.VendorCreateRequest{}
 	if err := ctx.BodyParser(&req); err != nil {
-		util.HandleError(ctx, fiber.StatusBadRequest, err)
-		return nil
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
-
-	result, err := h.IVendorService.Create(req)
+	result, err := h.IVendorService.Create(companyId, req)
 	if err != nil {
-		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{
-			Status: fiber.StatusBadRequest,
-			Message: err.Error(),
-		})
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
-
-	return ctx.Status(fiber.StatusCreated).JSON(response.JSON{
-		Status: fiber.StatusCreated,
-		Message: "A new record has been stored.",
-		Data:    result,
-	})
+	return ctx.Status(fiber.StatusCreated).JSON(response.JSON{Status: fiber.StatusCreated, Message: "A new record has been stored.", Data: result})
 }
 
 // Find All Vendors
@@ -68,34 +62,21 @@ func (h *VendorHandler) Create(ctx *fiber.Ctx) error {
 // @Failure 500 {object} response.JSON "Internal Server Error"
 // @Router /api/v1/vendors [get]
 func (h *VendorHandler) FindAll(ctx *fiber.Ctx) error {
-	qp := util.ParseQueryParams(ctx, entity.Vendor{}.SearchableFields())
-
-	items, totalCount, err := h.IVendorService.FindAll(qp)
+	companyId, err := util.GetCompanyID(ctx)
 	if err != nil {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
-			Status: fiber.StatusInternalServerError,
-			Message: "Failed to retrieve records",
-			Errors:  err.Error(),
-		})
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
-
+	qp := util.ParseQueryParams(ctx, entity.Vendor{}.SearchableFields())
+	items, totalCount, err := h.IVendorService.FindAll(companyId, qp)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{Status: fiber.StatusInternalServerError, Message: "Failed to retrieve records", Errors: err.Error()})
+	}
 	if totalCount == 0 || (qp.Page-1)*qp.PageSize >= totalCount {
-		return ctx.Status(fiber.StatusOK).JSON(response.JSON{
-			Status: fiber.StatusOK,
-			Message: "No records found.",
-			Data:    []response.VendorResponse{},
-		})
+		return ctx.Status(fiber.StatusOK).JSON(response.JSON{Status: fiber.StatusOK, Message: "No records found.", Data: []response.VendorResponse{}})
 	}
-
 	baseURL := ctx.Protocol() + "://" + ctx.Hostname() + ctx.Path()
 	meta := util.GenerateMeta(baseURL, qp, totalCount)
-
-	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
-		Status: fiber.StatusOK,
-		Message: "Successfully retrieved all records.",
-		Data:    items,
-		Meta:    &meta,
-	})
+	return ctx.Status(fiber.StatusOK).JSON(response.JSON{Status: fiber.StatusOK, Message: "Successfully retrieved all records.", Data: items, Meta: &meta})
 }
 
 // Find Vendor by Id
@@ -109,25 +90,19 @@ func (h *VendorHandler) FindAll(ctx *fiber.Ctx) error {
 // @Failure 404 {object} response.JSON "Vendor not found"
 // @Router /api/v1/vendors/{id} [get]
 func (h *VendorHandler) FindById(ctx *fiber.Ctx) error {
-	parsedId, err := uuid.Parse(ctx.Params("id"))
+	companyId, err := util.GetCompanyID(ctx)
 	if err != nil {
-		util.HandleError(ctx, fiber.StatusBadRequest, err)
-		return nil
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
-
-	result, err := h.IVendorService.FindById(parsedId)
+	id, err := uuid.Parse(ctx.Params("id"))
 	if err != nil {
-		return ctx.Status(fiber.StatusNotFound).JSON(response.JSON{
-			Status: fiber.StatusNotFound,
-			Message: err.Error(),
-		})
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: "invalid id"})
 	}
-
-	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
-		Status: fiber.StatusOK,
-		Message: "Successfully retrieved selected record.",
-		Data:    result,
-	})
+	result, err := h.IVendorService.FindById(companyId, id)
+	if err != nil {
+		return ctx.Status(fiber.StatusNotFound).JSON(response.JSON{Status: fiber.StatusNotFound, Message: err.Error()})
+	}
+	return ctx.Status(fiber.StatusOK).JSON(response.JSON{Status: fiber.StatusOK, Message: "Successfully retrieved selected record.", Data: result})
 }
 
 // Update Vendor by Id
@@ -142,33 +117,24 @@ func (h *VendorHandler) FindById(ctx *fiber.Ctx) error {
 // @Failure 404 {object} response.JSON "Vendor not found"
 // @Router /api/v1/vendors/{id} [put]
 func (h *VendorHandler) Update(ctx *fiber.Ctx) error {
+	companyId, err := util.GetCompanyID(ctx)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
+	}
+	id, err := uuid.Parse(ctx.Params("id"))
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: "invalid id"})
+	}
 	req := request.VendorUpdateRequest{}
 	if err := ctx.BodyParser(&req); err != nil {
-		util.HandleError(ctx, fiber.StatusBadRequest, err)
-		return nil
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
-
-	parsedId, err := uuid.Parse(ctx.Params("id"))
+	req.Id = id
+	result, err := h.IVendorService.Update(companyId, req)
 	if err != nil {
-		util.HandleError(ctx, fiber.StatusBadRequest, err)
-		return nil
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
-
-	req.Id = parsedId
-
-	result, err := h.IVendorService.Update(req)
-	if err != nil {
-		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{
-			Status: fiber.StatusBadRequest,
-			Message: err.Error(),
-		})
-	}
-
-	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
-		Status: fiber.StatusOK,
-		Message: "Selected record has been updated.",
-		Data:    result,
-	})
+	return ctx.Status(fiber.StatusOK).JSON(response.JSON{Status: fiber.StatusOK, Message: "Selected record has been updated.", Data: result})
 }
 
 // Delete Vendor by Id
@@ -182,24 +148,18 @@ func (h *VendorHandler) Update(ctx *fiber.Ctx) error {
 // @Failure 404 {object} response.JSON "Vendor not found"
 // @Router /api/v1/vendors/{id} [delete]
 func (h *VendorHandler) Delete(ctx *fiber.Ctx) error {
-	parsedId, err := uuid.Parse(ctx.Params("id"))
+	companyId, err := util.GetCompanyID(ctx)
 	if err != nil {
-		util.HandleError(ctx, fiber.StatusBadRequest, err)
-		return nil
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
-
-	_, err = h.IVendorService.Delete(parsedId)
+	id, err := uuid.Parse(ctx.Params("id"))
 	if err != nil {
-		return ctx.Status(fiber.StatusNotFound).JSON(response.JSON{
-			Status: fiber.StatusNotFound,
-			Message: err.Error(),
-		})
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: "invalid id"})
 	}
-
-	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
-		Status: fiber.StatusOK,
-		Message: "Selected record has been deleted.",
-	})
+	if _, err := h.IVendorService.Delete(companyId, id); err != nil {
+		return ctx.Status(fiber.StatusNotFound).JSON(response.JSON{Status: fiber.StatusNotFound, Message: err.Error()})
+	}
+	return ctx.Status(fiber.StatusOK).JSON(response.JSON{Status: fiber.StatusOK, Message: "Selected record has been deleted."})
 }
 
 // Select Vendor Dropdown List
@@ -212,22 +172,17 @@ func (h *VendorHandler) Delete(ctx *fiber.Ctx) error {
 // @Success 200 {object} response.SelectJSON "Successfully retrieved dropdown options"
 // @Router /api/v1/dropdown/vendors [get]
 func (h *VendorHandler) SelectDropdownList(ctx *fiber.Ctx) error {
-	qp := util.ParseQueryParams(ctx, entity.Vendor{}.SearchableFields())
-
-	items, totalCount, err := h.IVendorService.SelectDropdownList(qp)
+	companyId, err := util.GetCompanyID(ctx)
 	if err != nil {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
-			Status: fiber.StatusInternalServerError,
-			Message: "Failed to retrieve records",
-			Errors:  err.Error(),
-		})
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
-
-	if totalCount == 0 || (qp.Page-1)*qp.PageSize >= totalCount {
-		return ctx.Status(fiber.StatusOK).JSON(response.SelectJSON{
-			Data: []response.SelectDropdownListResponse{},
-		})
+	qp := util.ParseQueryParams(ctx, entity.Vendor{}.SearchableFields())
+	items, totalCount, err := h.IVendorService.SelectDropdownList(companyId, qp)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{Status: fiber.StatusInternalServerError, Message: "Failed to retrieve records", Errors: err.Error()})
 	}
-
+	if totalCount == 0 {
+		return ctx.Status(fiber.StatusOK).JSON(response.SelectJSON{Data: []response.SelectDropdownListResponse{}})
+	}
 	return ctx.Status(fiber.StatusOK).JSON(response.SelectJSON{Data: items})
 }

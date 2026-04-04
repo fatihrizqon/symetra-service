@@ -20,6 +20,11 @@ type CompanyConfigurationRequest struct {
 	InvoicePrefix   string `json:"invoice_prefix"`
 	QuotationPrefix string `json:"quotation_prefix"`
 	InvoiceDueDays  int    `json:"invoice_due_days"`
+
+	DefaultExpenseAccountId *uuid.UUID `json:"default_expense_account_id"`
+	PurchaseOrderPrefix     string     `json:"purchase_order_prefix"`
+	BillPrefix              string     `json:"bill_prefix"`
+	BillDueDays             int        `json:"bill_due_days"`
 }
 
 // ─── Quotation ────────────────────────────────────────────────────────────────

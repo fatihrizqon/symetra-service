@@ -33,6 +33,7 @@ func (r *CompanyConfigurationRepository) FindByCompanyId(companyId uuid.UUID) (e
 		Preload("SalesRevenueAccount").Preload("ServiceRevenueAccount").
 		Preload("TaxPayableAccount").Preload("TaxReceivableAccount").
 		Preload("BankAccount").Preload("CashAccount").
+		Preload("DefaultExpenseAccount").
 		Where("company_id = ?", companyId).First(&cfg).Error
 	if err != nil {
 		// Return default config if not found yet

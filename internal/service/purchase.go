@@ -78,25 +78,9 @@ func toPOResponse(po entity.PurchaseOrder) response.POResponse {
 // validateVendorBelongsToCompany — FIX [FRAUD-02]
 // Pastikan vendor milik company yang sedang aktif sebelum membuat PO/Bill.
 func (s *PurchaseOrderService) validateVendorBelongsToCompany(vendorId, companyId uuid.UUID) error {
-	qp := &util.QueryParams{Page: 1, PageSize: 1, Filters: map[string][]string{}}
-	vendors, _, err := s.vendorRepo.FindAll(qp)
+	_, err := s.vendorRepo.FindById(companyId, vendorId)
 	if err != nil {
-		return err
-	}
-	// Karena FindAll sudah scope by QueryParams (yang tidak include company_id filter di vendorRepo),
-	// kita gunakan FindById langsung dan validasi manual.
-	// Alternatif: tambahkan FindByIdAndCompany di IVendorRepository.
-	_ = vendors
-
-	// Implementasi yang lebih tepat: cek via raw query
-	// Di sini kita asumsikan IVendorRepository sudah punya FindById yang return vendor
-	// lalu kita cek CompanyId-nya.
-	vendor, err := s.vendorRepo.FindById(vendorId)
-	if err != nil {
-		return errors.New("vendor not found")
-	}
-	if vendor.CompanyId != companyId {
-		return errors.New("vendor does not belong to the active company")
+		return errors.New("vendor not found or does not belong to the active company")
 	}
 	return nil
 }
@@ -448,12 +432,9 @@ func toBillResponse(b entity.Bill) response.BillResponse {
 
 // validateVendorForBill — FIX [FRAUD-02]: validasi vendor milik company
 func (s *BillService) validateVendorForBill(vendorId, companyId uuid.UUID) error {
-	vendor, err := s.vendorRepo.FindById(vendorId)
+	_, err := s.vendorRepo.FindById(companyId, vendorId)
 	if err != nil {
-		return errors.New("vendor not found")
-	}
-	if vendor.CompanyId != companyId {
-		return errors.New("vendor does not belong to the active company")
+		return errors.New("vendor not found or does not belong to the active company")
 	}
 	return nil
 }

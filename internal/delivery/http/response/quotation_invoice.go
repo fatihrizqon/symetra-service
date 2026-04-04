@@ -36,6 +36,12 @@ type CompanyConfigurationResponse struct {
 	QuotationPrefix string `json:"quotation_prefix"`
 	InvoiceDueDays  int    `json:"invoice_due_days"`
 
+	DefaultExpenseAccountId   *uuid.UUID `json:"default_expense_account_id"`
+	DefaultExpenseAccountName string     `json:"default_expense_account_name,omitempty"`
+	PurchaseOrderPrefix       string     `json:"purchase_order_prefix"`
+	BillPrefix                string     `json:"bill_prefix"`
+	BillDueDays               int        `json:"bill_due_days"`
+
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }

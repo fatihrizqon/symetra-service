@@ -59,11 +59,11 @@ func (h *ReportHandler) TrialBalance(ctx *fiber.Ctx) error {
 	result, err := h.IReportService.TrialBalance(start, end)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
-			Status: 500, Message: err.Error(),
+			Status: fiber.StatusInternalServerError, Message: err.Error(),
 		})
 	}
 
-	return ctx.JSON(response.JSON{Status: 200, Message: "Trial balance generated.", Data: result})
+	return ctx.JSON(response.JSON{Status: fiber.StatusOK, Message: "Trial balance generated.", Data: result})
 }
 
 // ProfitLoss godoc
@@ -83,11 +83,11 @@ func (h *ReportHandler) ProfitLoss(ctx *fiber.Ctx) error {
 	result, err := h.IReportService.ProfitLoss(start, end)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
-			Status: 500, Message: err.Error(),
+			Status: fiber.StatusInternalServerError, Message: err.Error(),
 		})
 	}
 
-	return ctx.JSON(response.JSON{Status: 200, Message: "Profit & loss statement generated.", Data: result})
+	return ctx.JSON(response.JSON{Status: fiber.StatusOK, Message: "Profit & loss statement generated.", Data: result})
 }
 
 // BalanceSheet godoc
@@ -110,11 +110,11 @@ func (h *ReportHandler) BalanceSheet(ctx *fiber.Ctx) error {
 	result, err := h.IReportService.BalanceSheet(asOf)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
-			Status: 500, Message: err.Error(),
+			Status: fiber.StatusInternalServerError, Message: err.Error(),
 		})
 	}
 
-	return ctx.JSON(response.JSON{Status: 200, Message: "Balance sheet generated.", Data: result})
+	return ctx.JSON(response.JSON{Status: fiber.StatusOK, Message: "Balance sheet generated.", Data: result})
 }
 
 // CashFlow godoc
@@ -134,11 +134,11 @@ func (h *ReportHandler) CashFlow(ctx *fiber.Ctx) error {
 	result, err := h.IReportService.CashFlow(start, end)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
-			Status: 500, Message: err.Error(),
+			Status: fiber.StatusInternalServerError, Message: err.Error(),
 		})
 	}
 
-	return ctx.JSON(response.JSON{Status: 200, Message: "Cash flow statement generated.", Data: result})
+	return ctx.JSON(response.JSON{Status: fiber.StatusOK, Message: "Cash flow statement generated.", Data: result})
 }
 
 // EquityStatement godoc
@@ -158,11 +158,11 @@ func (h *ReportHandler) EquityStatement(ctx *fiber.Ctx) error {
 	result, err := h.IReportService.EquityStatement(start, end)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
-			Status: 500, Message: err.Error(),
+			Status: fiber.StatusInternalServerError, Message: err.Error(),
 		})
 	}
 
-	return ctx.JSON(response.JSON{Status: 200, Message: "Equity statement generated.", Data: result})
+	return ctx.JSON(response.JSON{Status: fiber.StatusOK, Message: "Equity statement generated.", Data: result})
 }
 
 // GeneralLedger godoc
@@ -185,11 +185,11 @@ func (h *ReportHandler) GeneralLedger(ctx *fiber.Ctx) error {
 	result, err := h.IReportService.GeneralLedger(start, end, coaID)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
-			Status: 500, Message: err.Error(),
+			Status: fiber.StatusInternalServerError, Message: err.Error(),
 		})
 	}
 
-	return ctx.JSON(response.JSON{Status: 200, Message: "General ledger generated.", Data: result})
+	return ctx.JSON(response.JSON{Status: fiber.StatusOK, Message: "General ledger generated.", Data: result})
 }
 
 // JournalBook godoc
@@ -209,9 +209,9 @@ func (h *ReportHandler) JournalBook(ctx *fiber.Ctx) error {
 	result, err := h.IReportService.JournalBook(start, end)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
-			Status: 500, Message: err.Error(),
+			Status: fiber.StatusInternalServerError, Message: err.Error(),
 		})
 	}
 
-	return ctx.JSON(response.JSON{Status: 200, Message: "Journal book generated.", Data: result})
+	return ctx.JSON(response.JSON{Status: fiber.StatusOK, Message: "Journal book generated.", Data: result})
 }

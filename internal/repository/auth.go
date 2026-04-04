@@ -19,10 +19,9 @@ func NewAuthRepository(Db *gorm.DB) IAuthRepository {
 	return &AuthRepository{Db: Db}
 }
 
-// Login implements IAuthRepository.
-func (e *AuthRepository) Login(email string) (entity.User, error) {
+func (r *AuthRepository) Login(email string) (entity.User, error) {
 	var entity entity.User
-	if err := e.Db.Where("email = ?", email).First(&entity).Error; err != nil {
+	if err := r.Db.Where("email = ?", email).First(&entity).Error; err != nil {
 		return entity, errors.New("credentials does not matches our record")
 	}
 	return entity, nil

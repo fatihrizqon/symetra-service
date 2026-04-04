@@ -43,10 +43,10 @@ func NewAuthService(
 	}
 }
 
-func (e *AuthService) Login(req request.LoginRequest) (AuthResult, error) {
+func (s *AuthService) Login(req request.LoginRequest) (AuthResult, error) {
 	var res AuthResult
 
-	user, err := e.IAuthRepository.Login(req.Email)
+	user, err := s.IAuthRepository.Login(req.Email)
 	if err != nil {
 		return res, err
 	}
@@ -60,7 +60,7 @@ func (e *AuthService) Login(req request.LoginRequest) (AuthResult, error) {
 		UserID: user.Id,
 	}
 
-	session, err = e.ITokenRepository.CreateSession(session)
+	session, err = s.ITokenRepository.CreateSession(session)
 	if err != nil {
 		return res, err
 	}
@@ -75,9 +75,6 @@ func (e *AuthService) Login(req request.LoginRequest) (AuthResult, error) {
 		return res, fmt.Errorf("failed to generate refresh token: %w", err)
 	}
 
-	// ExpiresAt harus match durasi JWT refresh token (7 hari).
-	// Sebelumnya 15 menit menyebabkan FindCredentialByToken gagal setelah 15 menit
-	// meski JWT masih valid, sehingga /refresh selalu return 401 setelah 15 menit.
 	credential := entity.Credential{
 		ID:           util.GenerateUUID(),
 		SessionID:    session.ID,
@@ -86,7 +83,7 @@ func (e *AuthService) Login(req request.LoginRequest) (AuthResult, error) {
 		ExpiresAt:    time.Now().Add(7 * 24 * time.Hour),
 	}
 
-	if err := e.ITokenRepository.CreateCredential(credential); err != nil {
+	if err := s.ITokenRepository.CreateCredential(credential); err != nil {
 		return res, err
 	}
 
@@ -97,13 +94,13 @@ func (e *AuthService) Login(req request.LoginRequest) (AuthResult, error) {
 	}, nil
 }
 
-func (e *AuthService) RefreshToken(refreshToken string) (AuthResult, error) {
-	oldCredential, err := e.ITokenRepository.FindCredentialByToken(refreshToken)
+func (s *AuthService) RefreshToken(refreshToken string) (AuthResult, error) {
+	oldCredential, err := s.ITokenRepository.FindCredentialByToken(refreshToken)
 	if err != nil {
 		return AuthResult{}, errors.New("invalid or revoked refresh token")
 	}
 
-	session, err := e.ITokenRepository.FindSessionByID(oldCredential.SessionID)
+	session, err := s.ITokenRepository.FindSessionByID(oldCredential.SessionID)
 	if err != nil {
 		return AuthResult{}, errors.New("session revoked or not found")
 	}
@@ -123,14 +120,14 @@ func (e *AuthService) RefreshToken(refreshToken string) (AuthResult, error) {
 		SessionID:    session.ID,
 		Type:         "REFRESH_TOKEN",
 		RefreshToken: newRefreshToken,
-		ExpiresAt:    time.Now().Add(7 * 24 * time.Hour), // match JWT refresh token duration
+		ExpiresAt:    time.Now().Add(7 * 24 * time.Hour),
 	}
 
-	if err := e.ITokenRepository.RevokeCredentialByID(oldCredential.ID); err != nil {
+	if err := s.ITokenRepository.RevokeCredentialByID(oldCredential.ID); err != nil {
 		return AuthResult{}, fmt.Errorf("failed to revoke old refresh token: %w", err)
 	}
 
-	if err := e.ITokenRepository.CreateCredential(newCredential); err != nil {
+	if err := s.ITokenRepository.CreateCredential(newCredential); err != nil {
 		return AuthResult{}, fmt.Errorf("failed to save new refresh token: %w", err)
 	}
 
@@ -141,19 +138,17 @@ func (e *AuthService) RefreshToken(refreshToken string) (AuthResult, error) {
 	}, nil
 }
 
-func (e *AuthService) Logout(refreshToken string) error {
-	credential, err := e.ITokenRepository.FindCredentialByToken(refreshToken)
+func (s *AuthService) Logout(refreshToken string) error {
+	credential, err := s.ITokenRepository.FindCredentialByToken(refreshToken)
 	if err != nil {
 		return err
 	}
-	if err := e.ITokenRepository.RevokeCredentialByID(credential.ID); err != nil {
+	if err := s.ITokenRepository.RevokeCredentialByID(credential.ID); err != nil {
 		return err
 	}
-
-	if err := e.ITokenRepository.RevokeSession(credential.SessionID); err != nil {
+	if err := s.ITokenRepository.RevokeSession(credential.SessionID); err != nil {
 		return err
 	}
-
 	return nil
 }
 

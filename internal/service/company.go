@@ -29,7 +29,6 @@ type ICompanyService interface {
 	RemoveMember(companyID, targetUserID, callerID uuid.UUID) error
 
 	// Platform guards
-	// AssertSuperadmin returns error jika user bukan superadmin.
 	// Digunakan oleh handler yang tidak bisa menggunakan CompanyMiddleware.
 	AssertSuperadmin(userID uuid.UUID) error
 }

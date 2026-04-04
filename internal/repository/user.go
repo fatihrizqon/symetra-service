@@ -104,27 +104,27 @@ func (r *UserRepository) Delete(id uuid.UUID) error {
 }
 
 // CountAll implements IUserRepository.
-func (e *UserRepository) CountAll(ctx context.Context) (int64, error) {
+func (r *UserRepository) CountAll(ctx context.Context) (int64, error) {
 	var count int64
-	if err := e.Db.WithContext(ctx).Model(&entity.User{}).Count(&count).Error; err != nil {
+	if err := r.Db.WithContext(ctx).Model(&entity.User{}).Count(&count).Error; err != nil {
 		return 0, err
 	}
 	return count, nil
 }
 
 // CountBetween(ctx, from time.Time, to time.Time) implements IUserRepository.
-func (e *UserRepository) CountBetween(ctx context.Context, from time.Time, to time.Time) (int64, error) {
+func (r *UserRepository) CountBetween(ctx context.Context, from time.Time, to time.Time) (int64, error) {
 	var count int64
-	if err := e.Db.WithContext(ctx).Model(&entity.User{}).Where("created_at BETWEEN ? AND ?", from, to).Count(&count).Error; err != nil {
+	if err := r.Db.WithContext(ctx).Model(&entity.User{}).Where("created_at BETWEEN ? AND ?", from, to).Count(&count).Error; err != nil {
 		return 0, err
 	}
 	return count, nil
 }
 
 // CountVerified implements IUserRepository.
-func (e *UserRepository) CountVerified(ctx context.Context) (int64, error) {
+func (r *UserRepository) CountVerified(ctx context.Context) (int64, error) {
 	var count int64
-	if err := e.Db.WithContext(ctx).Model(&entity.User{}).Where("email_verified_at IS NOT NULL").Count(&count).Error; err != nil {
+	if err := r.Db.WithContext(ctx).Model(&entity.User{}).Where("email_verified_at IS NOT NULL").Count(&count).Error; err != nil {
 		return 0, err
 	}
 	return count, nil

@@ -45,13 +45,13 @@ func (h *CompanyHandler) CreateCompany(ctx *fiber.Ctx) error {
 	result, err := h.ICompanyService.Create(req, callerID)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{
-			Status:  400,
+			Status: fiber.StatusBadRequest,
 			Message: err.Error(),
 		})
 	}
 
 	return ctx.Status(fiber.StatusCreated).JSON(response.JSON{
-		Status:  201,
+		Status: fiber.StatusCreated,
 		Message: "Company created successfully.",
 		Data:    result,
 	})
@@ -63,7 +63,6 @@ func (h *CompanyHandler) CreateCompany(ctx *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /api/v1/companies [get]
 func (h *CompanyHandler) FindAllCompanies(ctx *fiber.Ctx) error {
-	// Guard: endpoint ini tidak pakai CompanyMiddleware (tidak ada X-Company-ID),
 	// jadi superadmin check dilakukan langsung di handler via ICompanyService.
 	callerID, err := util.GetCallerID(ctx)
 	if err != nil {
@@ -73,7 +72,7 @@ func (h *CompanyHandler) FindAllCompanies(ctx *fiber.Ctx) error {
 
 	if err := h.ICompanyService.AssertSuperadmin(callerID); err != nil {
 		return ctx.Status(fiber.StatusForbidden).JSON(response.JSON{
-			Status:  403,
+			Status: fiber.StatusForbidden,
 			Message: "access denied: superadmin only",
 		})
 	}
@@ -83,13 +82,13 @@ func (h *CompanyHandler) FindAllCompanies(ctx *fiber.Ctx) error {
 	entities, totalCount, err := h.ICompanyService.FindAll(qp)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
-			Status: 500, Message: "Failed to retrieve companies", Errors: err.Error(),
+			Status: fiber.StatusInternalServerError, Message: "Failed to retrieve companies", Errors: err.Error(),
 		})
 	}
 
 	if totalCount == 0 || (qp.Page-1)*qp.PageSize >= totalCount {
 		return ctx.Status(fiber.StatusOK).JSON(response.JSON{
-			Status: 200, Message: "No records found.", Data: []response.CompanyResponse{},
+			Status: fiber.StatusOK, Message: "No records found.", Data: []response.CompanyResponse{},
 		})
 	}
 
@@ -97,7 +96,7 @@ func (h *CompanyHandler) FindAllCompanies(ctx *fiber.Ctx) error {
 	meta := util.GenerateMeta(baseURL, qp, totalCount)
 
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
-		Status: 200, Message: "Successfully retrieved companies.", Data: entities, Meta: &meta,
+		Status: fiber.StatusOK, Message: "Successfully retrieved companies.", Data: entities, Meta: &meta,
 	})
 }
 
@@ -116,12 +115,12 @@ func (h *CompanyHandler) FindMyCompanies(ctx *fiber.Ctx) error {
 	result, err := h.ICompanyService.FindMyCompanies(callerID)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
-			Status: 500, Message: err.Error(),
+			Status: fiber.StatusInternalServerError, Message: err.Error(),
 		})
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
-		Status: 200, Message: "Successfully retrieved your companies.", Data: result,
+		Status: fiber.StatusOK, Message: "Successfully retrieved your companies.", Data: result,
 	})
 }
 
@@ -141,12 +140,12 @@ func (h *CompanyHandler) FindCompanyById(ctx *fiber.Ctx) error {
 	result, err := h.ICompanyService.FindById(id)
 	if err != nil {
 		return ctx.Status(fiber.StatusNotFound).JSON(response.JSON{
-			Status: 404, Message: err.Error(),
+			Status: fiber.StatusNotFound, Message: err.Error(),
 		})
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
-		Status: 200, Message: "Successfully retrieved company.", Data: result,
+		Status: fiber.StatusOK, Message: "Successfully retrieved company.", Data: result,
 	})
 }
 
@@ -174,12 +173,12 @@ func (h *CompanyHandler) UpdateCompany(ctx *fiber.Ctx) error {
 	result, err := h.ICompanyService.Update(req)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{
-			Status: 400, Message: err.Error(),
+			Status: fiber.StatusBadRequest, Message: err.Error(),
 		})
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
-		Status: 200, Message: "Company updated.", Data: result,
+		Status: fiber.StatusOK, Message: "Company updated.", Data: result,
 	})
 }
 
@@ -205,12 +204,12 @@ func (h *CompanyHandler) DeleteCompany(ctx *fiber.Ctx) error {
 
 	if err := h.ICompanyService.Delete(id, callerID); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{
-			Status: 400, Message: err.Error(),
+			Status: fiber.StatusBadRequest, Message: err.Error(),
 		})
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
-		Status: 200, Message: "Company deleted.",
+		Status: fiber.StatusOK, Message: "Company deleted.",
 	})
 }
 
@@ -246,12 +245,12 @@ func (h *CompanyHandler) AssignMember(ctx *fiber.Ctx) error {
 	result, err := h.ICompanyService.AssignMember(req, callerID)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{
-			Status: 400, Message: err.Error(),
+			Status: fiber.StatusBadRequest, Message: err.Error(),
 		})
 	}
 
 	return ctx.Status(fiber.StatusCreated).JSON(response.JSON{
-		Status: 201, Message: "Member added successfully.", Data: result,
+		Status: fiber.StatusCreated, Message: "Member added successfully.", Data: result,
 	})
 }
 
@@ -272,12 +271,12 @@ func (h *CompanyHandler) FindMembers(ctx *fiber.Ctx) error {
 	result, err := h.ICompanyService.FindMembers(companyID)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
-			Status: 500, Message: err.Error(),
+			Status: fiber.StatusInternalServerError, Message: err.Error(),
 		})
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
-		Status: 200, Message: "Successfully retrieved members.", Data: result,
+		Status: fiber.StatusOK, Message: "Successfully retrieved members.", Data: result,
 	})
 }
 
@@ -317,12 +316,12 @@ func (h *CompanyHandler) UpdateMemberRole(ctx *fiber.Ctx) error {
 
 	if err := h.ICompanyService.UpdateMemberRole(req, callerID); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{
-			Status: 400, Message: err.Error(),
+			Status: fiber.StatusBadRequest, Message: err.Error(),
 		})
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
-		Status: 200, Message: "Member role updated.",
+		Status: fiber.StatusOK, Message: "Member role updated.",
 	})
 }
 
@@ -354,11 +353,11 @@ func (h *CompanyHandler) RemoveMember(ctx *fiber.Ctx) error {
 
 	if err := h.ICompanyService.RemoveMember(companyID, targetUserID, callerID); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{
-			Status: 400, Message: err.Error(),
+			Status: fiber.StatusBadRequest, Message: err.Error(),
 		})
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
-		Status: 200, Message: "Member removed.",
+		Status: fiber.StatusOK, Message: "Member removed.",
 	})
 }

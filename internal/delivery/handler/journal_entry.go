@@ -34,9 +34,9 @@ func (h *JournalEntryHandler) Create(ctx *fiber.Ctx) error {
 
 	result, err := h.IJournalEntryService.Create(companyID, req, callerID, entity.JournalTypeGeneral)
 	if err != nil {
-		return ctx.Status(400).JSON(response.JSON{Status: 400, Message: err.Error()})
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
-	return ctx.Status(201).JSON(response.JSON{Status: 201, Message: "Journal entry created.", Data: result})
+	return ctx.Status(fiber.StatusCreated).JSON(response.JSON{Status: fiber.StatusCreated, Message: "Journal entry created.", Data: result})
 }
 
 func (h *JournalEntryHandler) FindAll(ctx *fiber.Ctx) error {
@@ -48,14 +48,14 @@ func (h *JournalEntryHandler) FindAll(ctx *fiber.Ctx) error {
 	qp := util.ParseQueryParams(ctx, entity.JournalEntry{}.SearchableFields())
 	entities, totalCount, err := h.IJournalEntryService.FindAll(companyID, qp)
 	if err != nil {
-		return ctx.Status(500).JSON(response.JSON{Status: 500, Message: err.Error()})
+		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{Status: fiber.StatusInternalServerError, Message: err.Error()})
 	}
 	if totalCount == 0 || (qp.Page-1)*qp.PageSize >= totalCount {
-		return ctx.Status(200).JSON(response.JSON{Status: 200, Message: "No records found.", Data: []response.JournalEntryResponse{}})
+		return ctx.Status(fiber.StatusOK).JSON(response.JSON{Status: fiber.StatusOK, Message: "No records found.", Data: []response.JournalEntryResponse{}})
 	}
 	baseURL := ctx.Protocol() + "://" + ctx.Hostname() + ctx.Path()
 	meta := util.GenerateMeta(baseURL, qp, totalCount)
-	return ctx.Status(200).JSON(response.JSON{Status: 200, Message: "Successfully retrieved records.", Data: entities, Meta: &meta})
+	return ctx.Status(fiber.StatusOK).JSON(response.JSON{Status: fiber.StatusOK, Message: "Successfully retrieved records.", Data: entities, Meta: &meta})
 }
 
 func (h *JournalEntryHandler) FindById(ctx *fiber.Ctx) error {
@@ -71,9 +71,9 @@ func (h *JournalEntryHandler) FindById(ctx *fiber.Ctx) error {
 	}
 	result, err := h.IJournalEntryService.FindById(companyID, id)
 	if err != nil {
-		return ctx.Status(404).JSON(response.JSON{Status: 404, Message: err.Error()})
+		return ctx.Status(fiber.StatusNotFound).JSON(response.JSON{Status: fiber.StatusNotFound, Message: err.Error()})
 	}
-	return ctx.Status(200).JSON(response.JSON{Status: 200, Message: "Record found.", Data: result})
+	return ctx.Status(fiber.StatusOK).JSON(response.JSON{Status: fiber.StatusOK, Message: "Record found.", Data: result})
 }
 
 func (h *JournalEntryHandler) Update(ctx *fiber.Ctx) error {
@@ -95,9 +95,9 @@ func (h *JournalEntryHandler) Update(ctx *fiber.Ctx) error {
 	req.Id = id
 	result, err := h.IJournalEntryService.Update(companyID, req)
 	if err != nil {
-		return ctx.Status(400).JSON(response.JSON{Status: 400, Message: err.Error()})
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
-	return ctx.Status(200).JSON(response.JSON{Status: 200, Message: "Journal entry updated.", Data: result})
+	return ctx.Status(fiber.StatusOK).JSON(response.JSON{Status: fiber.StatusOK, Message: "Journal entry updated.", Data: result})
 }
 
 func (h *JournalEntryHandler) Delete(ctx *fiber.Ctx) error {
@@ -112,9 +112,9 @@ func (h *JournalEntryHandler) Delete(ctx *fiber.Ctx) error {
 		return nil
 	}
 	if err := h.IJournalEntryService.Delete(companyID, id); err != nil {
-		return ctx.Status(400).JSON(response.JSON{Status: 400, Message: err.Error()})
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
-	return ctx.Status(200).JSON(response.JSON{Status: 200, Message: "Journal entry deleted."})
+	return ctx.Status(fiber.StatusOK).JSON(response.JSON{Status: fiber.StatusOK, Message: "Journal entry deleted."})
 }
 
 func (h *JournalEntryHandler) Post(ctx *fiber.Ctx) error {
@@ -129,9 +129,9 @@ func (h *JournalEntryHandler) Post(ctx *fiber.Ctx) error {
 		return nil
 	}
 	if err := h.IJournalEntryService.Post(companyID, id); err != nil {
-		return ctx.Status(400).JSON(response.JSON{Status: 400, Message: err.Error()})
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
-	return ctx.Status(200).JSON(response.JSON{Status: 200, Message: "Journal entry posted."})
+	return ctx.Status(fiber.StatusOK).JSON(response.JSON{Status: fiber.StatusOK, Message: "Journal entry posted."})
 }
 
 func (h *JournalEntryHandler) Void(ctx *fiber.Ctx) error {
@@ -146,7 +146,7 @@ func (h *JournalEntryHandler) Void(ctx *fiber.Ctx) error {
 		return nil
 	}
 	if err := h.IJournalEntryService.Void(companyID, id); err != nil {
-		return ctx.Status(400).JSON(response.JSON{Status: 400, Message: err.Error()})
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
-	return ctx.Status(200).JSON(response.JSON{Status: 200, Message: "Journal entry voided."})
+	return ctx.Status(fiber.StatusOK).JSON(response.JSON{Status: fiber.StatusOK, Message: "Journal entry voided."})
 }

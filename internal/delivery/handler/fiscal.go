@@ -54,13 +54,13 @@ func (h *FiscalHandler) CreateFiscalYear(ctx *fiber.Ctx) error {
 	result, err := h.IFiscalService.CreateFiscalYear(req, callerID)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{
-			Status:  400,
+			Status: fiber.StatusBadRequest,
 			Message: err.Error(),
 		})
 	}
 
 	return ctx.Status(fiber.StatusCreated).JSON(response.JSON{
-		Status:  201,
+		Status: fiber.StatusCreated,
 		Message: "Fiscal year created successfully.",
 		Data:    result,
 	})
@@ -82,7 +82,7 @@ func (h *FiscalHandler) FindAllFiscalYears(ctx *fiber.Ctx) error {
 	entities, totalCount, err := h.IFiscalService.FindAllFiscalYears(qp)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
-			Status:  500,
+			Status: fiber.StatusInternalServerError,
 			Message: "Failed to retrieve fiscal years",
 			Errors:  err.Error(),
 		})
@@ -90,7 +90,7 @@ func (h *FiscalHandler) FindAllFiscalYears(ctx *fiber.Ctx) error {
 
 	if totalCount == 0 || (qp.Page-1)*qp.PageSize >= totalCount {
 		return ctx.Status(fiber.StatusOK).JSON(response.JSON{
-			Status:  200,
+			Status: fiber.StatusOK,
 			Message: "No records found.",
 			Data:    []response.FiscalYearResponse{},
 			Meta:    nil,
@@ -101,7 +101,7 @@ func (h *FiscalHandler) FindAllFiscalYears(ctx *fiber.Ctx) error {
 	meta := util.GenerateMeta(baseURL, qp, totalCount)
 
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
-		Status:  200,
+		Status: fiber.StatusOK,
 		Message: "Successfully retrieved fiscal years.",
 		Data:    entities,
 		Meta:    &meta,
@@ -124,13 +124,13 @@ func (h *FiscalHandler) FindFiscalYearById(ctx *fiber.Ctx) error {
 	result, err := h.IFiscalService.FindFiscalYearById(id)
 	if err != nil {
 		return ctx.Status(fiber.StatusNotFound).JSON(response.JSON{
-			Status:  404,
+			Status: fiber.StatusNotFound,
 			Message: err.Error(),
 		})
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
-		Status:  200,
+		Status: fiber.StatusOK,
 		Message: "Successfully retrieved fiscal year.",
 		Data:    result,
 	})
@@ -160,13 +160,13 @@ func (h *FiscalHandler) UpdateFiscalYear(ctx *fiber.Ctx) error {
 	result, err := h.IFiscalService.UpdateFiscalYear(req)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{
-			Status:  400,
+			Status: fiber.StatusBadRequest,
 			Message: err.Error(),
 		})
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
-		Status:  200,
+		Status: fiber.StatusOK,
 		Message: "Fiscal year updated.",
 		Data:    result,
 	})
@@ -188,13 +188,13 @@ func (h *FiscalHandler) ActivateFiscalYear(ctx *fiber.Ctx) error {
 	result, err := h.IFiscalService.ActivateFiscalYear(id)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{
-			Status:  400,
+			Status: fiber.StatusBadRequest,
 			Message: err.Error(),
 		})
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
-		Status:  200,
+		Status: fiber.StatusOK,
 		Message: "Fiscal year is now active.",
 		Data:    result,
 	})
@@ -215,13 +215,13 @@ func (h *FiscalHandler) DeleteFiscalYear(ctx *fiber.Ctx) error {
 
 	if err := h.IFiscalService.DeleteFiscalYear(id); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{
-			Status:  400,
+			Status: fiber.StatusBadRequest,
 			Message: err.Error(),
 		})
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
-		Status:  200,
+		Status: fiber.StatusOK,
 		Message: "Fiscal year deleted.",
 	})
 }
@@ -241,7 +241,7 @@ func (h *FiscalHandler) FindAllPeriods(ctx *fiber.Ctx) error {
 	entities, totalCount, err := h.IFiscalService.FindAllPeriods(qp)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
-			Status:  500,
+			Status: fiber.StatusInternalServerError,
 			Message: "Failed to retrieve periods",
 			Errors:  err.Error(),
 		})
@@ -249,7 +249,7 @@ func (h *FiscalHandler) FindAllPeriods(ctx *fiber.Ctx) error {
 
 	if totalCount == 0 || (qp.Page-1)*qp.PageSize >= totalCount {
 		return ctx.Status(fiber.StatusOK).JSON(response.JSON{
-			Status:  200,
+			Status: fiber.StatusOK,
 			Message: "No records found.",
 			Data:    []response.FiscalPeriodResponse{},
 		})
@@ -259,7 +259,7 @@ func (h *FiscalHandler) FindAllPeriods(ctx *fiber.Ctx) error {
 	meta := util.GenerateMeta(baseURL, qp, totalCount)
 
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
-		Status:  200,
+		Status: fiber.StatusOK,
 		Message: "Successfully retrieved fiscal periods.",
 		Data:    entities,
 		Meta:    &meta,
@@ -282,13 +282,13 @@ func (h *FiscalHandler) FindPeriodById(ctx *fiber.Ctx) error {
 	result, err := h.IFiscalService.FindPeriodById(id)
 	if err != nil {
 		return ctx.Status(fiber.StatusNotFound).JSON(response.JSON{
-			Status:  404,
+			Status: fiber.StatusNotFound,
 			Message: err.Error(),
 		})
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
-		Status:  200,
+		Status: fiber.StatusOK,
 		Message: "Successfully retrieved fiscal period.",
 		Data:    result,
 	})
@@ -316,13 +316,13 @@ func (h *FiscalHandler) ClosePeriod(ctx *fiber.Ctx) error {
 	result, err := h.IFiscalService.ClosePeriod(id, callerID)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{
-			Status:  400,
+			Status: fiber.StatusBadRequest,
 			Message: err.Error(),
 		})
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
-		Status:  200,
+		Status: fiber.StatusOK,
 		Message: "Fiscal period closed successfully.",
 		Data:    result,
 	})
@@ -358,13 +358,13 @@ func (h *FiscalHandler) ReopenPeriod(ctx *fiber.Ctx) error {
 	result, err := h.IFiscalService.ReopenPeriod(req, callerID)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{
-			Status:  400,
+			Status: fiber.StatusBadRequest,
 			Message: err.Error(),
 		})
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
-		Status:  200,
+		Status: fiber.StatusOK,
 		Message: "Fiscal period reopened successfully.",
 		Data:    result,
 	})
@@ -392,13 +392,13 @@ func (h *FiscalHandler) LockPeriod(ctx *fiber.Ctx) error {
 	result, err := h.IFiscalService.LockPeriod(id, callerID)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{
-			Status:  400,
+			Status: fiber.StatusBadRequest,
 			Message: err.Error(),
 		})
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
-		Status:  200,
+		Status: fiber.StatusOK,
 		Message: "Fiscal period permanently locked.",
 		Data:    result,
 	})
@@ -420,13 +420,13 @@ func (h *FiscalHandler) FindPeriodLogs(ctx *fiber.Ctx) error {
 	logs, err := h.IFiscalService.FindPeriodLogs(id)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
-			Status:  500,
+			Status: fiber.StatusInternalServerError,
 			Message: err.Error(),
 		})
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
-		Status:  200,
+		Status: fiber.StatusOK,
 		Message: "Successfully retrieved period logs.",
 		Data:    logs,
 	})

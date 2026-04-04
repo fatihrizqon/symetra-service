@@ -39,7 +39,7 @@ func (h *DashboardHandler) Overview(ctx *fiber.Ctx) error {
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
-		Status:  200,
+		Status: fiber.StatusOK,
 		Message: "Successfully retrieved all records.",
 		Data:    result,
 		Meta:    nil,

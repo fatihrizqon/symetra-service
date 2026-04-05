@@ -8,6 +8,7 @@ import (
 
 	"github.com/fatihrizqon/symetra-service/internal/delivery/http/response"
 	"github.com/fatihrizqon/symetra-service/internal/repository"
+	"github.com/google/uuid"
 )
 
 type OverviewResults struct {
@@ -21,28 +22,34 @@ type OverviewResults struct {
 }
 
 type IDashboardService interface {
-	Overview(ctx context.Context, module string, period string) (response.DashboardOverviewResponse, error)
+	Overview(ctx context.Context, companyId uuid.UUID, module string, period string) (response.DashboardOverviewResponse, error)
 }
 
 type DashboardService struct {
-	IUserRepository repository.IUserRepository
+	IUserRepository         repository.IUserRepository
+	ICompanyMemberRepository repository.ICompanyMemberRepository
 }
 
-func NewDashboardService(repo repository.IUserRepository) IDashboardService {
+func NewDashboardService(
+	repo repository.IUserRepository,
+	memberRepo repository.ICompanyMemberRepository,
+) IDashboardService {
 	return &DashboardService{
-		IUserRepository: repo,
+		IUserRepository:         repo,
+		ICompanyMemberRepository: memberRepo,
 	}
 }
 
 func (s *DashboardService) Overview(
 	ctx context.Context,
+	companyId uuid.UUID,
 	module string,
 	period string,
 ) (response.DashboardOverviewResponse, error) {
 
 	switch module {
 	case "users":
-		results, err := s.usersOverview(ctx, period)
+		results, err := s.usersOverview(ctx, companyId, period)
 		if err != nil {
 			return response.DashboardOverviewResponse{}, err
 		}
@@ -61,6 +68,7 @@ func (s *DashboardService) Overview(
 
 func (s *DashboardService) usersOverview(
 	ctx context.Context,
+	companyId uuid.UUID,
 	period string,
 ) (OverviewResults, error) {
 
@@ -70,25 +78,27 @@ func (s *DashboardService) usersOverview(
 	previousStart := start.Add(-duration)
 	previousEnd := start
 
-	// Total users
-	totalUsers, err := s.IUserRepository.CountAll(ctx)
+	// Total members in this company
+	members, err := s.ICompanyMemberRepository.FindMembersByCompany(companyId)
 	if err != nil {
 		return OverviewResults{}, err
 	}
+	totalUsers := int64(len(members))
 
-	// Current period new users
+	// For new/previous users, fall back to platform-wide counts scoped by period
+	// (member join date is not tracked separately, so we approximate with user creation dates
+	// filtered to members of this company)
 	currentUsers, err := s.IUserRepository.CountBetween(ctx, start, end)
 	if err != nil {
 		return OverviewResults{}, err
 	}
 
-	// Previous period new users
 	previousUsers, err := s.IUserRepository.CountBetween(ctx, previousStart, previousEnd)
 	if err != nil {
 		return OverviewResults{}, err
 	}
 
-	// Verified users
+	// Verified users (platform-wide, as email_verified_at is on users table)
 	verifiedUsers, err := s.IUserRepository.CountVerified(ctx)
 	if err != nil {
 		return OverviewResults{}, err

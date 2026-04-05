@@ -94,7 +94,7 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Use(rc.AuthMiddleware)
 
 	rc.App.Post("/api/v1/auth/logout", rc.AuthHandler.Logout)
-	rc.App.Get("/api/v1/dashboard/overview", rc.DashboardHandler.Overview)
+	rc.App.Get("/api/v1/dashboard/overview", rc.CompanyMiddleware, rc.DashboardHandler.Overview)
 
 	// ── Users ────────────────────────────────────────────────────────────────
 	rc.App.Get("/api/v1/users", rc.UserHandler.FindAll)

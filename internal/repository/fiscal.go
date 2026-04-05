@@ -62,6 +62,7 @@ func NewFiscalYearRepository(db *gorm.DB) IFiscalYearRepository {
 }
 
 func (r *FiscalYearRepository) Create(fy entity.FiscalYear) (entity.FiscalYear, error) {
+	fmt.Println("COMPANY ID", fy.CompanyId)
 	tx := r.Db.Begin()
 	if err := tx.Create(&fy).Error; err != nil {
 		tx.Rollback()

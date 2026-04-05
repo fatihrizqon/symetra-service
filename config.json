@@ -27,7 +27,7 @@
     }
   },
   "log": {
-    "level": 6
+    "level": 4
   },
   "database": {
     "username": "postgres",

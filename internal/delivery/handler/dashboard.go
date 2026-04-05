@@ -3,6 +3,7 @@ package handler
 import (
 	"github.com/fatihrizqon/symetra-service/internal/delivery/http/response"
 	"github.com/fatihrizqon/symetra-service/internal/service"
+	"github.com/fatihrizqon/symetra-service/internal/util"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -17,6 +18,10 @@ func NewDashboardHandler(service service.IDashboardService) *DashboardHandler {
 }
 
 func (h *DashboardHandler) Overview(ctx *fiber.Ctx) error {
+	companyId, err := util.GetCompanyID(ctx)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
+	}
 
 	module := ctx.Query("module")
 	period := ctx.Query("period", "30d")
@@ -30,6 +35,7 @@ func (h *DashboardHandler) Overview(ctx *fiber.Ctx) error {
 
 	result, err := h.IDashboardService.Overview(
 		ctx.Context(),
+		companyId,
 		module,
 		period,
 	)

@@ -754,7 +754,7 @@ func (s *InvoiceService) Confirm(companyId, id uuid.UUID, createdBy uuid.UUID) (
 		return response.InvoiceResponse{}, errors.New("tax payable account not configured — set it in Company → Configuration")
 	}
 
-	period, err := s.fiscalRepo.FindByDate(inv.InvoiceDate)
+	period, err := s.fiscalRepo.FindByDate(companyId, inv.InvoiceDate)
 	if err != nil {
 		return response.InvoiceResponse{}, errors.New("no open fiscal period for invoice date: " + err.Error())
 	}
@@ -844,7 +844,7 @@ func (s *InvoiceService) MarkPaid(companyId, id uuid.UUID, req request.InvoiceMa
 		return response.InvoiceResponse{}, err
 	}
 
-	period, err := s.fiscalRepo.FindByDate(paymentDate)
+	period, err := s.fiscalRepo.FindByDate(companyId, paymentDate)
 	if err != nil {
 		return response.InvoiceResponse{}, errors.New("no open fiscal period for payment date: " + err.Error())
 	}
@@ -921,7 +921,7 @@ func (s *InvoiceService) Cancel(companyId, id uuid.UUID, createdBy uuid.UUID) (r
 			return response.InvoiceResponse{}, errors.New("COA accounts not configured for reversal")
 		}
 
-		period, err := s.fiscalRepo.FindByDate(time.Now())
+		period, err := s.fiscalRepo.FindByDate(companyId, time.Now())
 		if err != nil {
 			return response.InvoiceResponse{}, errors.New("no open fiscal period for reversal: " + err.Error())
 		}

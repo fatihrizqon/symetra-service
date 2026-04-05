@@ -3,6 +3,7 @@ package repository
 import (
 	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -10,7 +11,7 @@ import (
 type AccountLedgerRow struct {
 	AccountCode  string
 	AccountName  string
-	GroupName    string // e.g. "Assets", "Liabilities", "Equity", "Revenue", "Expense"
+	GroupName    string
 	SubgroupName string
 	TotalDebit   float64
 	TotalCredit  float64
@@ -18,12 +19,12 @@ type AccountLedgerRow struct {
 }
 
 type IReportRepository interface {
-	GetLedger(start, end time.Time) ([]AccountLedgerRow, error)
-	GetLedgerUpTo(end time.Time) ([]AccountLedgerRow, error)
-	GetPostedCount(start, end time.Time) (int, error)
-	GetGeneralLedger(start, end time.Time, coaID string) ([]GeneralLedgerRow, error)
-	GetOpeningBalance(asOf time.Time, coaID string) (float64, error)
-	GetJournalBook(start, end time.Time) ([]JournalBookRow, error)
+	GetLedger(companyId uuid.UUID, start, end time.Time) ([]AccountLedgerRow, error)
+	GetLedgerUpTo(companyId uuid.UUID, end time.Time) ([]AccountLedgerRow, error)
+	GetPostedCount(companyId uuid.UUID, start, end time.Time) (int, error)
+	GetGeneralLedger(companyId uuid.UUID, start, end time.Time, coaID string) ([]GeneralLedgerRow, error)
+	GetOpeningBalance(companyId uuid.UUID, asOf time.Time, coaID string) (float64, error)
+	GetJournalBook(companyId uuid.UUID, start, end time.Time) ([]JournalBookRow, error)
 }
 
 type ReportRepository struct {
@@ -34,10 +35,8 @@ func NewReportRepository(db *gorm.DB) IReportRepository {
 	return &ReportRepository{Db: db}
 }
 
-// GetLedger aggregates all posted journal lines within a date range.
-func (r *ReportRepository) GetLedger(start, end time.Time) ([]AccountLedgerRow, error) {
+func (r *ReportRepository) GetLedger(companyId uuid.UUID, start, end time.Time) ([]AccountLedgerRow, error) {
 	var rows []AccountLedgerRow
-
 	err := r.Db.Raw(`
 		SELECT
 			ca.code                      AS account_code,
@@ -53,20 +52,17 @@ func (r *ReportRepository) GetLedger(start, end time.Time) ([]AccountLedgerRow, 
 		INNER JOIN coa_subgroups cs   ON cs.id = ca.subgroup_id
 		INNER JOIN coa_groups cg      ON cg.id = cs.group_id
 		WHERE je.status = 'posted'
+		  AND je.company_id = ?
 		  AND je.date >= ?
 		  AND je.date <= ?
 		GROUP BY ca.code, ca.name, cg.name, cs.name
 		ORDER BY ca.code
-	`, start, end).Scan(&rows).Error
-
+	`, companyId, start, end).Scan(&rows).Error
 	return rows, err
 }
 
-// GetLedgerUpTo aggregates all posted journal lines from beginning of time up to end (inclusive).
-// Used for Balance Sheet (cumulative) and opening balances.
-func (r *ReportRepository) GetLedgerUpTo(end time.Time) ([]AccountLedgerRow, error) {
+func (r *ReportRepository) GetLedgerUpTo(companyId uuid.UUID, end time.Time) ([]AccountLedgerRow, error) {
 	var rows []AccountLedgerRow
-
 	err := r.Db.Raw(`
 		SELECT
 			ca.code                      AS account_code,
@@ -82,35 +78,37 @@ func (r *ReportRepository) GetLedgerUpTo(end time.Time) ([]AccountLedgerRow, err
 		INNER JOIN coa_subgroups cs   ON cs.id = ca.subgroup_id
 		INNER JOIN coa_groups cg      ON cg.id = cs.group_id
 		WHERE je.status = 'posted'
+		  AND je.company_id = ?
 		  AND je.date <= ?
 		GROUP BY ca.code, ca.name, cg.name, cs.name
 		ORDER BY ca.code
-	`, end).Scan(&rows).Error
-
+	`, companyId, end).Scan(&rows).Error
 	return rows, err
 }
 
-// GetPostedCount returns number of posted entries in range.
-func (r *ReportRepository) GetPostedCount(start, end time.Time) (int, error) {
+func (r *ReportRepository) GetPostedCount(companyId uuid.UUID, start, end time.Time) (int, error) {
 	var count int64
 	err := r.Db.Raw(`
 		SELECT COUNT(*) FROM journal_entries
-		WHERE status = 'posted' AND date >= ? AND date <= ?
-	`, start, end).Scan(&count).Error
+		WHERE status = 'posted'
+		  AND company_id = ?
+		  AND date >= ?
+		  AND date <= ?
+	`, companyId, start, end).Scan(&count).Error
 	return int(count), err
 }
 
 // GeneralLedgerRow is a single transaction line for the general ledger report.
 type GeneralLedgerRow struct {
-	AccountCode    string
-	AccountName    string
-	GroupName      string
-	SubgroupName   string
-	Date           string
-	JournalNumber  string
-	Description    string
-	Debit          float64
-	Credit         float64
+	AccountCode   string
+	AccountName   string
+	GroupName     string
+	SubgroupName  string
+	Date          string
+	JournalNumber string
+	Description   string
+	Debit         float64
+	Credit        float64
 }
 
 // JournalBookRow is a single journal line for the journal book report.
@@ -127,9 +125,7 @@ type JournalBookRow struct {
 	TotalCredit   float64
 }
 
-// GetGeneralLedger fetches all posted transaction lines per account for the period.
-// Pass coaID = "" to fetch all accounts, or a specific UUID to filter one account.
-func (r *ReportRepository) GetGeneralLedger(start, end time.Time, coaID string) ([]GeneralLedgerRow, error) {
+func (r *ReportRepository) GetGeneralLedger(companyId uuid.UUID, start, end time.Time, coaID string) ([]GeneralLedgerRow, error) {
 	var rows []GeneralLedgerRow
 
 	query := `
@@ -149,10 +145,11 @@ func (r *ReportRepository) GetGeneralLedger(start, end time.Time, coaID string) 
 		INNER JOIN coa_subgroups cs   ON cs.id = ca.subgroup_id
 		INNER JOIN coa_groups cg      ON cg.id = cs.group_id
 		WHERE je.status = 'posted'
+		  AND je.company_id = ?
 		  AND je.date >= ?
 		  AND je.date <= ?`
 
-	args := []interface{}{start, end}
+	args := []interface{}{companyId, start, end}
 	if coaID != "" {
 		query += " AND ca.id = ?"
 		args = append(args, coaID)
@@ -163,12 +160,7 @@ func (r *ReportRepository) GetGeneralLedger(start, end time.Time, coaID string) 
 	return rows, err
 }
 
-// GetOpeningBalance returns the net opening balance of an account (or all accounts
-// if coaID = "") cumulatively up to (but not including) the start date.
-// Normal balance sign: assets/expenses → debit−credit, liabilities/equity/revenue → credit−debit.
-// We return raw (debit − credit) and let the service apply the sign per account type.
-func (r *ReportRepository) GetOpeningBalance(asOf time.Time, coaID string) (float64, error) {
-	// asOf is exclusive — we want everything BEFORE the period start
+func (r *ReportRepository) GetOpeningBalance(companyId uuid.UUID, asOf time.Time, coaID string) (float64, error) {
 	type result struct{ Balance float64 }
 	var res result
 
@@ -178,9 +170,10 @@ func (r *ReportRepository) GetOpeningBalance(asOf time.Time, coaID string) (floa
 		INNER JOIN journal_entries je ON je.id = jl.journal_entry_id
 		INNER JOIN coa ca             ON ca.id = jl.coa_id
 		WHERE je.status = 'posted'
+		  AND je.company_id = ?
 		  AND je.date < ?`
 
-	args := []interface{}{asOf}
+	args := []interface{}{companyId, asOf}
 	if coaID != "" {
 		query += " AND ca.id = ?"
 		args = append(args, coaID)
@@ -190,10 +183,8 @@ func (r *ReportRepository) GetOpeningBalance(asOf time.Time, coaID string) (floa
 	return res.Balance, err
 }
 
-// GetJournalBook fetches all posted journal entries with their lines for the period.
-func (r *ReportRepository) GetJournalBook(start, end time.Time) ([]JournalBookRow, error) {
+func (r *ReportRepository) GetJournalBook(companyId uuid.UUID, start, end time.Time) ([]JournalBookRow, error) {
 	var rows []JournalBookRow
-
 	err := r.Db.Raw(`
 		SELECT
 			TO_CHAR(je.date, 'YYYY-MM-DD')  AS date,
@@ -210,10 +201,10 @@ func (r *ReportRepository) GetJournalBook(start, end time.Time) ([]JournalBookRo
 		INNER JOIN journal_entries je ON je.id = jl.journal_entry_id
 		INNER JOIN coa ca             ON ca.id = jl.coa_id
 		WHERE je.status = 'posted'
+		  AND je.company_id = ?
 		  AND je.date >= ?
 		  AND je.date <= ?
 		ORDER BY je.date, je.journal_number, jl.id
-	`, start, end).Scan(&rows).Error
-
+	`, companyId, start, end).Scan(&rows).Error
 	return rows, err
 }

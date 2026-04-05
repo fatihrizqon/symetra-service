@@ -1,0 +1,3 @@
+1. Fiscal Management harusnya mengikuti selected company. case, jika ada Company A & Company B. maka Fiscal Management kedua company tersebut. Jadi fiscal management terikat ke company. berikut juga fiscal periodnya.
+2. Selain Fiscal Management, pastikan rules ini berlaku di semua module. Jadi data Company A & Company B agar tidak tercampur dan isolated untuk masing-masing company. Bahkan sampai level dropdown, juga isolated based X-Company-ID.
+3. Ketika Company lebih dari 1, saat reload muncul pilihan company dan itu mengganggu. bisa ga, selected company disimpan di localStorage agar saat reload ga perlu milih company. milih company bener-bener saat awal login saja. ketika logout localStorage di clearkan.

@@ -18,23 +18,23 @@ import (
 
 type IFiscalService interface {
 	// Fiscal Year
-	CreateFiscalYear(req request.FiscalYearCreateRequest, createdBy uuid.UUID) (entity.FiscalYear, error)
-	FindAllFiscalYears(qp *util.QueryParams) ([]response.FiscalYearResponse, int, error)
-	FindFiscalYearById(id uuid.UUID) (response.FiscalYearResponse, error)
-	UpdateFiscalYear(req request.FiscalYearUpdateRequest) (entity.FiscalYear, error)
-	ActivateFiscalYear(id uuid.UUID) (entity.FiscalYear, error)
-	DeleteFiscalYear(id uuid.UUID) error
+	CreateFiscalYear(companyId uuid.UUID, req request.FiscalYearCreateRequest, createdBy uuid.UUID) (entity.FiscalYear, error)
+	FindAllFiscalYears(companyId uuid.UUID, qp *util.QueryParams) ([]response.FiscalYearResponse, int, error)
+	FindFiscalYearById(companyId, id uuid.UUID) (response.FiscalYearResponse, error)
+	UpdateFiscalYear(companyId uuid.UUID, req request.FiscalYearUpdateRequest) (entity.FiscalYear, error)
+	ActivateFiscalYear(companyId, id uuid.UUID) (entity.FiscalYear, error)
+	DeleteFiscalYear(companyId, id uuid.UUID) error
 
 	// Fiscal Period
-	FindAllPeriods(qp *util.QueryParams) ([]response.FiscalPeriodResponse, int, error)
-	FindPeriodById(id uuid.UUID) (response.FiscalPeriodResponse, error)
-	ClosePeriod(id uuid.UUID, performedBy uuid.UUID) (entity.FiscalPeriod, error)
-	ReopenPeriod(req request.FiscalPeriodReopenRequest, performedBy uuid.UUID) (entity.FiscalPeriod, error)
-	LockPeriod(id uuid.UUID, performedBy uuid.UUID) (entity.FiscalPeriod, error)
+	FindAllPeriods(companyId uuid.UUID, qp *util.QueryParams) ([]response.FiscalPeriodResponse, int, error)
+	FindPeriodById(companyId, id uuid.UUID) (response.FiscalPeriodResponse, error)
+	ClosePeriod(companyId, id uuid.UUID, performedBy uuid.UUID) (entity.FiscalPeriod, error)
+	ReopenPeriod(companyId uuid.UUID, req request.FiscalPeriodReopenRequest, performedBy uuid.UUID) (entity.FiscalPeriod, error)
+	LockPeriod(companyId, id uuid.UUID, performedBy uuid.UUID) (entity.FiscalPeriod, error)
 	FindPeriodLogs(id uuid.UUID) ([]response.FiscalPeriodLogResponse, error)
 
 	// Guard — used by other services (journal entries, revenues, expenses, etc.)
-	ValidatePeriodOpen(date time.Time) error
+	ValidatePeriodOpen(companyId uuid.UUID, date time.Time) error
 }
 
 // ─── Implementation ───────────────────────────────────────────────────────────
@@ -55,7 +55,7 @@ func NewFiscalService(
 
 // ── Fiscal Year ───────────────────────────────────────────────────────────────
 
-func (s *FiscalService) CreateFiscalYear(req request.FiscalYearCreateRequest, createdBy uuid.UUID) (entity.FiscalYear, error) {
+func (s *FiscalService) CreateFiscalYear(companyId uuid.UUID, req request.FiscalYearCreateRequest, createdBy uuid.UUID) (entity.FiscalYear, error) {
 	if err := s.validate.Struct(req); err != nil {
 		return entity.FiscalYear{}, err
 	}
@@ -73,6 +73,7 @@ func (s *FiscalService) CreateFiscalYear(req request.FiscalYearCreateRequest, cr
 	}
 
 	fy := entity.FiscalYear{
+		CompanyId:  companyId,
 		Name:       req.Name,
 		StartDate:  startDate,
 		EndDate:    endDate,
@@ -86,7 +87,6 @@ func (s *FiscalService) CreateFiscalYear(req request.FiscalYearCreateRequest, cr
 		return created, err
 	}
 
-	// Auto-generate periods (unless custom — those are handled separately)
 	if req.PeriodType != string(entity.PeriodTypeCustom) {
 		actualStart := startDate
 		if req.StubStartDate != "" {
@@ -101,11 +101,11 @@ func (s *FiscalService) CreateFiscalYear(req request.FiscalYearCreateRequest, cr
 		}
 	}
 
-	return s.fyRepo.FindById(created.Id)
+	return s.fyRepo.FindById(companyId, created.Id)
 }
 
-func (s *FiscalService) FindAllFiscalYears(qp *util.QueryParams) ([]response.FiscalYearResponse, int, error) {
-	entities, totalCount, err := s.fyRepo.FindAll(qp)
+func (s *FiscalService) FindAllFiscalYears(companyId uuid.UUID, qp *util.QueryParams) ([]response.FiscalYearResponse, int, error) {
+	entities, totalCount, err := s.fyRepo.FindAll(companyId, qp)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -124,8 +124,8 @@ func (s *FiscalService) FindAllFiscalYears(qp *util.QueryParams) ([]response.Fis
 	return resps, totalCount, nil
 }
 
-func (s *FiscalService) FindFiscalYearById(id uuid.UUID) (response.FiscalYearResponse, error) {
-	fy, err := s.fyRepo.FindById(id)
+func (s *FiscalService) FindFiscalYearById(companyId, id uuid.UUID) (response.FiscalYearResponse, error) {
+	fy, err := s.fyRepo.FindById(companyId, id)
 	if err != nil {
 		return response.FiscalYearResponse{}, err
 	}
@@ -138,8 +138,8 @@ func (s *FiscalService) FindFiscalYearById(id uuid.UUID) (response.FiscalYearRes
 	return res, nil
 }
 
-func (s *FiscalService) UpdateFiscalYear(req request.FiscalYearUpdateRequest) (entity.FiscalYear, error) {
-	fy, err := s.fyRepo.FindById(req.Id)
+func (s *FiscalService) UpdateFiscalYear(companyId uuid.UUID, req request.FiscalYearUpdateRequest) (entity.FiscalYear, error) {
+	fy, err := s.fyRepo.FindById(companyId, req.Id)
 	if err != nil {
 		return fy, err
 	}
@@ -150,10 +150,8 @@ func (s *FiscalService) UpdateFiscalYear(req request.FiscalYearUpdateRequest) (e
 	return fy, s.fyRepo.Update(fy)
 }
 
-// ActivateFiscalYear sets the fiscal year status to active.
-// Business rule: only one fiscal year can be active at a time.
-func (s *FiscalService) ActivateFiscalYear(id uuid.UUID) (entity.FiscalYear, error) {
-	fy, err := s.fyRepo.FindById(id)
+func (s *FiscalService) ActivateFiscalYear(companyId, id uuid.UUID) (entity.FiscalYear, error) {
+	fy, err := s.fyRepo.FindById(companyId, id)
 	if err != nil {
 		return fy, err
 	}
@@ -161,8 +159,7 @@ func (s *FiscalService) ActivateFiscalYear(id uuid.UUID) (entity.FiscalYear, err
 		return fy, errors.New("only draft fiscal years can be activated")
 	}
 
-	// Ensure no other active fiscal year exists
-	existing, err := s.fyRepo.FindActive()
+	existing, err := s.fyRepo.FindActive(companyId)
 	if err == nil && existing.Id != id {
 		return fy, fmt.Errorf("fiscal year '%s' is already active — close it first", existing.Name)
 	}
@@ -171,22 +168,21 @@ func (s *FiscalService) ActivateFiscalYear(id uuid.UUID) (entity.FiscalYear, err
 	return fy, s.fyRepo.Update(fy)
 }
 
-// DeleteFiscalYear only allows deleting draft fiscal years with no transactions.
-func (s *FiscalService) DeleteFiscalYear(id uuid.UUID) error {
-	fy, err := s.fyRepo.FindById(id)
+func (s *FiscalService) DeleteFiscalYear(companyId, id uuid.UUID) error {
+	fy, err := s.fyRepo.FindById(companyId, id)
 	if err != nil {
 		return err
 	}
 	if fy.Status != entity.FiscalYearDraft {
 		return errors.New("only draft fiscal years can be deleted")
 	}
-	return s.fyRepo.Delete(id)
+	return s.fyRepo.Delete(companyId, id)
 }
 
 // ── Fiscal Period ─────────────────────────────────────────────────────────────
 
-func (s *FiscalService) FindAllPeriods(qp *util.QueryParams) ([]response.FiscalPeriodResponse, int, error) {
-	entities, totalCount, err := s.fpRepo.FindAll(qp)
+func (s *FiscalService) FindAllPeriods(companyId uuid.UUID, qp *util.QueryParams) ([]response.FiscalPeriodResponse, int, error) {
+	entities, totalCount, err := s.fpRepo.FindAll(companyId, qp)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -205,17 +201,16 @@ func (s *FiscalService) FindAllPeriods(qp *util.QueryParams) ([]response.FiscalP
 	return resps, totalCount, nil
 }
 
-func (s *FiscalService) FindPeriodById(id uuid.UUID) (response.FiscalPeriodResponse, error) {
-	p, err := s.fpRepo.FindById(id)
+func (s *FiscalService) FindPeriodById(companyId, id uuid.UUID) (response.FiscalPeriodResponse, error) {
+	p, err := s.fpRepo.FindById(companyId, id)
 	if err != nil {
 		return response.FiscalPeriodResponse{}, err
 	}
 	return mapFiscalPeriod(p), nil
 }
 
-// ClosePeriod transitions a period from OPEN → CLOSED.
-func (s *FiscalService) ClosePeriod(id uuid.UUID, performedBy uuid.UUID) (entity.FiscalPeriod, error) {
-	p, err := s.fpRepo.FindById(id)
+func (s *FiscalService) ClosePeriod(companyId, id uuid.UUID, performedBy uuid.UUID) (entity.FiscalPeriod, error) {
+	p, err := s.fpRepo.FindById(companyId, id)
 	if err != nil {
 		return p, err
 	}
@@ -243,14 +238,12 @@ func (s *FiscalService) ClosePeriod(id uuid.UUID, performedBy uuid.UUID) (entity
 	return p, nil
 }
 
-// ReopenPeriod transitions CLOSED → OPEN. Reason is required for audit.
-// Locked periods cannot be reopened — ever.
-func (s *FiscalService) ReopenPeriod(req request.FiscalPeriodReopenRequest, performedBy uuid.UUID) (entity.FiscalPeriod, error) {
+func (s *FiscalService) ReopenPeriod(companyId uuid.UUID, req request.FiscalPeriodReopenRequest, performedBy uuid.UUID) (entity.FiscalPeriod, error) {
 	if err := s.validate.Struct(req); err != nil {
 		return entity.FiscalPeriod{}, err
 	}
 
-	p, err := s.fpRepo.FindById(req.Id)
+	p, err := s.fpRepo.FindById(companyId, req.Id)
 	if err != nil {
 		return p, err
 	}
@@ -281,9 +274,8 @@ func (s *FiscalService) ReopenPeriod(req request.FiscalPeriodReopenRequest, perf
 	return p, nil
 }
 
-// LockPeriod transitions CLOSED → LOCKED. This is permanent.
-func (s *FiscalService) LockPeriod(id uuid.UUID, performedBy uuid.UUID) (entity.FiscalPeriod, error) {
-	p, err := s.fpRepo.FindById(id)
+func (s *FiscalService) LockPeriod(companyId, id uuid.UUID, performedBy uuid.UUID) (entity.FiscalPeriod, error) {
+	p, err := s.fpRepo.FindById(companyId, id)
 	if err != nil {
 		return p, err
 	}
@@ -334,13 +326,9 @@ func (s *FiscalService) FindPeriodLogs(id uuid.UUID) ([]response.FiscalPeriodLog
 
 // ── Guard ─────────────────────────────────────────────────────────────────────
 
-// ValidatePeriodOpen is called by other services (journal entries, revenues, expenses)
-// before creating or editing a transaction. It rejects the operation if the period
-// covering the given date is closed or locked.
-func (s *FiscalService) ValidatePeriodOpen(date time.Time) error {
-	p, err := s.fpRepo.FindByDate(date)
+func (s *FiscalService) ValidatePeriodOpen(companyId uuid.UUID, date time.Time) error {
+	p, err := s.fpRepo.FindByDate(companyId, date)
 	if err != nil {
-		// No period at all for this date — might be before fiscal year starts
 		return fmt.Errorf("no fiscal period found for date %s — check your fiscal year setup", date.Format("2006-01-02"))
 	}
 	switch p.Status {
@@ -355,13 +343,13 @@ func (s *FiscalService) ValidatePeriodOpen(date time.Time) error {
 	}
 }
 
-// generatePeriods auto-generates fiscal periods for monthly or quarterly types.
-// If actualStart > startDate, the first period is a stub period.
+// generatePeriods, firstDayOfNextMonth, periodName, mapFiscalYear, mapFiscalPeriod
+// ─────────────────────────────────────────────────────────────────────────────
+
 func generatePeriods(fyId uuid.UUID, fyStart, actualStart, fyEnd time.Time, pType entity.PeriodType) []entity.FiscalPeriod {
 	var periods []entity.FiscalPeriod
 	periodNumber := 1
 
-	// If there is a stub (onboarding mid-period)
 	if actualStart.After(fyStart) {
 		stubEnd := firstDayOfNextMonth(fyStart).Add(-time.Second)
 		if stubEnd.After(fyEnd) {
@@ -386,7 +374,7 @@ func generatePeriods(fyId uuid.UUID, fyStart, actualStart, fyEnd time.Time, pTyp
 		switch pType {
 		case entity.PeriodTypeQuarterly:
 			periodEnd = cursor.AddDate(0, 3, 0).Add(-time.Second)
-		default: // monthly
+		default:
 			periodEnd = firstDayOfNextMonth(cursor).Add(-time.Second)
 		}
 		if periodEnd.After(fyEnd) {
@@ -432,8 +420,6 @@ func periodName(t time.Time, pType entity.PeriodType) string {
 		return t.Format("January 2006")
 	}
 }
-
-// ── Mappers ───────────────────────────────────────────────────────────────────
 
 func mapFiscalYear(fy entity.FiscalYear) response.FiscalYearResponse {
 	return response.FiscalYearResponse{

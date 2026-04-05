@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/fatihrizqon/symetra-service/internal/entity"
@@ -32,19 +33,19 @@ var fiscalPeriodSortColumns = map[string]string{
 
 type IFiscalYearRepository interface {
 	Create(fy entity.FiscalYear) (entity.FiscalYear, error)
-	FindAll(qp *util.QueryParams) ([]entity.FiscalYear, int, error)
-	FindById(id uuid.UUID) (entity.FiscalYear, error)
-	FindActive() (entity.FiscalYear, error)
+	FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]entity.FiscalYear, int, error)
+	FindById(companyId, id uuid.UUID) (entity.FiscalYear, error)
+	FindActive(companyId uuid.UUID) (entity.FiscalYear, error)
 	Update(fy entity.FiscalYear) error
-	Delete(id uuid.UUID) error
+	Delete(companyId, id uuid.UUID) error
 }
 
 type IFiscalPeriodRepository interface {
 	CreateBatch(periods []entity.FiscalPeriod) error
-	FindAll(qp *util.QueryParams) ([]entity.FiscalPeriod, int, error)
-	FindById(id uuid.UUID) (entity.FiscalPeriod, error)
-	FindByDate(date time.Time) (entity.FiscalPeriod, error)
-	FindCurrentOpen() (entity.FiscalPeriod, error)
+	FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]entity.FiscalPeriod, int, error)
+	FindById(companyId, id uuid.UUID) (entity.FiscalPeriod, error)
+	FindByDate(companyId uuid.UUID, date time.Time) (entity.FiscalPeriod, error)
+	FindCurrentOpen(companyId uuid.UUID) (entity.FiscalPeriod, error)
 	Update(p entity.FiscalPeriod) error
 	CreateLog(log entity.FiscalPeriodLog) error
 	FindLogs(periodId uuid.UUID) ([]entity.FiscalPeriodLog, error)
@@ -67,14 +68,14 @@ func (r *FiscalYearRepository) Create(fy entity.FiscalYear) (entity.FiscalYear, 
 		return fy, err
 	}
 	tx.Commit()
-	return fy, nil
+	return r.FindById(fy.CompanyId, fy.Id)
 }
 
-func (r *FiscalYearRepository) FindAll(qp *util.QueryParams) ([]entity.FiscalYear, int, error) {
+func (r *FiscalYearRepository) FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]entity.FiscalYear, int, error) {
 	var entities []entity.FiscalYear
 	var totalCount int64
 
-	query := r.Db.Model(&entity.FiscalYear{})
+	query := r.Db.Model(&entity.FiscalYear{}).Where("fiscal_years.company_id = ?", companyId)
 	query = util.ApplySearch(query, qp)
 	query = entity.FiscalYear{}.ApplyFilters(query, qp.Filters)
 
@@ -94,17 +95,20 @@ func (r *FiscalYearRepository) FindAll(qp *util.QueryParams) ([]entity.FiscalYea
 	return entities, int(totalCount), nil
 }
 
-func (r *FiscalYearRepository) FindById(id uuid.UUID) (entity.FiscalYear, error) {
+func (r *FiscalYearRepository) FindById(companyId, id uuid.UUID) (entity.FiscalYear, error) {
 	var fy entity.FiscalYear
-	if err := r.Db.Preload("Periods").Where("id = ?", id).First(&fy).Error; err != nil {
+	if err := r.Db.Preload("Periods").
+		Where("id = ? AND company_id = ?", id, companyId).
+		First(&fy).Error; err != nil {
 		return fy, errors.New("fiscal year not found")
 	}
 	return fy, nil
 }
 
-func (r *FiscalYearRepository) FindActive() (entity.FiscalYear, error) {
+func (r *FiscalYearRepository) FindActive(companyId uuid.UUID) (entity.FiscalYear, error) {
 	var fy entity.FiscalYear
-	if err := r.Db.Where("status = ?", entity.FiscalYearActive).First(&fy).Error; err != nil {
+	if err := r.Db.Where("company_id = ? AND status = ?", companyId, entity.FiscalYearActive).
+		First(&fy).Error; err != nil {
 		return fy, errors.New("no active fiscal year found")
 	}
 	return fy, nil
@@ -120,9 +124,10 @@ func (r *FiscalYearRepository) Update(fy entity.FiscalYear) error {
 	return nil
 }
 
-func (r *FiscalYearRepository) Delete(id uuid.UUID) error {
+func (r *FiscalYearRepository) Delete(companyId, id uuid.UUID) error {
 	tx := r.Db.Begin()
-	if err := tx.Where("id = ?", id).Delete(&entity.FiscalYear{}).Error; err != nil {
+	if err := tx.Where("id = ? AND company_id = ?", id, companyId).
+		Delete(&entity.FiscalYear{}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -150,11 +155,13 @@ func (r *FiscalPeriodRepository) CreateBatch(periods []entity.FiscalPeriod) erro
 	return nil
 }
 
-func (r *FiscalPeriodRepository) FindAll(qp *util.QueryParams) ([]entity.FiscalPeriod, int, error) {
+func (r *FiscalPeriodRepository) FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]entity.FiscalPeriod, int, error) {
 	var entities []entity.FiscalPeriod
 	var totalCount int64
 
-	query := r.Db.Model(&entity.FiscalPeriod{}).Preload("FiscalYear")
+	query := r.Db.Model(&entity.FiscalPeriod{}).Preload("FiscalYear").
+		Joins("INNER JOIN fiscal_years fy ON fy.id = fiscal_periods.fiscal_year_id").
+		Where("fy.company_id = ?", companyId)
 	query = util.ApplySearch(query, qp)
 	query = entity.FiscalPeriod{}.ApplyFilters(query, qp.Filters)
 
@@ -174,22 +181,26 @@ func (r *FiscalPeriodRepository) FindAll(qp *util.QueryParams) ([]entity.FiscalP
 	return entities, int(totalCount), nil
 }
 
-func (r *FiscalPeriodRepository) FindById(id uuid.UUID) (entity.FiscalPeriod, error) {
-	// BUG NOTE 06032026: sempat terjadi saat close fiscal period, uuid not found. tapi sesaat itu bisa.
+func (r *FiscalPeriodRepository) FindById(companyId, id uuid.UUID) (entity.FiscalPeriod, error) {
 	var p entity.FiscalPeriod
-	if err := r.Db.Preload("FiscalYear").Where("id = ?", id).First(&p).Error; err != nil {
-		return p, errors.New("fiscal period not found")
+	err := r.Db.Preload("FiscalYear").
+		Joins("INNER JOIN fiscal_years fy ON fy.id = fiscal_periods.fiscal_year_id").
+		Where("fiscal_periods.id = ? AND fy.company_id = ?", id, companyId).
+		First(&p).Error
+	if err != nil {
+		return p, fmt.Errorf("fiscal period not found")
 	}
 	return p, nil
 }
 
-// FindByDate finds the open or closed (but not locked) period that covers the given date.
-// Used by transaction guards to validate whether a date is in an editable period.
-func (r *FiscalPeriodRepository) FindByDate(date time.Time) (entity.FiscalPeriod, error) {
+// FindByDate finds the open or closed (but not locked) period covering the given date
+// for the specified company.
+func (r *FiscalPeriodRepository) FindByDate(companyId uuid.UUID, date time.Time) (entity.FiscalPeriod, error) {
 	var p entity.FiscalPeriod
 	err := r.Db.
-		Where("start_date <= ? AND end_date >= ? AND status != ?",
-			date, date, entity.FiscalPeriodLocked).
+		Joins("INNER JOIN fiscal_years fy ON fy.id = fiscal_periods.fiscal_year_id").
+		Where("fy.company_id = ? AND fiscal_periods.start_date <= ? AND fiscal_periods.end_date >= ? AND fiscal_periods.status != ?",
+			companyId, date, date, entity.FiscalPeriodLocked).
 		First(&p).Error
 	if err != nil {
 		return p, errors.New("no editable fiscal period found for this date")
@@ -197,12 +208,13 @@ func (r *FiscalPeriodRepository) FindByDate(date time.Time) (entity.FiscalPeriod
 	return p, nil
 }
 
-func (r *FiscalPeriodRepository) FindCurrentOpen() (entity.FiscalPeriod, error) {
+func (r *FiscalPeriodRepository) FindCurrentOpen(companyId uuid.UUID) (entity.FiscalPeriod, error) {
 	var p entity.FiscalPeriod
 	now := time.Now()
 	err := r.Db.
-		Where("start_date <= ? AND end_date >= ? AND status = ?",
-			now, now, entity.FiscalPeriodOpen).
+		Joins("INNER JOIN fiscal_years fy ON fy.id = fiscal_periods.fiscal_year_id").
+		Where("fy.company_id = ? AND fiscal_periods.start_date <= ? AND fiscal_periods.end_date >= ? AND fiscal_periods.status = ?",
+			companyId, now, now, entity.FiscalPeriodOpen).
 		First(&p).Error
 	if err != nil {
 		return p, errors.New("no open fiscal period found for today")

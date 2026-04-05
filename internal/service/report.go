@@ -7,6 +7,7 @@ import (
 
 	"github.com/fatihrizqon/symetra-service/internal/delivery/http/response"
 	"github.com/fatihrizqon/symetra-service/internal/repository"
+	"github.com/google/uuid"
 )
 
 // ─── COA Group name constants ─────────────────────────────────────────────────
@@ -32,13 +33,13 @@ func subgroupContains(name, keyword string) bool {
 }
 
 type IReportService interface {
-	TrialBalance(start, end time.Time) (response.TrialBalanceResponse, error)
-	ProfitLoss(start, end time.Time) (response.ProfitLossResponse, error)
-	BalanceSheet(asOf time.Time) (response.BalanceSheetResponse, error)
-	CashFlow(start, end time.Time) (response.CashFlowResponse, error)
-	EquityStatement(start, end time.Time) (response.EquityStatementResponse, error)
-	GeneralLedger(start, end time.Time, coaID string) (response.GeneralLedgerResponse, error)
-	JournalBook(start, end time.Time) (response.JournalBookResponse, error)
+	TrialBalance(companyId uuid.UUID, start, end time.Time) (response.TrialBalanceResponse, error)
+	ProfitLoss(companyId uuid.UUID, start, end time.Time) (response.ProfitLossResponse, error)
+	BalanceSheet(companyId uuid.UUID, asOf time.Time) (response.BalanceSheetResponse, error)
+	CashFlow(companyId uuid.UUID, start, end time.Time) (response.CashFlowResponse, error)
+	EquityStatement(companyId uuid.UUID, start, end time.Time) (response.EquityStatementResponse, error)
+	GeneralLedger(companyId uuid.UUID, start, end time.Time, coaID string) (response.GeneralLedgerResponse, error)
+	JournalBook(companyId uuid.UUID, start, end time.Time) (response.JournalBookResponse, error)
 }
 
 type ReportService struct {
@@ -52,13 +53,13 @@ func NewReportService(repo repository.IReportRepository) IReportService {
 // ─── 1. Trial Balance ────────────────────────────────────────────────────────
 // Shows debit / credit totals per account for the given period.
 
-func (s *ReportService) TrialBalance(start, end time.Time) (response.TrialBalanceResponse, error) {
-	rows, err := s.IReportRepository.GetLedger(start, end)
+func (s *ReportService) TrialBalance(companyId uuid.UUID, start, end time.Time) (response.TrialBalanceResponse, error) {
+	rows, err := s.IReportRepository.GetLedger(companyId, start, end)
 	if err != nil {
 		return response.TrialBalanceResponse{}, err
 	}
 
-	postedCount, _ := s.IReportRepository.GetPostedCount(start, end)
+	postedCount, _ := s.IReportRepository.GetPostedCount(companyId, start, end)
 
 	var lines []response.TrialBalanceLine
 	var totalDebit, totalCredit float64
@@ -98,8 +99,8 @@ func (s *ReportService) TrialBalance(start, end time.Time) (response.TrialBalanc
 // Laba Rugi: Pendapatan → HPP → Laba Kotor → Beban Operasional →
 //            Laba Operasional → Pendapatan/Beban Lain → Laba Bersih
 
-func (s *ReportService) ProfitLoss(start, end time.Time) (response.ProfitLossResponse, error) {
-	rows, err := s.IReportRepository.GetLedger(start, end)
+func (s *ReportService) ProfitLoss(companyId uuid.UUID, start, end time.Time) (response.ProfitLossResponse, error) {
+	rows, err := s.IReportRepository.GetLedger(companyId, start, end)
 	if err != nil {
 		return response.ProfitLossResponse{}, err
 	}
@@ -184,7 +185,7 @@ func (s *ReportService) ProfitLoss(start, end time.Time) (response.ProfitLossRes
 // ─── 3. Balance Sheet ────────────────────────────────────────────────────────
 // Neraca: kumulatif dari awal sampai asOf.
 
-func (s *ReportService) BalanceSheet(asOf time.Time) (response.BalanceSheetResponse, error) {
+func (s *ReportService) BalanceSheet(companyId uuid.UUID, asOf time.Time) (response.BalanceSheetResponse, error) {
 	rows, err := s.IReportRepository.GetLedgerUpTo(asOf)
 	if err != nil {
 		return response.BalanceSheetResponse{}, err
@@ -270,9 +271,9 @@ func (s *ReportService) BalanceSheet(asOf time.Time) (response.BalanceSheetRespo
 // ─── 4. Cash Flow ────────────────────────────────────────────────────────────
 // Arus Kas: Indirect method — Operating (from P&L), Investing, Financing.
 
-func (s *ReportService) CashFlow(start, end time.Time) (response.CashFlowResponse, error) {
+func (s *ReportService) CashFlow(companyId uuid.UUID, start, end time.Time) (response.CashFlowResponse, error) {
 	// Period rows
-	periodRows, err := s.IReportRepository.GetLedger(start, end)
+	periodRows, err := s.IReportRepository.GetLedger(companyId, start, end)
 	if err != nil {
 		return response.CashFlowResponse{}, err
 	}
@@ -360,7 +361,7 @@ func (s *ReportService) CashFlow(start, end time.Time) (response.CashFlowRespons
 
 // ─── 5. Equity Statement ─────────────────────────────────────────────────────
 
-func (s *ReportService) EquityStatement(start, end time.Time) (response.EquityStatementResponse, error) {
+func (s *ReportService) EquityStatement(companyId uuid.UUID, start, end time.Time) (response.EquityStatementResponse, error) {
 	// Opening equity: cumulative up to day before start
 	openingEnd := start.Add(-24 * time.Hour)
 	openRows, err := s.IReportRepository.GetLedgerUpTo(openingEnd)
@@ -376,7 +377,7 @@ func (s *ReportService) EquityStatement(start, end time.Time) (response.EquitySt
 	}
 
 	// Period equity movements
-	periodRows, err := s.IReportRepository.GetLedger(start, end)
+	periodRows, err := s.IReportRepository.GetLedger(companyId, start, end)
 	if err != nil {
 		return response.EquityStatementResponse{}, err
 	}
@@ -453,8 +454,8 @@ func sectionsToSlice(m map[string]*response.ReportSection) []response.ReportSect
 // Per-account transaction history with running balance.
 // coaID = "" → all accounts; coaID = "<uuid>" → single account.
 
-func (s *ReportService) GeneralLedger(start, end time.Time, coaID string) (response.GeneralLedgerResponse, error) {
-	rows, err := s.IReportRepository.GetGeneralLedger(start, end, coaID)
+func (s *ReportService) GeneralLedger(companyId uuid.UUID, start, end time.Time, coaID string) (response.GeneralLedgerResponse, error) {
+	rows, err := s.IReportRepository.GetGeneralLedger(companyId, start, end, coaID)
 	if err != nil {
 		return response.GeneralLedgerResponse{}, err
 	}
@@ -552,8 +553,8 @@ func (s *ReportService) GeneralLedger(start, end time.Time, coaID string) (respo
 // ─── 7. Journal Book (Jurnal Umum) ───────────────────────────────────────────
 // All posted journal entries for the period, grouped by entry with their lines.
 
-func (s *ReportService) JournalBook(start, end time.Time) (response.JournalBookResponse, error) {
-	rows, err := s.IReportRepository.GetJournalBook(start, end)
+func (s *ReportService) JournalBook(companyId uuid.UUID, start, end time.Time) (response.JournalBookResponse, error) {
+	rows, err := s.IReportRepository.GetJournalBook(companyId, start, end)
 	if err != nil {
 		return response.JournalBookResponse{}, err
 	}

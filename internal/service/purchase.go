@@ -726,7 +726,7 @@ func (s *BillService) Confirm(companyId, id uuid.UUID, callerId uuid.UUID) (resp
 		return response.BillResponse{}, errors.New("tax receivable account not configured — set it in Company → Configuration")
 	}
 
-	period, err := s.fiscalRepo.FindByDate(bill.BillDate)
+	period, err := s.fiscalRepo.FindByDate(companyId, bill.BillDate)
 	if err != nil {
 		return response.BillResponse{}, errors.New("no open fiscal period for bill date: " + err.Error())
 	}
@@ -836,7 +836,7 @@ func (s *BillService) AddPayment(companyId, id uuid.UUID, req request.BillPaymen
 		return response.BillResponse{}, errors.New("accounts payable account not configured")
 	}
 
-	period, err := s.fiscalRepo.FindByDate(paymentDate)
+	period, err := s.fiscalRepo.FindByDate(companyId, paymentDate)
 	if err != nil {
 		return response.BillResponse{}, errors.New("no open fiscal period for payment date: " + err.Error())
 	}
@@ -974,7 +974,7 @@ func (s *BillService) Cancel(companyId, id uuid.UUID, callerId uuid.UUID) (respo
 			return response.BillResponse{}, errors.New("accounts payable account not configured for reversal")
 		}
 
-		period, err := s.fiscalRepo.FindByDate(time.Now())
+		period, err := s.fiscalRepo.FindByDate(companyId, time.Now())
 		if err != nil {
 			return response.BillResponse{}, errors.New("no open fiscal period for reversal: " + err.Error())
 		}

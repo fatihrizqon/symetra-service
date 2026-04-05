@@ -10,11 +10,18 @@ import (
 func (FiscalYear) TableName() string { return "fiscal_years" }
 
 type FiscalYearStatus string
+type ClosingMode string
 
 const (
-	FiscalYearDraft  FiscalYearStatus = "draft"
-	FiscalYearActive FiscalYearStatus = "active"
-	FiscalYearClosed FiscalYearStatus = "closed"
+	FiscalYearDraft          FiscalYearStatus = "draft"
+	FiscalYearActive         FiscalYearStatus = "active"
+	FiscalYearClosingReview  FiscalYearStatus = "closing_review" // all periods locked, awaiting close
+	FiscalYearClosed         FiscalYearStatus = "closed"
+)
+
+const (
+	ClosingModeSimple ClosingMode = "simple" // no closing JE, just mark closed
+	ClosingModeFormal ClosingMode = "formal" // generate closing JE → zeroing P&L → Retained Earnings
 )
 
 type PeriodType string
@@ -26,19 +33,24 @@ const (
 )
 
 type FiscalYear struct {
-	Id         uuid.UUID        `gorm:"type:uuid;primaryKey;default:gen_random_uuid();" json:"id"`
-	CompanyId  uuid.UUID        `gorm:"type:uuid;not null;index;" json:"company_id"` // ← NEW
-	Name       string           `gorm:"type:character varying(100);not null;" json:"name"`
-	StartDate  time.Time        `gorm:"type:date;not null;" json:"start_date"`
-	EndDate    time.Time        `gorm:"type:date;not null;" json:"end_date"`
-	PeriodType PeriodType       `gorm:"type:character varying(20);not null;default:'monthly';" json:"period_type"`
-	Status     FiscalYearStatus `gorm:"type:character varying(20);not null;default:'draft';" json:"status"`
-	ClosedAt   *time.Time       `gorm:"default:null;" json:"closed_at,omitempty"`
-	ClosedBy   *uuid.UUID       `gorm:"type:uuid;default:null;" json:"closed_by,omitempty"`
-	CreatedBy  uuid.UUID        `gorm:"type:uuid;not null;" json:"created_by"`
-	Periods    []FiscalPeriod   `gorm:"foreignKey:FiscalYearId;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"periods,omitempty"`
-	CreatedAt  time.Time        `gorm:"autoCreateTime;" json:"created_at"`
-	UpdatedAt  time.Time        `gorm:"autoUpdateTime;" json:"updated_at"`
+	Id          uuid.UUID        `gorm:"type:uuid;primaryKey;default:gen_random_uuid();" json:"id"`
+	CompanyId   uuid.UUID        `gorm:"type:uuid;not null;index;" json:"company_id"`
+	Name        string           `gorm:"type:character varying(100);not null;" json:"name"`
+	StartDate   time.Time        `gorm:"type:date;not null;" json:"start_date"`
+	EndDate     time.Time        `gorm:"type:date;not null;" json:"end_date"`
+	PeriodType  PeriodType       `gorm:"type:character varying(20);not null;default:'monthly';" json:"period_type"`
+	Status      FiscalYearStatus `gorm:"type:character varying(20);not null;default:'draft';" json:"status"`
+	ClosingMode ClosingMode      `gorm:"type:character varying(20);default:null;" json:"closing_mode,omitempty"`
+	// ClosingJournalEntryId: reference to JE-CLOSE generated on formal close
+	ClosingJEId *uuid.UUID `gorm:"type:uuid;default:null;" json:"closing_je_id,omitempty"`
+	// OpeningJournalEntryId: reference to JE-OB generated for THIS fiscal year
+	OpeningJEId *uuid.UUID `gorm:"type:uuid;default:null;" json:"opening_je_id,omitempty"`
+	ClosedAt    *time.Time `gorm:"default:null;" json:"closed_at,omitempty"`
+	ClosedBy    *uuid.UUID `gorm:"type:uuid;default:null;" json:"closed_by,omitempty"`
+	CreatedBy   uuid.UUID  `gorm:"type:uuid;not null;" json:"created_by"`
+	Periods     []FiscalPeriod `gorm:"foreignKey:FiscalYearId;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"periods,omitempty"`
+	CreatedAt   time.Time  `gorm:"autoCreateTime;" json:"created_at"`
+	UpdatedAt   time.Time  `gorm:"autoUpdateTime;" json:"updated_at"`
 }
 
 func (FiscalYear) SearchableFields() []string { return []string{"name"} }
@@ -57,10 +69,6 @@ func (FiscalYear) ApplyFilters(db *gorm.DB, filters map[string][]string) *gorm.D
 
 func (FiscalPeriod) TableName() string { return "fiscal_periods" }
 
-// FiscalPeriodStatus represents the lifecycle state of a single period.
-// Transitions: open → closed → locked
-// Reopen: closed → open (with reason, admin only)
-// Locked is permanent — no reopen.
 type FiscalPeriodStatus string
 
 const (
@@ -87,9 +95,7 @@ type FiscalPeriod struct {
 	UpdatedAt    time.Time          `gorm:"autoUpdateTime;" json:"updated_at"`
 }
 
-func (FiscalPeriod) SearchableFields() []string {
-	return []string{"name"}
-}
+func (FiscalPeriod) SearchableFields() []string { return []string{"name"} }
 
 func (FiscalPeriod) ApplyFilters(db *gorm.DB, filters map[string][]string) *gorm.DB {
 	if values, ok := filters["status"]; ok {
@@ -108,7 +114,7 @@ func (FiscalPeriodLog) TableName() string { return "fiscal_period_logs" }
 type FiscalPeriodLog struct {
 	Id             uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid();" json:"id"`
 	FiscalPeriodId uuid.UUID `gorm:"type:uuid;not null;index;" json:"fiscal_period_id"`
-	Action         string    `gorm:"type:character varying(50);not null;" json:"action"` // CLOSED, REOPENED, LOCKED
+	Action         string    `gorm:"type:character varying(50);not null;" json:"action"`
 	FromStatus     string    `gorm:"type:character varying(20);not null;" json:"from_status"`
 	ToStatus       string    `gorm:"type:character varying(20);not null;" json:"to_status"`
 	Reason         string    `gorm:"type:text;" json:"reason"`

@@ -25,6 +25,9 @@ type CompanyConfigurationRequest struct {
 	PurchaseOrderPrefix     string     `json:"purchase_order_prefix"`
 	BillPrefix              string     `json:"bill_prefix"`
 	BillDueDays             int        `json:"bill_due_days"`
+
+	// Fiscal closing
+	RetainedEarningsCoaId *uuid.UUID `json:"retained_earnings_coa_id"`
 }
 
 // ─── Quotation ────────────────────────────────────────────────────────────────

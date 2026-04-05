@@ -32,10 +32,6 @@ func getCallerID(ctx *fiber.Ctx) (uuid.UUID, error) {
 // @Summary Create a new fiscal year
 // @Tags Fiscal
 // @Security BearerAuth
-// @Accept json
-// @Produce json
-// @Param request body request.FiscalYearCreateRequest true "Fiscal Year Create Request"
-// @Success 201 {object} response.JSON
 // @Router /api/v1/fiscal/years [post]
 func (h *FiscalHandler) CreateFiscalYear(ctx *fiber.Ctx) error {
 	companyID, err := util.GetCompanyID(ctx)
@@ -82,7 +78,6 @@ func (h *FiscalHandler) FindAllFiscalYears(ctx *fiber.Ctx) error {
 // @Summary Get fiscal year by ID (includes periods)
 // @Tags Fiscal
 // @Security BearerAuth
-// @Param id path string true "Fiscal Year ID"
 // @Router /api/v1/fiscal/years/{id} [get]
 func (h *FiscalHandler) FindFiscalYearById(ctx *fiber.Ctx) error {
 	companyID, err := util.GetCompanyID(ctx)
@@ -299,4 +294,102 @@ func (h *FiscalHandler) FindPeriodLogs(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{Status: fiber.StatusInternalServerError, Message: err.Error()})
 	}
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{Status: fiber.StatusOK, Message: "Successfully retrieved period logs.", Data: logs})
+}
+
+// ── Year-End Closing — NEW ────────────────────────────────────────────────────
+
+// @Summary Check if a fiscal year is ready to close
+// @Tags Fiscal
+// @Security BearerAuth
+// @Router /api/v1/fiscal/years/{id}/readiness [get]
+func (h *FiscalHandler) CheckReadiness(ctx *fiber.Ctx) error {
+	companyID, err := util.GetCompanyID(ctx)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
+	}
+	id, err := uuid.Parse(ctx.Params("id"))
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: "invalid id"})
+	}
+	result, err := h.IFiscalService.ReadyToClose(companyID, id)
+	if err != nil {
+		return ctx.Status(fiber.StatusNotFound).JSON(response.JSON{Status: fiber.StatusNotFound, Message: err.Error()})
+	}
+	return ctx.Status(fiber.StatusOK).JSON(response.JSON{Status: fiber.StatusOK, Message: "Readiness check complete.", Data: result})
+}
+
+// @Summary Close a fiscal year (simple or formal mode)
+// @Tags Fiscal
+// @Security BearerAuth
+// @Accept json
+// @Param request body request.FiscalYearCloseRequest true "mode: simple|formal"
+// @Router /api/v1/fiscal/years/{id}/close [put]
+func (h *FiscalHandler) CloseFiscalYear(ctx *fiber.Ctx) error {
+	companyID, err := util.GetCompanyID(ctx)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
+	}
+	callerID, err := getCallerID(ctx)
+	if err != nil {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(response.JSON{Status: fiber.StatusUnauthorized, Message: err.Error()})
+	}
+	id, err := uuid.Parse(ctx.Params("id"))
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: "invalid id"})
+	}
+	var req request.FiscalYearCloseRequest
+	if err := ctx.BodyParser(&req); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
+	}
+	result, err := h.IFiscalService.CloseFiscalYear(companyID, id, req, callerID)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
+	}
+	return ctx.Status(fiber.StatusOK).JSON(response.JSON{Status: fiber.StatusOK, Message: "Fiscal year closed successfully.", Data: result})
+}
+
+// ── Opening Balance — NEW ─────────────────────────────────────────────────────
+
+// @Summary Generate opening balance from previous period's ledger
+// @Tags Fiscal
+// @Security BearerAuth
+// @Router /api/v1/fiscal/years/{id}/opening-balance [post]
+func (h *FiscalHandler) GenerateOpeningBalance(ctx *fiber.Ctx) error {
+	companyID, err := util.GetCompanyID(ctx)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
+	}
+	callerID, err := getCallerID(ctx)
+	if err != nil {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(response.JSON{Status: fiber.StatusUnauthorized, Message: err.Error()})
+	}
+	id, err := uuid.Parse(ctx.Params("id"))
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: "invalid id"})
+	}
+	result, err := h.IFiscalService.GenerateOpeningBalance(companyID, id, callerID)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
+	}
+	return ctx.Status(fiber.StatusOK).JSON(response.JSON{Status: fiber.StatusOK, Message: "Opening balance generated successfully.", Data: result})
+}
+
+// @Summary Delete opening balance (to allow regeneration)
+// @Tags Fiscal
+// @Security BearerAuth
+// @Router /api/v1/fiscal/years/{id}/opening-balance [delete]
+func (h *FiscalHandler) DeleteOpeningBalance(ctx *fiber.Ctx) error {
+	companyID, err := util.GetCompanyID(ctx)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
+	}
+	id, err := uuid.Parse(ctx.Params("id"))
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: "invalid id"})
+	}
+	result, err := h.IFiscalService.DeleteOpeningBalance(companyID, id)
+	if err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
+	}
+	return ctx.Status(fiber.StatusOK).JSON(response.JSON{Status: fiber.StatusOK, Message: "Opening balance deleted. You may now regenerate it.", Data: result})
 }

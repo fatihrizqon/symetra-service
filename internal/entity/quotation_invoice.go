@@ -47,6 +47,12 @@ type CompanyConfiguration struct {
 	BillPrefix              string     `gorm:"type:character varying;not null;default:'BILL';" json:"bill_prefix"`
 	BillDueDays             int        `gorm:"type:integer;not null;default:30;" json:"bill_due_days"`
 
+	// ─── Fiscal Year Closing ─────────────────────────────────────────────────
+	// RetainedEarningsCoaId: target COA for P&L net when using formal closing mode.
+	// Required only when ClosingMode = "formal". Validated in service before close.
+	RetainedEarningsCoaId *uuid.UUID `gorm:"type:uuid;default:null;" json:"retained_earnings_coa_id"`
+	RetainedEarningsCoa   *COA       `gorm:"foreignKey:RetainedEarningsCoaId;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"retained_earnings_coa,omitempty"`
+
 	CreatedAt time.Time `gorm:"autoCreateTime;" json:"created_at"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime;" json:"updated_at"`
 }

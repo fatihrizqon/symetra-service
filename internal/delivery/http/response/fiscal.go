@@ -9,18 +9,21 @@ import (
 // ─── Fiscal Year ──────────────────────────────────────────────────────────────
 
 type FiscalYearResponse struct {
-	Id         uuid.UUID              `json:"id"`
-	Name       string                 `json:"name"`
-	StartDate  time.Time              `json:"start_date"`
-	EndDate    time.Time              `json:"end_date"`
-	PeriodType string                 `json:"period_type"`
-	Status     string                 `json:"status"`
-	ClosedAt   *time.Time             `json:"closed_at,omitempty"`
-	ClosedBy   *uuid.UUID             `json:"closed_by,omitempty"`
-	CreatedBy  uuid.UUID              `json:"created_by"`
-	Periods    []FiscalPeriodResponse `json:"periods,omitempty"`
-	CreatedAt  time.Time              `json:"created_at"`
-	UpdatedAt  time.Time              `json:"updated_at"`
+	Id          uuid.UUID              `json:"id"`
+	Name        string                 `json:"name"`
+	StartDate   time.Time              `json:"start_date"`
+	EndDate     time.Time              `json:"end_date"`
+	PeriodType  string                 `json:"period_type"`
+	Status      string                 `json:"status"`
+	ClosingMode string                 `json:"closing_mode,omitempty"`
+	ClosingJEId *uuid.UUID             `json:"closing_je_id,omitempty"`
+	OpeningJEId *uuid.UUID             `json:"opening_je_id,omitempty"`
+	ClosedAt    *time.Time             `json:"closed_at,omitempty"`
+	ClosedBy    *uuid.UUID             `json:"closed_by,omitempty"`
+	CreatedBy   uuid.UUID              `json:"created_by"`
+	Periods     []FiscalPeriodResponse `json:"periods,omitempty"`
+	CreatedAt   time.Time              `json:"created_at"`
+	UpdatedAt   time.Time              `json:"updated_at"`
 }
 
 // ─── Fiscal Period ────────────────────────────────────────────────────────────
@@ -54,4 +57,16 @@ type FiscalPeriodLogResponse struct {
 	Reason         string    `json:"reason,omitempty"`
 	PerformedBy    uuid.UUID `json:"performed_by"`
 	PerformedAt    time.Time `json:"performed_at"`
+}
+
+// ─── Fiscal Year — extended fields for closing ────────────────────────────────
+
+// FiscalReadinessResponse describes whether a FY is ready to close.
+type FiscalReadinessResponse struct {
+	FiscalYearId        uuid.UUID `json:"fiscal_year_id"`
+	FiscalYearName      string    `json:"fiscal_year_name"`
+	ReadyToClose        bool      `json:"ready_to_close"`
+	UnlockedPeriods     int       `json:"unlocked_periods"`
+	DraftJournalEntries int       `json:"draft_journal_entries"`
+	Issues              []string  `json:"issues,omitempty"`
 }

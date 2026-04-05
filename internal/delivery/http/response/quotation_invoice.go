@@ -42,6 +42,10 @@ type CompanyConfigurationResponse struct {
 	BillPrefix                string     `json:"bill_prefix"`
 	BillDueDays               int        `json:"bill_due_days"`
 
+	// Fiscal closing
+	RetainedEarningsCoaId   *uuid.UUID `json:"retained_earnings_coa_id"`
+	RetainedEarningsCoaName string     `json:"retained_earnings_coa_name,omitempty"`
+
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }

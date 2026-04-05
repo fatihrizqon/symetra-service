@@ -55,3 +55,11 @@ type FiscalYearCreateCustomRequest struct {
 	FiscalYearCreateRequest
 	Periods []FiscalCustomPeriodRequest `validate:"required,min=1,dive" json:"periods"`
 }
+
+// ─── Fiscal Year Closing ──────────────────────────────────────────────────────
+
+// FiscalYearCloseRequest triggers year-end closing.
+// Mode: "simple" (no closing JE) or "formal" (generate closing JE → Retained Earnings).
+type FiscalYearCloseRequest struct {
+	Mode string `validate:"required,oneof=simple formal" json:"mode"`
+}

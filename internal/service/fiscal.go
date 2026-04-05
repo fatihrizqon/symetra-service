@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/fatihrizqon/symetra-service/internal/delivery/http/request"
@@ -17,7 +18,7 @@ import (
 // ─── Interface ────────────────────────────────────────────────────────────────
 
 type IFiscalService interface {
-	// Fiscal Year
+	// Fiscal Year CRUD
 	CreateFiscalYear(companyID uuid.UUID, req request.FiscalYearCreateRequest, createdBy uuid.UUID) (entity.FiscalYear, error)
 	FindAllFiscalYears(companyID uuid.UUID, qp *util.QueryParams) ([]response.FiscalYearResponse, int, error)
 	FindFiscalYearById(companyID, id uuid.UUID) (response.FiscalYearResponse, error)
@@ -33,27 +34,54 @@ type IFiscalService interface {
 	LockPeriod(companyID, id uuid.UUID, performedBy uuid.UUID) (entity.FiscalPeriod, error)
 	FindPeriodLogs(id uuid.UUID) ([]response.FiscalPeriodLogResponse, error)
 
-	// Guard — used by other services (journal entries, revenues, expenses, etc.)
+	// Guard — used by other services
 	ValidatePeriodOpen(companyID uuid.UUID, date time.Time) error
+
+	// Year-End Closing
+	ReadyToClose(companyID, fyID uuid.UUID) (response.FiscalReadinessResponse, error)
+	CloseFiscalYear(companyID, fyID uuid.UUID, req request.FiscalYearCloseRequest, performedBy uuid.UUID) (entity.FiscalYear, error)
+
+	// Opening Balance
+	GenerateOpeningBalance(companyID, fyID uuid.UUID, performedBy uuid.UUID) (entity.FiscalYear, error)
+	DeleteOpeningBalance(companyID, fyID uuid.UUID) (entity.FiscalYear, error)
 }
 
 // ─── Implementation ───────────────────────────────────────────────────────────
 
 type FiscalService struct {
-	fyRepo   repository.IFiscalYearRepository
-	fpRepo   repository.IFiscalPeriodRepository
-	validate *validator.Validate
+	fyRepo       repository.IFiscalYearRepository
+	fpRepo       repository.IFiscalPeriodRepository
+	jeRepo       repository.IJournalEntryRepository
+	coaRepo      repository.ICOARepository
+	coaGroupRepo repository.ICOAGroupRepository
+	reportRepo   repository.IReportRepository
+	cfgRepo      repository.ICompanyConfigurationRepository
+	validate     *validator.Validate
 }
 
 func NewFiscalService(
 	fyRepo repository.IFiscalYearRepository,
 	fpRepo repository.IFiscalPeriodRepository,
+	jeRepo repository.IJournalEntryRepository,
+	coaRepo repository.ICOARepository,
+	coaGroupRepo repository.ICOAGroupRepository,
+	reportRepo repository.IReportRepository,
+	cfgRepo repository.ICompanyConfigurationRepository,
 	validate *validator.Validate,
 ) IFiscalService {
-	return &FiscalService{fyRepo: fyRepo, fpRepo: fpRepo, validate: validate}
+	return &FiscalService{
+		fyRepo:       fyRepo,
+		fpRepo:       fpRepo,
+		jeRepo:       jeRepo,
+		coaRepo:      coaRepo,
+		coaGroupRepo: coaGroupRepo,
+		reportRepo:   reportRepo,
+		cfgRepo:      cfgRepo,
+		validate:     validate,
+	}
 }
 
-// ── Fiscal Year ───────────────────────────────────────────────────────────────
+// ── Fiscal Year CRUD ──────────────────────────────────────────────────────────
 
 func (s *FiscalService) CreateFiscalYear(companyID uuid.UUID, req request.FiscalYearCreateRequest, createdBy uuid.UUID) (entity.FiscalYear, error) {
 	if err := s.validate.Struct(req); err != nil {
@@ -116,7 +144,6 @@ func (s *FiscalService) FindAllFiscalYears(companyID uuid.UUID, qp *util.QueryPa
 	if qp.Page > totalPages {
 		return nil, totalCount, nil
 	}
-
 	resps := make([]response.FiscalYearResponse, 0, len(entities))
 	for _, fy := range entities {
 		resps = append(resps, mapFiscalYear(fy))
@@ -193,7 +220,6 @@ func (s *FiscalService) FindAllPeriods(companyID uuid.UUID, qp *util.QueryParams
 	if qp.Page > totalPages {
 		return nil, totalCount, nil
 	}
-
 	resps := make([]response.FiscalPeriodResponse, 0, len(entities))
 	for _, p := range entities {
 		resps = append(resps, mapFiscalPeriod(p))
@@ -343,8 +369,340 @@ func (s *FiscalService) ValidatePeriodOpen(companyID uuid.UUID, date time.Time) 
 	}
 }
 
-// generatePeriods, firstDayOfNextMonth, periodName, mapFiscalYear, mapFiscalPeriod
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Year-End Closing ──────────────────────────────────────────────────────────
+
+// ReadyToClose checks all preconditions and returns a structured readiness response.
+func (s *FiscalService) ReadyToClose(companyID, fyID uuid.UUID) (response.FiscalReadinessResponse, error) {
+	fy, err := s.fyRepo.FindById(companyID, fyID)
+	if err != nil {
+		return response.FiscalReadinessResponse{}, err
+	}
+
+	res := response.FiscalReadinessResponse{FiscalYearId: fyID, FiscalYearName: fy.Name}
+
+	unlocked, err := s.fyRepo.CountOpenOrClosedPeriods(fyID)
+	if err != nil {
+		return res, err
+	}
+	res.UnlockedPeriods = int(unlocked)
+
+	drafts, err := s.fyRepo.CountDraftJournalEntries(companyID, fyID)
+	if err != nil {
+		return res, err
+	}
+	res.DraftJournalEntries = int(drafts)
+
+	res.ReadyToClose = unlocked == 0 && drafts == 0
+	if !res.ReadyToClose {
+		var issues []string
+		if unlocked > 0 {
+			issues = append(issues, fmt.Sprintf("%d period(s) not yet locked", unlocked))
+		}
+		if drafts > 0 {
+			issues = append(issues, fmt.Sprintf("%d draft journal entry/entries exist", drafts))
+		}
+		res.Issues = issues
+	}
+
+	return res, nil
+}
+
+// CloseFiscalYear performs year-end close in simple or formal mode.
+func (s *FiscalService) CloseFiscalYear(companyID, fyID uuid.UUID, req request.FiscalYearCloseRequest, performedBy uuid.UUID) (entity.FiscalYear, error) {
+	fy, err := s.fyRepo.FindById(companyID, fyID)
+	if err != nil {
+		return fy, err
+	}
+
+	if fy.Status != entity.FiscalYearActive && fy.Status != entity.FiscalYearClosingReview {
+		return fy, fmt.Errorf("fiscal year must be active or in closing_review to close (current: %s)", fy.Status)
+	}
+
+	// Readiness check
+	readiness, err := s.ReadyToClose(companyID, fyID)
+	if err != nil {
+		return fy, err
+	}
+	if !readiness.ReadyToClose {
+		return fy, fmt.Errorf("fiscal year is not ready to close: %s", strings.Join(readiness.Issues, "; "))
+	}
+
+	// Idempotency guard
+	if has, _ := s.fyRepo.HasClosingJE(fyID); has {
+		return fy, fmt.Errorf("a closing journal entry already exists for this fiscal year")
+	}
+
+	mode := entity.ClosingMode(req.Mode)
+	if mode != entity.ClosingModeSimple && mode != entity.ClosingModeFormal {
+		return fy, fmt.Errorf("invalid closing mode '%s': must be 'simple' or 'formal'", req.Mode)
+	}
+
+	if mode == entity.ClosingModeFormal {
+		if err := s.generateClosingJE(companyID, &fy, performedBy); err != nil {
+			return fy, fmt.Errorf("failed to generate closing journal entry: %w", err)
+		}
+	}
+
+	now := time.Now()
+	fy.Status = entity.FiscalYearClosed
+	fy.ClosingMode = mode
+	fy.ClosedAt = &now
+	fy.ClosedBy = &performedBy
+
+	return fy, s.fyRepo.Update(fy)
+}
+
+// generateClosingJE creates the year-end P&L closing journal entry.
+func (s *FiscalService) generateClosingJE(companyID uuid.UUID, fy *entity.FiscalYear, performedBy uuid.UUID) error {
+	cfg, err := s.cfgRepo.FindByCompanyId(companyID)
+	if err != nil || cfg.RetainedEarningsCoaId == nil {
+		return fmt.Errorf("retained_earnings_coa_id is not configured — set it in Company Configuration before using formal close")
+	}
+	retainedEarningsCoaID := *cfg.RetainedEarningsCoaId
+
+	rows, err := s.reportRepo.GetLedger(companyID, fy.StartDate, fy.EndDate)
+	if err != nil {
+		return err
+	}
+
+	type closingLine struct {
+		coaID  uuid.UUID
+		debit  float64
+		credit float64
+		desc   string
+	}
+	var lines []closingLine
+	var netIncome float64
+
+	for _, row := range rows {
+		coa, err := s.coaRepo.FindByCode(companyID, row.AccountCode)
+		if err != nil {
+			continue
+		}
+		normalBalance := s.getGroupNormalBalance(companyID, row.GroupName)
+
+		switch normalBalance {
+		case "credit":
+			// Income account — close by debiting
+			creditBalance := row.TotalCredit - row.TotalDebit
+			if creditBalance == 0 {
+				continue
+			}
+			lines = append(lines, closingLine{coaID: coa.Id, debit: creditBalance, credit: 0,
+				desc: fmt.Sprintf("Closing - %s", row.AccountName)})
+			netIncome += creditBalance
+
+		case "debit":
+			if !s.isExpenseGroup(row.GroupName) {
+				continue
+			}
+			debitBalance := row.TotalDebit - row.TotalCredit
+			if debitBalance == 0 {
+				continue
+			}
+			lines = append(lines, closingLine{coaID: coa.Id, debit: 0, credit: debitBalance,
+				desc: fmt.Sprintf("Closing - %s", row.AccountName)})
+			netIncome -= debitBalance
+		}
+	}
+
+	if len(lines) == 0 {
+		return nil // no P&L activity — skip
+	}
+
+	if netIncome > 0 {
+		lines = append(lines, closingLine{coaID: retainedEarningsCoaID, debit: 0, credit: netIncome,
+			desc: "Closing - Transfer net profit to Retained Earnings"})
+	} else if netIncome < 0 {
+		lines = append(lines, closingLine{coaID: retainedEarningsCoaID, debit: -netIncome, credit: 0,
+			desc: "Closing - Transfer net loss to Retained Earnings"})
+	}
+
+	jeNumber := fmt.Sprintf("JE-CLOSE-%s", fy.EndDate.Format("2006"))
+	je := entity.JournalEntry{
+		CompanyId:     companyID,
+		JournalNumber: jeNumber,
+		Type:          entity.JournalTypeGeneral,
+		Date:          fy.EndDate,
+		Description:   fmt.Sprintf("Year-End Closing Entry — %s", fy.Name),
+		Status:        entity.JournalStatusPosted,
+		CreatedBy:     performedBy,
+	}
+
+	var totalDebit, totalCredit float64
+	jlLines := make([]entity.JournalLine, 0, len(lines))
+	for _, l := range lines {
+		totalDebit += l.debit
+		totalCredit += l.credit
+		jlLines = append(jlLines, entity.JournalLine{
+			CoaId: l.coaID, Description: l.desc, Debit: l.debit, Credit: l.credit,
+		})
+	}
+	je.TotalDebit = totalDebit
+	je.TotalCredit = totalCredit
+
+	createdJE, err := s.jeRepo.Create(je, jlLines)
+	if err != nil {
+		return fmt.Errorf("failed to save closing journal entry: %w", err)
+	}
+
+	fy.ClosingJEId = &createdJE.Id
+	return nil
+}
+
+// ── Opening Balance ───────────────────────────────────────────────────────────
+
+// GenerateOpeningBalance generates an OB journal entry for fyID from previous period's ledger.
+func (s *FiscalService) GenerateOpeningBalance(companyID, fyID uuid.UUID, performedBy uuid.UUID) (entity.FiscalYear, error) {
+	fy, err := s.fyRepo.FindById(companyID, fyID)
+	if err != nil {
+		return fy, err
+	}
+	if fy.Status == entity.FiscalYearClosed {
+		return fy, fmt.Errorf("cannot generate opening balance for a closed fiscal year")
+	}
+
+	// Idempotency guard
+	if has, _ := s.fyRepo.HasOpeningJE(fyID); has {
+		return fy, fmt.Errorf("opening balance already exists for this fiscal year — delete it first to regenerate")
+	}
+
+	// Get balances up to the day before this FY starts
+	asOf := fy.StartDate.AddDate(0, 0, -1)
+	rows, err := s.reportRepo.GetLedgerUpTo(companyID, asOf)
+	if err != nil {
+		return fy, err
+	}
+	if len(rows) == 0 {
+		return fy, fmt.Errorf("no posted journal entries found before %s — nothing to carry forward", asOf.Format("2006-01-02"))
+	}
+
+	// Check previous FY closing mode
+	prevFY, prevErr := s.fyRepo.FindLastClosed(companyID)
+	formalClose := prevErr == nil && prevFY.ClosingMode == entity.ClosingModeFormal
+
+	type obLine struct {
+		coaID  uuid.UUID
+		debit  float64
+		credit float64
+		desc   string
+	}
+	var lines []obLine
+	var totalDebit, totalCredit float64
+
+	for _, row := range rows {
+		coa, err := s.coaRepo.FindByCode(companyID, row.AccountCode)
+		if err != nil {
+			continue
+		}
+
+		normalBalance := s.getGroupNormalBalance(companyID, row.GroupName)
+
+		// Formal close: skip P&L accounts (already zeroed by closing JE)
+		if formalClose && s.isPLGroup(row.GroupName) {
+			continue
+		}
+
+		netBalance := row.TotalDebit - row.TotalCredit
+		if netBalance == 0 {
+			continue
+		}
+
+		desc := fmt.Sprintf("Opening Balance - %s", row.AccountName)
+		_ = normalBalance // normalBalance used for context; net balance drives debit/credit
+		if netBalance > 0 {
+			lines = append(lines, obLine{coaID: coa.Id, debit: netBalance, credit: 0, desc: desc})
+			totalDebit += netBalance
+		} else {
+			lines = append(lines, obLine{coaID: coa.Id, debit: 0, credit: -netBalance, desc: desc})
+			totalCredit += -netBalance
+		}
+	}
+
+	if len(lines) == 0 {
+		return fy, fmt.Errorf("all account balances are zero — nothing to carry forward")
+	}
+
+	// Find fiscal period for start date
+	var periodID *uuid.UUID
+	if p, err := s.fpRepo.FindByDate(companyID, fy.StartDate); err == nil {
+		periodID = &p.Id
+	}
+
+	jeNumber := fmt.Sprintf("JE-OB-%s", fy.StartDate.Format("2006"))
+	je := entity.JournalEntry{
+		CompanyId:      companyID,
+		FiscalPeriodId: periodID,
+		JournalNumber:  jeNumber,
+		Type:           entity.JournalTypeGeneral,
+		Date:           fy.StartDate,
+		Description:    fmt.Sprintf("Opening Balance — %s (carried from %s)", fy.Name, asOf.Format("2006-01-02")),
+		Status:         entity.JournalStatusPosted,
+		TotalDebit:     totalDebit,
+		TotalCredit:    totalCredit,
+		CreatedBy:      performedBy,
+	}
+
+	jlLines := make([]entity.JournalLine, 0, len(lines))
+	for _, l := range lines {
+		jlLines = append(jlLines, entity.JournalLine{
+			CoaId: l.coaID, Description: l.desc, Debit: l.debit, Credit: l.credit,
+		})
+	}
+
+	createdJE, err := s.jeRepo.Create(je, jlLines)
+	if err != nil {
+		return fy, fmt.Errorf("failed to save opening balance journal entry: %w", err)
+	}
+
+	fy.OpeningJEId = &createdJE.Id
+	return fy, s.fyRepo.Update(fy)
+}
+
+// DeleteOpeningBalance removes the opening JE for regeneration.
+func (s *FiscalService) DeleteOpeningBalance(companyID, fyID uuid.UUID) (entity.FiscalYear, error) {
+	fy, err := s.fyRepo.FindById(companyID, fyID)
+	if err != nil {
+		return fy, err
+	}
+	if fy.Status == entity.FiscalYearClosed {
+		return fy, fmt.Errorf("cannot delete opening balance of a closed fiscal year")
+	}
+	if fy.OpeningJEId == nil {
+		return fy, fmt.Errorf("no opening balance found for this fiscal year")
+	}
+
+	if err := s.jeRepo.Delete(companyID, *fy.OpeningJEId); err != nil {
+		return fy, fmt.Errorf("failed to delete opening balance journal entry: %w", err)
+	}
+
+	fy.OpeningJEId = nil
+	return fy, s.fyRepo.Update(fy)
+}
+
+// ─── Private helpers ──────────────────────────────────────────────────────────
+
+func (s *FiscalService) getGroupNormalBalance(companyID uuid.UUID, groupName string) string {
+	g, err := s.coaGroupRepo.FindByName(companyID, groupName)
+	if err != nil {
+		return ""
+	}
+	return g.NormalBalance
+}
+
+func (s *FiscalService) isExpenseGroup(groupName string) bool {
+	lower := strings.ToLower(strings.TrimSpace(groupName))
+	return strings.Contains(lower, "beban") || strings.Contains(lower, "expense")
+}
+
+func (s *FiscalService) isPLGroup(groupName string) bool {
+	lower := strings.ToLower(strings.TrimSpace(groupName))
+	return strings.Contains(lower, "beban") || strings.Contains(lower, "expense") ||
+		strings.Contains(lower, "pendapatan") || strings.Contains(lower, "revenue") ||
+		strings.Contains(lower, "income")
+}
+
+// ─── Period generators & mappers (unchanged from original) ───────────────────
 
 func generatePeriods(fyId uuid.UUID, fyStart, actualStart, fyEnd time.Time, pType entity.PeriodType) []entity.FiscalPeriod {
 	var periods []entity.FiscalPeriod
@@ -356,13 +714,9 @@ func generatePeriods(fyId uuid.UUID, fyStart, actualStart, fyEnd time.Time, pTyp
 			stubEnd = fyEnd
 		}
 		periods = append(periods, entity.FiscalPeriod{
-			FiscalYearId: fyId,
-			Name:         fmt.Sprintf("Stub – %s", fyStart.Format("Jan 2006")),
-			PeriodNumber: periodNumber,
-			StartDate:    actualStart,
-			EndDate:      stubEnd,
-			IsStub:       true,
-			Status:       entity.FiscalPeriodOpen,
+			FiscalYearId: fyId, Name: fmt.Sprintf("Stub – %s", fyStart.Format("Jan 2006")),
+			PeriodNumber: periodNumber, StartDate: actualStart, EndDate: stubEnd,
+			IsStub: true, Status: entity.FiscalPeriodOpen,
 		})
 		periodNumber++
 		fyStart = firstDayOfNextMonth(fyStart)
@@ -380,17 +734,11 @@ func generatePeriods(fyId uuid.UUID, fyStart, actualStart, fyEnd time.Time, pTyp
 		if periodEnd.After(fyEnd) {
 			periodEnd = fyEnd
 		}
-
 		periods = append(periods, entity.FiscalPeriod{
-			FiscalYearId: fyId,
-			Name:         periodName(cursor, pType),
-			PeriodNumber: periodNumber,
-			StartDate:    cursor,
-			EndDate:      periodEnd,
-			IsStub:       false,
-			Status:       entity.FiscalPeriodOpen,
+			FiscalYearId: fyId, Name: periodName(cursor, pType),
+			PeriodNumber: periodNumber, StartDate: cursor, EndDate: periodEnd,
+			IsStub: false, Status: entity.FiscalPeriodOpen,
 		})
-
 		periodNumber++
 		switch pType {
 		case entity.PeriodTypeQuarterly:
@@ -398,12 +746,10 @@ func generatePeriods(fyId uuid.UUID, fyStart, actualStart, fyEnd time.Time, pTyp
 		default:
 			cursor = firstDayOfNextMonth(cursor)
 		}
-
 		if !cursor.Before(fyEnd) && !cursor.Equal(fyEnd) {
 			break
 		}
 	}
-
 	return periods
 }
 
@@ -421,19 +767,26 @@ func periodName(t time.Time, pType entity.PeriodType) string {
 	}
 }
 
+func parseDate(s string) (time.Time, error) {
+	return time.Parse("2006-01-02", s)
+}
+
 func mapFiscalYear(fy entity.FiscalYear) response.FiscalYearResponse {
 	return response.FiscalYearResponse{
-		Id:         fy.Id,
-		Name:       fy.Name,
-		StartDate:  fy.StartDate,
-		EndDate:    fy.EndDate,
-		PeriodType: string(fy.PeriodType),
-		Status:     string(fy.Status),
-		ClosedAt:   fy.ClosedAt,
-		ClosedBy:   fy.ClosedBy,
-		CreatedBy:  fy.CreatedBy,
-		CreatedAt:  fy.CreatedAt,
-		UpdatedAt:  fy.UpdatedAt,
+		Id:          fy.Id,
+		Name:        fy.Name,
+		StartDate:   fy.StartDate,
+		EndDate:     fy.EndDate,
+		PeriodType:  string(fy.PeriodType),
+		Status:      string(fy.Status),
+		ClosingMode: string(fy.ClosingMode),
+		ClosingJEId: fy.ClosingJEId,
+		OpeningJEId: fy.OpeningJEId,
+		ClosedAt:    fy.ClosedAt,
+		ClosedBy:    fy.ClosedBy,
+		CreatedBy:   fy.CreatedBy,
+		CreatedAt:   fy.CreatedAt,
+		UpdatedAt:   fy.UpdatedAt,
 	}
 }
 

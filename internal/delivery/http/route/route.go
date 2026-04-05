@@ -173,6 +173,11 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	// ── Fiscal ────────────────────────────────────────────────────────────────
 	rc.App.Post("/api/v1/fiscal/years", rc.CompanyMiddleware, middleware.NewRequirePermission("fiscal:manage"), rc.FiscalHandler.CreateFiscalYear)
 	rc.App.Get("/api/v1/fiscal/years", rc.CompanyMiddleware, middleware.NewRequirePermission("fiscal:read"), rc.FiscalHandler.FindAllFiscalYears)
+	// ── Sub-routes must be registered BEFORE the generic /:id routes in Fiber ──
+	rc.App.Get("/api/v1/fiscal/years/:id/readiness", rc.CompanyMiddleware, middleware.NewRequirePermission("fiscal:manage"), rc.FiscalHandler.CheckReadiness)
+	rc.App.Put("/api/v1/fiscal/years/:id/close", rc.CompanyMiddleware, middleware.NewRequirePermission("fiscal:manage"), rc.FiscalHandler.CloseFiscalYear)
+	rc.App.Post("/api/v1/fiscal/years/:id/opening-balance", rc.CompanyMiddleware, middleware.NewRequirePermission("fiscal:manage"), rc.FiscalHandler.GenerateOpeningBalance)
+	rc.App.Delete("/api/v1/fiscal/years/:id/opening-balance", rc.CompanyMiddleware, middleware.NewRequirePermission("fiscal:manage"), rc.FiscalHandler.DeleteOpeningBalance)
 	rc.App.Get("/api/v1/fiscal/years/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("fiscal:read"), rc.FiscalHandler.FindFiscalYearById)
 	rc.App.Put("/api/v1/fiscal/years/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("fiscal:manage"), rc.FiscalHandler.UpdateFiscalYear)
 	rc.App.Put("/api/v1/fiscal/years/:id/activate", rc.CompanyMiddleware, middleware.NewRequirePermission("fiscal:manage"), rc.FiscalHandler.ActivateFiscalYear)
@@ -183,6 +188,8 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Put("/api/v1/fiscal/periods/:id/reopen", rc.CompanyMiddleware, middleware.NewRequirePermission("fiscal:manage"), rc.FiscalHandler.ReopenPeriod)
 	rc.App.Put("/api/v1/fiscal/periods/:id/lock", rc.CompanyMiddleware, middleware.NewRequirePermission("fiscal:manage"), rc.FiscalHandler.LockPeriod)
 	rc.App.Get("/api/v1/fiscal/periods/:id/logs", rc.CompanyMiddleware, middleware.NewRequirePermission("fiscal:read"), rc.FiscalHandler.FindPeriodLogs)
+
+
 
 	// ── Company Configuration ─────────────────────────────────────────────────
 	rc.App.Get("/api/v1/companies/:id/configuration", rc.CompanyMiddleware, middleware.NewRequirePermission("company:read"), rc.CompanyConfigHandler.Get)

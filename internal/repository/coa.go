@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/fatihrizqon/symetra-service/internal/entity"
 	"github.com/fatihrizqon/symetra-service/internal/util"
@@ -21,6 +22,7 @@ type ICOARepository interface {
 	Create(entity.COA) (entity.COA, error)
 	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.COA, int, error)
 	FindById(companyID, entityId uuid.UUID) (entity.COA, error)
+	FindByCode(companyID uuid.UUID, code string) (entity.COA, error)
 	Update(entity.COA) error
 	Delete(companyID, entityId uuid.UUID) error
 	SelectDropdownList(companyID uuid.UUID) ([]entity.COA, error)
@@ -110,4 +112,12 @@ func (r *COARepository) SelectDropdownList(companyID uuid.UUID) ([]entity.COA, e
 		return nil, err
 	}
 	return entities, nil
+}
+
+func (r *COARepository) FindByCode(companyID uuid.UUID, code string) (entity.COA, error) {
+	var c entity.COA
+	if err := r.Db.Where("company_id = ? AND code = ?", companyID, code).First(&c).Error; err != nil {
+		return c, fmt.Errorf("coa with code %s not found", code)
+	}
+	return c, nil
 }

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/fatihrizqon/symetra-service/internal/entity"
 	"github.com/fatihrizqon/symetra-service/internal/util"
@@ -22,6 +23,7 @@ type ICOAGroupRepository interface {
 	Create(entity.COAGroup) (entity.COAGroup, error)
 	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.COAGroup, int, error)
 	FindById(companyID, entityId uuid.UUID) (entity.COAGroup, error)
+	FindByName(companyID uuid.UUID, name string) (entity.COAGroup, error)
 	Update(entity.COAGroup) error
 	Delete(companyID, entityId uuid.UUID) error
 	SelectDropdownList(companyID uuid.UUID) ([]entity.COAGroup, error)
@@ -107,4 +109,13 @@ func (r *COAGroupRepository) SelectDropdownList(companyID uuid.UUID) ([]entity.C
 		return nil, err
 	}
 	return entities, nil
+}
+
+func (r *COAGroupRepository) FindByName(companyID uuid.UUID, name string) (entity.COAGroup, error) {
+	var g entity.COAGroup
+	// Case-insensitive contains match, consistent with report service behavior
+	if err := r.Db.Where("company_id = ? AND LOWER(name) = LOWER(?)", companyID, name).First(&g).Error; err != nil {
+		return g, fmt.Errorf("coa group '%s' not found", name)
+	}
+	return g, nil
 }

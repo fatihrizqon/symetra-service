@@ -105,6 +105,7 @@ func toConfigResponse(cfg entity.CompanyConfiguration) response.CompanyConfigura
 		PurchaseOrderPrefix:     cfg.PurchaseOrderPrefix,
 		BillPrefix:              cfg.BillPrefix,
 		BillDueDays:             cfg.BillDueDays,
+		RetainedEarningsCoaId:   cfg.RetainedEarningsCoaId,
 		CreatedAt:               cfg.CreatedAt,
 		UpdatedAt:               cfg.UpdatedAt,
 	}
@@ -134,6 +135,9 @@ func toConfigResponse(cfg entity.CompanyConfiguration) response.CompanyConfigura
 	}
 	if cfg.DefaultExpenseAccount != nil {
 		r.DefaultExpenseAccountName = cfg.DefaultExpenseAccount.Name
+	}
+	if cfg.RetainedEarningsCoa != nil {
+		r.RetainedEarningsCoaName = cfg.RetainedEarningsCoa.Name
 	}
 	return r
 }
@@ -194,6 +198,7 @@ func (s *CompanyConfigurationService) Upsert(companyID uuid.UUID, req request.Co
 		PurchaseOrderPrefix:     poPrefix,
 		BillPrefix:              billPrefix,
 		BillDueDays:             billDueDays,
+		RetainedEarningsCoaId:   req.RetainedEarningsCoaId,
 	}
 	saved, err := s.repo.Upsert(cfg)
 	if err != nil {

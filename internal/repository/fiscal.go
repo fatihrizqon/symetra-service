@@ -36,8 +36,14 @@ type IFiscalYearRepository interface {
 	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.FiscalYear, int, error)
 	FindById(companyID, id uuid.UUID) (entity.FiscalYear, error)
 	FindActive(companyID uuid.UUID) (entity.FiscalYear, error)
+	FindLastClosed(companyID uuid.UUID) (entity.FiscalYear, error)
 	Update(fy entity.FiscalYear) error
 	Delete(companyID, id uuid.UUID) error
+	// Closing/Opening helpers
+	CountOpenOrClosedPeriods(fyID uuid.UUID) (int64, error)
+	CountDraftJournalEntries(companyID, fyID uuid.UUID) (int64, error)
+	HasClosingJE(fyID uuid.UUID) (bool, error)
+	HasOpeningJE(fyID uuid.UUID) (bool, error)
 }
 
 type IFiscalPeriodRepository interface {
@@ -250,4 +256,59 @@ func (r *FiscalPeriodRepository) FindLogs(periodId uuid.UUID) ([]entity.FiscalPe
 		return nil, err
 	}
 	return logs, nil
+}
+
+// ─── Additional FiscalYear Repository Methods ─────────────────────────────────
+
+func (r *FiscalYearRepository) FindLastClosed(companyID uuid.UUID) (entity.FiscalYear, error) {
+	var fy entity.FiscalYear
+	err := r.Db.Where("company_id = ? AND status = ?", companyID, entity.FiscalYearClosed).
+		Order("end_date DESC").First(&fy).Error
+	if err != nil {
+		return fy, fmt.Errorf("no closed fiscal year found")
+	}
+	return fy, nil
+}
+
+// CountOpenOrClosedPeriods returns number of periods NOT yet locked in a FY.
+// Used to validate readiness for closing_review state.
+func (r *FiscalYearRepository) CountOpenOrClosedPeriods(fyID uuid.UUID) (int64, error) {
+	var count int64
+	err := r.Db.Model(&entity.FiscalPeriod{}).
+		Where("fiscal_year_id = ? AND status IN ?", fyID, []string{"open", "closed"}).
+		Count(&count).Error
+	return count, err
+}
+
+// CountDraftJournalEntries returns number of draft JEs in the FY date range.
+// A FY cannot be closed while drafts exist.
+func (r *FiscalYearRepository) CountDraftJournalEntries(companyID, fyID uuid.UUID) (int64, error) {
+	var count int64
+	var fy entity.FiscalYear
+	if err := r.Db.Where("id = ? AND company_id = ?", fyID, companyID).First(&fy).Error; err != nil {
+		return 0, err
+	}
+	err := r.Db.Model(&entity.JournalEntry{}).
+		Where("company_id = ? AND status = ? AND date >= ? AND date <= ?",
+			companyID, "draft", fy.StartDate, fy.EndDate).
+		Count(&count).Error
+	return count, err
+}
+
+// HasClosingJE checks if a closing journal entry already exists for this FY.
+func (r *FiscalYearRepository) HasClosingJE(fyID uuid.UUID) (bool, error) {
+	var fy entity.FiscalYear
+	if err := r.Db.Where("id = ?", fyID).First(&fy).Error; err != nil {
+		return false, err
+	}
+	return fy.ClosingJEId != nil, nil
+}
+
+// HasOpeningJE checks if an opening balance JE already exists for this FY.
+func (r *FiscalYearRepository) HasOpeningJE(fyID uuid.UUID) (bool, error) {
+	var fy entity.FiscalYear
+	if err := r.Db.Where("id = ?", fyID).First(&fy).Error; err != nil {
+		return false, err
+	}
+	return fy.OpeningJEId != nil, nil
 }

@@ -186,7 +186,7 @@ func (s *ReportService) ProfitLoss(companyID uuid.UUID, start, end time.Time) (r
 // Neraca: kumulatif dari awal sampai asOf.
 
 func (s *ReportService) BalanceSheet(companyID uuid.UUID, asOf time.Time) (response.BalanceSheetResponse, error) {
-	rows, err := s.IReportRepository.GetLedgerUpTo(asOf)
+	rows, err := s.IReportRepository.GetLedgerUpTo(companyID, asOf)
 	if err != nil {
 		return response.BalanceSheetResponse{}, err
 	}
@@ -280,7 +280,7 @@ func (s *ReportService) CashFlow(companyID uuid.UUID, start, end time.Time) (res
 
 	// Opening cash: cumulative balance of cash/bank accounts BEFORE start
 	openingEnd := start.Add(-24 * time.Hour)
-	openingRows, err := s.IReportRepository.GetLedgerUpTo(openingEnd)
+	openingRows, err := s.IReportRepository.GetLedgerUpTo(companyID, openingEnd)
 	if err != nil {
 		return response.CashFlowResponse{}, err
 	}
@@ -364,7 +364,7 @@ func (s *ReportService) CashFlow(companyID uuid.UUID, start, end time.Time) (res
 func (s *ReportService) EquityStatement(companyID uuid.UUID, start, end time.Time) (response.EquityStatementResponse, error) {
 	// Opening equity: cumulative up to day before start
 	openingEnd := start.Add(-24 * time.Hour)
-	openRows, err := s.IReportRepository.GetLedgerUpTo(openingEnd)
+	openRows, err := s.IReportRepository.GetLedgerUpTo(companyID, openingEnd)
 	if err != nil {
 		return response.EquityStatementResponse{}, err
 	}
@@ -399,7 +399,7 @@ func (s *ReportService) EquityStatement(companyID uuid.UUID, start, end time.Tim
 	}
 
 	// Net profit for period
-	plResp, err := s.ProfitLoss(start, end)
+	plResp, err := s.ProfitLoss(companyID, start, end)
 	if err != nil {
 		return response.EquityStatementResponse{}, err
 	}
@@ -502,7 +502,7 @@ func (s *ReportService) GeneralLedger(companyID uuid.UUID, start, end time.Time,
 
 		// Opening balance: cumulative net before period start for this account.
 		// Raw value is always (debit - credit); flip sign for credit-normal accounts.
-		openRaw, _ := s.IReportRepository.GetOpeningBalance(start, k.code)
+		openRaw, _ := s.IReportRepository.GetOpeningBalance(companyID, start, k.code)
 		var opening float64
 		if isDebitNormal {
 			opening = openRaw

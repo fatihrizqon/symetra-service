@@ -11,12 +11,12 @@ import (
 )
 
 type IVendorService interface {
-	Create(companyId uuid.UUID, req request.VendorCreateRequest) (entity.Vendor, error)
-	FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]response.VendorResponse, int, error)
-	FindById(companyId, id uuid.UUID) (response.VendorResponse, error)
-	Update(companyId uuid.UUID, req request.VendorUpdateRequest) (entity.Vendor, error)
-	Delete(companyId, id uuid.UUID) (entity.Vendor, error)
-	SelectDropdownList(companyId uuid.UUID, qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error)
+	Create(companyID uuid.UUID, req request.VendorCreateRequest) (entity.Vendor, error)
+	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]response.VendorResponse, int, error)
+	FindById(companyID, id uuid.UUID) (response.VendorResponse, error)
+	Update(companyID uuid.UUID, req request.VendorUpdateRequest) (entity.Vendor, error)
+	Delete(companyID, id uuid.UUID) (entity.Vendor, error)
+	SelectDropdownList(companyID uuid.UUID, qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error)
 }
 
 type VendorService struct {
@@ -48,12 +48,12 @@ func toVendorResponse(v entity.Vendor) response.VendorResponse {
 	return r
 }
 
-func (s *VendorService) Create(companyId uuid.UUID, req request.VendorCreateRequest) (entity.Vendor, error) {
+func (s *VendorService) Create(companyID uuid.UUID, req request.VendorCreateRequest) (entity.Vendor, error) {
 	if err := s.validate.Struct(req); err != nil {
 		return entity.Vendor{}, err
 	}
 	v := entity.Vendor{
-		CompanyId: companyId,
+		CompanyId: companyID,
 		Code:      req.Code,
 		Name:      req.Name,
 		Email:     req.Email,
@@ -64,8 +64,8 @@ func (s *VendorService) Create(companyId uuid.UUID, req request.VendorCreateRequ
 	return s.IVendorRepository.Create(v)
 }
 
-func (s *VendorService) FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]response.VendorResponse, int, error) {
-	entities, total, err := s.IVendorRepository.FindAll(companyId, qp)
+func (s *VendorService) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]response.VendorResponse, int, error) {
+	entities, total, err := s.IVendorRepository.FindAll(companyID, qp)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -82,16 +82,16 @@ func (s *VendorService) FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]re
 	return resps, total, nil
 }
 
-func (s *VendorService) FindById(companyId, id uuid.UUID) (response.VendorResponse, error) {
-	v, err := s.IVendorRepository.FindById(companyId, id)
+func (s *VendorService) FindById(companyID, id uuid.UUID) (response.VendorResponse, error) {
+	v, err := s.IVendorRepository.FindById(companyID, id)
 	if err != nil {
 		return response.VendorResponse{}, err
 	}
 	return toVendorResponse(v), nil
 }
 
-func (s *VendorService) Update(companyId uuid.UUID, req request.VendorUpdateRequest) (entity.Vendor, error) {
-	v, err := s.IVendorRepository.FindById(companyId, req.Id)
+func (s *VendorService) Update(companyID uuid.UUID, req request.VendorUpdateRequest) (entity.Vendor, error) {
+	v, err := s.IVendorRepository.FindById(companyID, req.Id)
 	if err != nil {
 		return v, err
 	}
@@ -110,16 +110,16 @@ func (s *VendorService) Update(companyId uuid.UUID, req request.VendorUpdateRequ
 	return v, nil
 }
 
-func (s *VendorService) Delete(companyId, id uuid.UUID) (entity.Vendor, error) {
-	v, err := s.IVendorRepository.FindById(companyId, id)
+func (s *VendorService) Delete(companyID, id uuid.UUID) (entity.Vendor, error) {
+	v, err := s.IVendorRepository.FindById(companyID, id)
 	if err != nil {
 		return v, err
 	}
-	return v, s.IVendorRepository.Delete(companyId, id)
+	return v, s.IVendorRepository.Delete(companyID, id)
 }
 
-func (s *VendorService) SelectDropdownList(companyId uuid.UUID, qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error) {
-	entities, total, err := s.IVendorRepository.FindAll(companyId, qp)
+func (s *VendorService) SelectDropdownList(companyID uuid.UUID, qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error) {
+	entities, total, err := s.IVendorRepository.FindAll(companyID, qp)
 	if err != nil {
 		return nil, 0, err
 	}

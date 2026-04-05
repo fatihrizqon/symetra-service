@@ -17,15 +17,15 @@ import (
 // ─── Purchase Order Service ───────────────────────────────────────────────────
 
 type IPurchaseOrderService interface {
-	Create(companyId uuid.UUID, req request.POCreateRequest, callerId uuid.UUID) (response.POResponse, error)
-	FindAllTyped(companyId uuid.UUID, qp *util.QueryParams) ([]response.POResponse, int, error)
-	FindById(companyId, id uuid.UUID) (response.POResponse, error)
-	Update(companyId uuid.UUID, req request.POUpdateRequest) (response.POResponse, error)
-	Delete(companyId, id uuid.UUID) error
-	Send(companyId, id uuid.UUID) error
-	Approve(companyId, id uuid.UUID) error
-	Decline(companyId, id uuid.UUID) error
-	SelectDropdownList(companyId uuid.UUID, qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error)
+	Create(companyID uuid.UUID, req request.POCreateRequest, callerId uuid.UUID) (response.POResponse, error)
+	FindAllTyped(companyID uuid.UUID, qp *util.QueryParams) ([]response.POResponse, int, error)
+	FindById(companyID, id uuid.UUID) (response.POResponse, error)
+	Update(companyID uuid.UUID, req request.POUpdateRequest) (response.POResponse, error)
+	Delete(companyID, id uuid.UUID) error
+	Send(companyID, id uuid.UUID) error
+	Approve(companyID, id uuid.UUID) error
+	Decline(companyID, id uuid.UUID) error
+	SelectDropdownList(companyID uuid.UUID, qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error)
 }
 
 type PurchaseOrderService struct {
@@ -77,8 +77,8 @@ func toPOResponse(po entity.PurchaseOrder) response.POResponse {
 
 // validateVendorBelongsToCompany — FIX [FRAUD-02]
 // Pastikan vendor milik company yang sedang aktif sebelum membuat PO/Bill.
-func (s *PurchaseOrderService) validateVendorBelongsToCompany(vendorId, companyId uuid.UUID) error {
-	_, err := s.vendorRepo.FindById(companyId, vendorId)
+func (s *PurchaseOrderService) validateVendorBelongsToCompany(vendorId, companyID uuid.UUID) error {
+	_, err := s.vendorRepo.FindById(companyID, vendorId)
 	if err != nil {
 		return errors.New("vendor not found or does not belong to the active company")
 	}
@@ -100,13 +100,13 @@ func validateItemDiscounts(items []itemInput) error {
 	return nil
 }
 
-func (s *PurchaseOrderService) Create(companyId uuid.UUID, req request.POCreateRequest, callerId uuid.UUID) (response.POResponse, error) {
+func (s *PurchaseOrderService) Create(companyID uuid.UUID, req request.POCreateRequest, callerId uuid.UUID) (response.POResponse, error) {
 	if err := s.validate.Struct(req); err != nil {
 		return response.POResponse{}, err
 	}
 
 	// FIX [FRAUD-02]: Validasi vendor milik company
-	if err := s.validateVendorBelongsToCompany(req.VendorId, companyId); err != nil {
+	if err := s.validateVendorBelongsToCompany(req.VendorId, companyID); err != nil {
 		return response.POResponse{}, err
 	}
 
@@ -136,10 +136,10 @@ func (s *PurchaseOrderService) Create(companyId uuid.UUID, req request.POCreateR
 		return response.POResponse{}, err
 	}
 
-	cfg, _ := s.cfgRepo.FindByCompanyId(companyId)
+	cfg, _ := s.cfgRepo.FindByCompanyId(companyID)
 	totals := calculateTotals(inputs, cfg.TaxRate, cfg.EnableTax)
 
-	poNumber, err := s.repo.GeneratePONumber(companyId, cfg.PurchaseOrderPrefix)
+	poNumber, err := s.repo.GeneratePONumber(companyID, cfg.PurchaseOrderPrefix)
 	if err != nil {
 		return response.POResponse{}, err
 	}
@@ -154,7 +154,7 @@ func (s *PurchaseOrderService) Create(companyId uuid.UUID, req request.POCreateR
 	}
 
 	po := entity.PurchaseOrder{
-		CompanyId: companyId, PONumber: poNumber,
+		CompanyId: companyID, PONumber: poNumber,
 		VendorId: req.VendorId, PODate: poDate, ExpiryDate: expiryDate,
 		Subtotal: totals.Subtotal, DiscountTotal: totals.DiscountTotal,
 		Dpp: totals.Dpp, TaxRate: cfg.TaxRate, TaxAmount: totals.TaxAmount,
@@ -168,8 +168,8 @@ func (s *PurchaseOrderService) Create(companyId uuid.UUID, req request.POCreateR
 	return toPOResponse(created), nil
 }
 
-func (s *PurchaseOrderService) FindAllTyped(companyId uuid.UUID, qp *util.QueryParams) ([]response.POResponse, int, error) {
-	entities, totalCount, err := s.repo.FindAll(companyId, qp)
+func (s *PurchaseOrderService) FindAllTyped(companyID uuid.UUID, qp *util.QueryParams) ([]response.POResponse, int, error) {
+	entities, totalCount, err := s.repo.FindAll(companyID, qp)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -180,16 +180,16 @@ func (s *PurchaseOrderService) FindAllTyped(companyId uuid.UUID, qp *util.QueryP
 	return resps, totalCount, nil
 }
 
-func (s *PurchaseOrderService) FindById(companyId, id uuid.UUID) (response.POResponse, error) {
-	po, err := s.repo.FindById(companyId, id)
+func (s *PurchaseOrderService) FindById(companyID, id uuid.UUID) (response.POResponse, error) {
+	po, err := s.repo.FindById(companyID, id)
 	if err != nil {
 		return response.POResponse{}, err
 	}
 	return toPOResponse(po), nil
 }
 
-func (s *PurchaseOrderService) Update(companyId uuid.UUID, req request.POUpdateRequest) (response.POResponse, error) {
-	existing, err := s.repo.FindById(companyId, req.Id)
+func (s *PurchaseOrderService) Update(companyID uuid.UUID, req request.POUpdateRequest) (response.POResponse, error) {
+	existing, err := s.repo.FindById(companyID, req.Id)
 	if err != nil {
 		return response.POResponse{}, err
 	}
@@ -201,7 +201,7 @@ func (s *PurchaseOrderService) Update(companyId uuid.UUID, req request.POUpdateR
 	}
 
 	// FIX [FRAUD-02]: Validasi vendor milik company
-	if err := s.validateVendorBelongsToCompany(req.VendorId, companyId); err != nil {
+	if err := s.validateVendorBelongsToCompany(req.VendorId, companyID); err != nil {
 		return response.POResponse{}, err
 	}
 
@@ -231,7 +231,7 @@ func (s *PurchaseOrderService) Update(companyId uuid.UUID, req request.POUpdateR
 		return response.POResponse{}, err
 	}
 
-	cfg, _ := s.cfgRepo.FindByCompanyId(companyId)
+	cfg, _ := s.cfgRepo.FindByCompanyId(companyID)
 	totals := calculateTotals(inputs, cfg.TaxRate, cfg.EnableTax)
 
 	items := make([]entity.PurchaseOrderItem, len(req.Items))
@@ -261,54 +261,54 @@ func (s *PurchaseOrderService) Update(companyId uuid.UUID, req request.POUpdateR
 	return toPOResponse(updated), nil
 }
 
-func (s *PurchaseOrderService) Delete(companyId, id uuid.UUID) error {
-	existing, err := s.repo.FindById(companyId, id)
+func (s *PurchaseOrderService) Delete(companyID, id uuid.UUID) error {
+	existing, err := s.repo.FindById(companyID, id)
 	if err != nil {
 		return err
 	}
 	if existing.Status != entity.POStatusDraft {
 		return errors.New("only draft purchase orders can be deleted")
 	}
-	return s.repo.Delete(companyId, id)
+	return s.repo.Delete(companyID, id)
 }
 
-func (s *PurchaseOrderService) Send(companyId, id uuid.UUID) error {
-	existing, err := s.repo.FindById(companyId, id)
+func (s *PurchaseOrderService) Send(companyID, id uuid.UUID) error {
+	existing, err := s.repo.FindById(companyID, id)
 	if err != nil {
 		return err
 	}
 	if existing.Status != entity.POStatusDraft {
 		return errors.New("only draft purchase orders can be sent")
 	}
-	return s.repo.UpdateStatus(companyId, id, entity.POStatusSent)
+	return s.repo.UpdateStatus(companyID, id, entity.POStatusSent)
 }
 
-func (s *PurchaseOrderService) Approve(companyId, id uuid.UUID) error {
-	existing, err := s.repo.FindById(companyId, id)
+func (s *PurchaseOrderService) Approve(companyID, id uuid.UUID) error {
+	existing, err := s.repo.FindById(companyID, id)
 	if err != nil {
 		return err
 	}
 	if existing.Status != entity.POStatusSent {
 		return errors.New("only sent purchase orders can be approved")
 	}
-	return s.repo.UpdateStatus(companyId, id, entity.POStatusApproved)
+	return s.repo.UpdateStatus(companyID, id, entity.POStatusApproved)
 }
 
 // FIX [BUG-11]: Decline hanya valid dari status sent atau approved
-func (s *PurchaseOrderService) Decline(companyId, id uuid.UUID) error {
-	existing, err := s.repo.FindById(companyId, id)
+func (s *PurchaseOrderService) Decline(companyID, id uuid.UUID) error {
+	existing, err := s.repo.FindById(companyID, id)
 	if err != nil {
 		return err
 	}
 	if existing.Status != entity.POStatusSent && existing.Status != entity.POStatusApproved {
 		return errors.New("only sent or approved purchase orders can be declined")
 	}
-	return s.repo.UpdateStatus(companyId, id, entity.POStatusDeclined)
+	return s.repo.UpdateStatus(companyID, id, entity.POStatusDeclined)
 }
 
 // SelectDropdownList — dropdown PO dengan status approved (belum converted) untuk form Bills
-func (s *PurchaseOrderService) SelectDropdownList(companyId uuid.UUID, qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error) {
-	entities, total, err := s.repo.SelectDropdown(companyId, qp)
+func (s *PurchaseOrderService) SelectDropdownList(companyID uuid.UUID, qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error) {
+	entities, total, err := s.repo.SelectDropdown(companyID, qp)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -325,24 +325,24 @@ func (s *PurchaseOrderService) SelectDropdownList(companyId uuid.UUID, qp *util.
 // ─── Bill Service ─────────────────────────────────────────────────────────────
 
 type IBillService interface {
-	Create(companyId uuid.UUID, req request.BillCreateRequest, callerId uuid.UUID) (response.BillResponse, error)
-	CreateFromPO(companyId, poId uuid.UUID, callerId uuid.UUID) (response.BillResponse, error)
-	FindAllTyped(companyId uuid.UUID, qp *util.QueryParams) ([]response.BillResponse, int, error)
-	FindById(companyId, id uuid.UUID) (response.BillResponse, error)
-	Update(companyId uuid.UUID, req request.BillUpdateRequest) (response.BillResponse, error)
-	Delete(companyId, id uuid.UUID) error
-	Confirm(companyId, id uuid.UUID, callerId uuid.UUID) (response.BillResponse, error)
-	AddPayment(companyId, id uuid.UUID, req request.BillPaymentRequest, callerId uuid.UUID) (response.BillResponse, error)
-	Cancel(companyId, id uuid.UUID, callerId uuid.UUID) (response.BillResponse, error)
-	SelectDropdownList(companyId uuid.UUID, qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error)
+	Create(companyID uuid.UUID, req request.BillCreateRequest, callerId uuid.UUID) (response.BillResponse, error)
+	CreateFromPO(companyID, poId uuid.UUID, callerId uuid.UUID) (response.BillResponse, error)
+	FindAllTyped(companyID uuid.UUID, qp *util.QueryParams) ([]response.BillResponse, int, error)
+	FindById(companyID, id uuid.UUID) (response.BillResponse, error)
+	Update(companyID uuid.UUID, req request.BillUpdateRequest) (response.BillResponse, error)
+	Delete(companyID, id uuid.UUID) error
+	Confirm(companyID, id uuid.UUID, callerId uuid.UUID) (response.BillResponse, error)
+	AddPayment(companyID, id uuid.UUID, req request.BillPaymentRequest, callerId uuid.UUID) (response.BillResponse, error)
+	Cancel(companyID, id uuid.UUID, callerId uuid.UUID) (response.BillResponse, error)
+	SelectDropdownList(companyID uuid.UUID, qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error)
 }
 
 type BillService struct {
-	billRepo   repository.IBillRepository
-	poRepo     repository.IPurchaseOrderRepository
-	cfgRepo    repository.ICompanyConfigurationRepository
+	billRepo repository.IBillRepository
+	poRepo   repository.IPurchaseOrderRepository
+	cfgRepo  repository.ICompanyConfigurationRepository
 	// FIX [FRAUD-02/03]: vendorRepo dan coaRepo untuk validasi kepemilikan
-	vendorRepo repository.IVendorRepository
+	vendorRepo  repository.IVendorRepository
 	journalRepo repository.IJournalEntryRepository
 	fiscalRepo  repository.IFiscalPeriodRepository
 	validate    *validator.Validate
@@ -387,7 +387,7 @@ func toBillPaymentResponse(p entity.BillPayment) response.BillPaymentResponse {
 		Amount: p.Amount, PaymentDate: p.PaymentDate,
 		PaymentAccountId: p.PaymentAccountId,
 		JournalEntryId:   p.JournalEntryId,
-		Notes: p.Notes, CreatedBy: p.CreatedBy, CreatedAt: p.CreatedAt,
+		Notes:            p.Notes, CreatedBy: p.CreatedBy, CreatedAt: p.CreatedAt,
 	}
 	if p.PaymentAccount != nil {
 		r.PaymentAccountName = p.PaymentAccount.Name
@@ -415,11 +415,11 @@ func toBillResponse(b entity.Bill) response.BillResponse {
 		BillDate: b.BillDate, DueDate: b.DueDate,
 		Subtotal: b.Subtotal, DiscountTotal: b.DiscountTotal,
 		Dpp: b.Dpp, TaxRate: b.TaxRate, TaxAmount: b.TaxAmount,
-		GrandTotal:    b.GrandTotal,
-		AmountPaid:    b.AmountPaid,
-		AmountDue:     b.AmountDue,
-		BillStatus:    string(b.BillStatus),
-		PaymentStatus: string(b.PaymentStatus),
+		GrandTotal:     b.GrandTotal,
+		AmountPaid:     b.AmountPaid,
+		AmountDue:      b.AmountDue,
+		BillStatus:     string(b.BillStatus),
+		PaymentStatus:  string(b.PaymentStatus),
 		Notes:          b.Notes,
 		JournalEntryId: b.JournalEntryId,
 		CreatedBy:      b.CreatedBy,
@@ -431,15 +431,15 @@ func toBillResponse(b entity.Bill) response.BillResponse {
 }
 
 // validateVendorForBill — FIX [FRAUD-02]: validasi vendor milik company
-func (s *BillService) validateVendorForBill(vendorId, companyId uuid.UUID) error {
-	_, err := s.vendorRepo.FindById(companyId, vendorId)
+func (s *BillService) validateVendorForBill(vendorId, companyID uuid.UUID) error {
+	_, err := s.vendorRepo.FindById(companyID, vendorId)
 	if err != nil {
 		return errors.New("vendor not found or does not belong to the active company")
 	}
 	return nil
 }
 
-func (s *BillService) Create(companyId uuid.UUID, req request.BillCreateRequest, callerId uuid.UUID) (response.BillResponse, error) {
+func (s *BillService) Create(companyID uuid.UUID, req request.BillCreateRequest, callerId uuid.UUID) (response.BillResponse, error) {
 	if err := s.validate.Struct(req); err != nil {
 		return response.BillResponse{}, err
 	}
@@ -449,7 +449,7 @@ func (s *BillService) Create(companyId uuid.UUID, req request.BillCreateRequest,
 		return response.BillResponse{}, errors.New("invalid vendor_id")
 	}
 	// FIX [FRAUD-02]: Validasi vendor milik company
-	if err := s.validateVendorForBill(vendorId, companyId); err != nil {
+	if err := s.validateVendorForBill(vendorId, companyID); err != nil {
 		return response.BillResponse{}, err
 	}
 
@@ -475,10 +475,10 @@ func (s *BillService) Create(companyId uuid.UUID, req request.BillCreateRequest,
 		return response.BillResponse{}, err
 	}
 
-	cfg, _ := s.cfgRepo.FindByCompanyId(companyId)
+	cfg, _ := s.cfgRepo.FindByCompanyId(companyID)
 	totals := calculateTotals(inputs, cfg.TaxRate, cfg.EnableTax)
 
-	billNumber, err := s.billRepo.GenerateBillNumber(companyId, cfg.BillPrefix)
+	billNumber, err := s.billRepo.GenerateBillNumber(companyID, cfg.BillPrefix)
 	if err != nil {
 		return response.BillResponse{}, err
 	}
@@ -494,7 +494,7 @@ func (s *BillService) Create(companyId uuid.UUID, req request.BillCreateRequest,
 	}
 
 	bill := entity.Bill{
-		CompanyId: companyId, BillNumber: billNumber,
+		CompanyId: companyID, BillNumber: billNumber,
 		VendorId: vendorId, BillDate: billDate, DueDate: dueDate,
 		Subtotal: totals.Subtotal, DiscountTotal: totals.DiscountTotal,
 		Dpp: totals.Dpp, TaxRate: cfg.TaxRate, TaxAmount: totals.TaxAmount,
@@ -514,8 +514,8 @@ func (s *BillService) Create(companyId uuid.UUID, req request.BillCreateRequest,
 // FIX [FRAUD-01]: CreateFromPO hanya boleh dari status approved
 // FIX [BUG-05]: PO status update di dalam transaction agar tidak orphan
 // FIX [BUG-10]: Due date dihitung dari tanggal bill (time.Now()), bukan PODate
-func (s *BillService) CreateFromPO(companyId, poId uuid.UUID, callerId uuid.UUID) (response.BillResponse, error) {
-	po, err := s.poRepo.FindById(companyId, poId)
+func (s *BillService) CreateFromPO(companyID, poId uuid.UUID, callerId uuid.UUID) (response.BillResponse, error) {
+	po, err := s.poRepo.FindById(companyID, poId)
 	if err != nil {
 		return response.BillResponse{}, err
 	}
@@ -525,8 +525,8 @@ func (s *BillService) CreateFromPO(companyId, poId uuid.UUID, callerId uuid.UUID
 		return response.BillResponse{}, errors.New("only approved purchase orders can be converted to bill")
 	}
 
-	cfg, _ := s.cfgRepo.FindByCompanyId(companyId)
-	billNumber, err := s.billRepo.GenerateBillNumber(companyId, cfg.BillPrefix)
+	cfg, _ := s.cfgRepo.FindByCompanyId(companyID)
+	billNumber, err := s.billRepo.GenerateBillNumber(companyID, cfg.BillPrefix)
 	if err != nil {
 		return response.BillResponse{}, err
 	}
@@ -544,7 +544,7 @@ func (s *BillService) CreateFromPO(companyId, poId uuid.UUID, callerId uuid.UUID
 	}
 
 	bill := entity.Bill{
-		CompanyId: companyId, BillNumber: billNumber,
+		CompanyId: companyID, BillNumber: billNumber,
 		PurchaseOrderId: &poId, VendorId: po.VendorId,
 		BillDate: billDate, DueDate: dueDate,
 		Subtotal: po.Subtotal, DiscountTotal: po.DiscountTotal,
@@ -552,7 +552,7 @@ func (s *BillService) CreateFromPO(companyId, poId uuid.UUID, callerId uuid.UUID
 		GrandTotal:    po.GrandTotal,
 		BillStatus:    entity.BillStatusDraft,
 		PaymentStatus: entity.BillPaymentUnpaid,
-		Notes: po.Notes, CreatedBy: callerId,
+		Notes:         po.Notes, CreatedBy: callerId,
 	}
 
 	created, err := s.billRepo.Create(bill, billItems)
@@ -566,15 +566,15 @@ func (s *BillService) CreateFromPO(companyId, poId uuid.UUID, callerId uuid.UUID
 	po.ConvertedBillId = &convertedId
 	if err := s.poRepo.Save(po); err != nil {
 		// Jika PO tidak bisa di-update, rollback dengan menghapus bill yang baru dibuat
-		_ = s.billRepo.Delete(companyId, created.Id)
+		_ = s.billRepo.Delete(companyID, created.Id)
 		return response.BillResponse{}, fmt.Errorf("failed to update purchase order status: %w", err)
 	}
 
 	return toBillResponse(created), nil
 }
 
-func (s *BillService) FindAllTyped(companyId uuid.UUID, qp *util.QueryParams) ([]response.BillResponse, int, error) {
-	entities, totalCount, err := s.billRepo.FindAll(companyId, qp)
+func (s *BillService) FindAllTyped(companyID uuid.UUID, qp *util.QueryParams) ([]response.BillResponse, int, error) {
+	entities, totalCount, err := s.billRepo.FindAll(companyID, qp)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -585,16 +585,16 @@ func (s *BillService) FindAllTyped(companyId uuid.UUID, qp *util.QueryParams) ([
 	return resps, totalCount, nil
 }
 
-func (s *BillService) FindById(companyId, id uuid.UUID) (response.BillResponse, error) {
-	bill, err := s.billRepo.FindById(companyId, id)
+func (s *BillService) FindById(companyID, id uuid.UUID) (response.BillResponse, error) {
+	bill, err := s.billRepo.FindById(companyID, id)
 	if err != nil {
 		return response.BillResponse{}, err
 	}
 	return toBillResponse(bill), nil
 }
 
-func (s *BillService) Update(companyId uuid.UUID, req request.BillUpdateRequest) (response.BillResponse, error) {
-	existing, err := s.billRepo.FindById(companyId, req.Id)
+func (s *BillService) Update(companyID uuid.UUID, req request.BillUpdateRequest) (response.BillResponse, error) {
+	existing, err := s.billRepo.FindById(companyID, req.Id)
 	if err != nil {
 		return response.BillResponse{}, err
 	}
@@ -610,7 +610,7 @@ func (s *BillService) Update(companyId uuid.UUID, req request.BillUpdateRequest)
 		return response.BillResponse{}, errors.New("invalid vendor_id")
 	}
 	// FIX [FRAUD-02]: Validasi vendor milik company
-	if err := s.validateVendorForBill(vendorId, companyId); err != nil {
+	if err := s.validateVendorForBill(vendorId, companyID); err != nil {
 		return response.BillResponse{}, err
 	}
 
@@ -636,7 +636,7 @@ func (s *BillService) Update(companyId uuid.UUID, req request.BillUpdateRequest)
 		return response.BillResponse{}, err
 	}
 
-	cfg, _ := s.cfgRepo.FindByCompanyId(companyId)
+	cfg, _ := s.cfgRepo.FindByCompanyId(companyID)
 	totals := calculateTotals(inputs, cfg.TaxRate, cfg.EnableTax)
 
 	items := make([]entity.BillItem, len(req.Items))
@@ -668,8 +668,8 @@ func (s *BillService) Update(companyId uuid.UUID, req request.BillUpdateRequest)
 }
 
 // FIX [BUG-04]: Delete bill — bungkus reset PO dalam transaksi agar tidak orphan
-func (s *BillService) Delete(companyId, id uuid.UUID) error {
-	existing, err := s.billRepo.FindById(companyId, id)
+func (s *BillService) Delete(companyID, id uuid.UUID) error {
+	existing, err := s.billRepo.FindById(companyID, id)
 	if err != nil {
 		return err
 	}
@@ -681,7 +681,7 @@ func (s *BillService) Delete(companyId, id uuid.UUID) error {
 	// Lakukan dalam urutan: reset PO dulu → hapus bill
 	// Jika hapus bill gagal, PO status sudah ter-reset (acceptable tradeoff vs orphan bill)
 	if existing.PurchaseOrderId != nil {
-		po, err := s.poRepo.FindById(companyId, *existing.PurchaseOrderId)
+		po, err := s.poRepo.FindById(companyID, *existing.PurchaseOrderId)
 		if err == nil {
 			po.Status = entity.POStatusApproved
 			po.ConvertedBillId = nil
@@ -691,13 +691,13 @@ func (s *BillService) Delete(companyId, id uuid.UUID) error {
 		}
 	}
 
-	return s.billRepo.Delete(companyId, id)
+	return s.billRepo.Delete(companyID, id)
 }
 
 // Confirm — Draft → Confirmed. Creates expense Journal Entry (auto-posted).
 // FIX [BUG-01]: Semua operasi dalam satu database transaction agar tidak ada journal orphan
-func (s *BillService) Confirm(companyId, id uuid.UUID, callerId uuid.UUID) (response.BillResponse, error) {
-	bill, err := s.billRepo.FindById(companyId, id)
+func (s *BillService) Confirm(companyID, id uuid.UUID, callerId uuid.UUID) (response.BillResponse, error) {
+	bill, err := s.billRepo.FindById(companyID, id)
 	if err != nil {
 		return response.BillResponse{}, err
 	}
@@ -705,7 +705,7 @@ func (s *BillService) Confirm(companyId, id uuid.UUID, callerId uuid.UUID) (resp
 		return response.BillResponse{}, errors.New("only draft bills can be confirmed")
 	}
 
-	cfg, err := s.cfgRepo.FindByCompanyId(companyId)
+	cfg, err := s.cfgRepo.FindByCompanyId(companyID)
 	if err != nil {
 		return response.BillResponse{}, err
 	}
@@ -726,12 +726,12 @@ func (s *BillService) Confirm(companyId, id uuid.UUID, callerId uuid.UUID) (resp
 		return response.BillResponse{}, errors.New("tax receivable account not configured — set it in Company → Configuration")
 	}
 
-	period, err := s.fiscalRepo.FindByDate(companyId, bill.BillDate)
+	period, err := s.fiscalRepo.FindByDate(companyID, bill.BillDate)
 	if err != nil {
 		return response.BillResponse{}, errors.New("no open fiscal period for bill date: " + err.Error())
 	}
 
-	journalNumber, err := s.journalRepo.GenerateJournalNumber(companyId, entity.JournalTypeExpense)
+	journalNumber, err := s.journalRepo.GenerateJournalNumber(companyID, entity.JournalTypeExpense)
 	if err != nil {
 		return response.BillResponse{}, err
 	}
@@ -769,7 +769,7 @@ func (s *BillService) Confirm(companyId, id uuid.UUID, callerId uuid.UUID) (resp
 
 	periodId := period.Id
 	journalEntry := entity.JournalEntry{
-		CompanyId:      companyId,
+		CompanyId:      companyID,
 		FiscalPeriodId: &periodId,
 		JournalNumber:  journalNumber,
 		Type:           entity.JournalTypeExpense,
@@ -817,7 +817,7 @@ func (s *BillService) Confirm(companyId, id uuid.UUID, callerId uuid.UUID) (resp
 // FIX [BUG-02]: Bungkus dalam transaksi (journal + payment + bill.Save)
 // FIX [BUG-06]: Gunakan SELECT FOR UPDATE untuk mencegah race condition / double payment
 // FIX [FRAUD-03]: Validasi payment_account_id milik company
-func (s *BillService) AddPayment(companyId, id uuid.UUID, req request.BillPaymentRequest, callerId uuid.UUID) (response.BillResponse, error) {
+func (s *BillService) AddPayment(companyID, id uuid.UUID, req request.BillPaymentRequest, callerId uuid.UUID) (response.BillResponse, error) {
 	if err := s.validate.Struct(req); err != nil {
 		return response.BillResponse{}, err
 	}
@@ -831,12 +831,12 @@ func (s *BillService) AddPayment(companyId, id uuid.UUID, req request.BillPaymen
 		return response.BillResponse{}, err
 	}
 
-	cfg, _ := s.cfgRepo.FindByCompanyId(companyId)
+	cfg, _ := s.cfgRepo.FindByCompanyId(companyID)
 	if cfg.ApAccountId == nil {
 		return response.BillResponse{}, errors.New("accounts payable account not configured")
 	}
 
-	period, err := s.fiscalRepo.FindByDate(companyId, paymentDate)
+	period, err := s.fiscalRepo.FindByDate(companyID, paymentDate)
 	if err != nil {
 		return response.BillResponse{}, errors.New("no open fiscal period for payment date: " + err.Error())
 	}
@@ -851,7 +851,7 @@ func (s *BillService) AddPayment(companyId, id uuid.UUID, req request.BillPaymen
 	}()
 
 	// FIX [BUG-06]: FindByIdForUpdate menggunakan SELECT ... FOR UPDATE
-	bill, err := s.billRepo.FindByIdForUpdate(tx, companyId, id)
+	bill, err := s.billRepo.FindByIdForUpdate(tx, companyID, id)
 	if err != nil {
 		tx.Rollback()
 		return response.BillResponse{}, err
@@ -869,7 +869,7 @@ func (s *BillService) AddPayment(companyId, id uuid.UUID, req request.BillPaymen
 		return response.BillResponse{}, errors.New("payment amount exceeds amount due")
 	}
 
-	journalNumber, err := s.journalRepo.GenerateJournalNumber(companyId, entity.JournalTypeExpense)
+	journalNumber, err := s.journalRepo.GenerateJournalNumber(companyID, entity.JournalTypeExpense)
 	if err != nil {
 		tx.Rollback()
 		return response.BillResponse{}, err
@@ -894,7 +894,7 @@ func (s *BillService) AddPayment(companyId, id uuid.UUID, req request.BillPaymen
 
 	periodId := period.Id
 	journalEntry := entity.JournalEntry{
-		CompanyId:      companyId,
+		CompanyId:      companyID,
 		FiscalPeriodId: &periodId,
 		JournalNumber:  journalNumber,
 		Type:           entity.JournalTypeExpense,
@@ -945,7 +945,7 @@ func (s *BillService) AddPayment(companyId, id uuid.UUID, req request.BillPaymen
 		return response.BillResponse{}, fmt.Errorf("failed to commit payment: %w", err)
 	}
 
-	fresh, err := s.billRepo.FindById(companyId, id)
+	fresh, err := s.billRepo.FindById(companyID, id)
 	if err != nil {
 		return response.BillResponse{}, err
 	}
@@ -956,8 +956,8 @@ func (s *BillService) AddPayment(companyId, id uuid.UUID, req request.BillPaymen
 // FIX [BUG-03]: Error handling pada journalRepo.Create dan billRepo.Save
 // FIX [BUG-09]: Hitung actual credit total agar jurnal balance
 // FIX [BUG-12]: Reset PaymentStatus ke unpaid saat cancel
-func (s *BillService) Cancel(companyId, id uuid.UUID, callerId uuid.UUID) (response.BillResponse, error) {
-	bill, err := s.billRepo.FindById(companyId, id)
+func (s *BillService) Cancel(companyID, id uuid.UUID, callerId uuid.UUID) (response.BillResponse, error) {
+	bill, err := s.billRepo.FindById(companyID, id)
 	if err != nil {
 		return response.BillResponse{}, err
 	}
@@ -969,17 +969,17 @@ func (s *BillService) Cancel(companyId, id uuid.UUID, callerId uuid.UUID) (respo
 	}
 
 	if bill.BillStatus == entity.BillStatusConfirmed && bill.JournalEntryId != nil {
-		cfg, _ := s.cfgRepo.FindByCompanyId(companyId)
+		cfg, _ := s.cfgRepo.FindByCompanyId(companyID)
 		if cfg.ApAccountId == nil {
 			return response.BillResponse{}, errors.New("accounts payable account not configured for reversal")
 		}
 
-		period, err := s.fiscalRepo.FindByDate(companyId, time.Now())
+		period, err := s.fiscalRepo.FindByDate(companyID, time.Now())
 		if err != nil {
 			return response.BillResponse{}, errors.New("no open fiscal period for reversal: " + err.Error())
 		}
 
-		journalNumber, err := s.journalRepo.GenerateJournalNumber(companyId, entity.JournalTypeExpense)
+		journalNumber, err := s.journalRepo.GenerateJournalNumber(companyID, entity.JournalTypeExpense)
 		if err != nil {
 			return response.BillResponse{}, err
 		}
@@ -1037,7 +1037,7 @@ func (s *BillService) Cancel(companyId, id uuid.UUID, callerId uuid.UUID) (respo
 
 		periodId := period.Id
 		reversal := entity.JournalEntry{
-			CompanyId:      companyId,
+			CompanyId:      companyID,
 			FiscalPeriodId: &periodId,
 			JournalNumber:  journalNumber,
 			Type:           entity.JournalTypeExpense,
@@ -1075,7 +1075,7 @@ func (s *BillService) Cancel(companyId, id uuid.UUID, callerId uuid.UUID) (respo
 
 		// Reset PO jika perlu (di luar transaksi utama — best effort)
 		if bill.PurchaseOrderId != nil {
-			po, err := s.poRepo.FindById(companyId, *bill.PurchaseOrderId)
+			po, err := s.poRepo.FindById(companyID, *bill.PurchaseOrderId)
 			if err == nil {
 				po.Status = entity.POStatusApproved
 				po.ConvertedBillId = nil
@@ -1099,7 +1099,7 @@ func (s *BillService) Cancel(companyId, id uuid.UUID, callerId uuid.UUID) (respo
 	}
 
 	if bill.PurchaseOrderId != nil {
-		po, err := s.poRepo.FindById(companyId, *bill.PurchaseOrderId)
+		po, err := s.poRepo.FindById(companyID, *bill.PurchaseOrderId)
 		if err == nil {
 			po.Status = entity.POStatusApproved
 			po.ConvertedBillId = nil
@@ -1111,8 +1111,8 @@ func (s *BillService) Cancel(companyId, id uuid.UUID, callerId uuid.UUID) (respo
 }
 
 // SelectDropdownList — dropdown bills untuk referensi/laporan
-func (s *BillService) SelectDropdownList(companyId uuid.UUID, qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error) {
-	entities, total, err := s.billRepo.FindAll(companyId, qp)
+func (s *BillService) SelectDropdownList(companyID uuid.UUID, qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error) {
+	entities, total, err := s.billRepo.FindAll(companyID, qp)
 	if err != nil {
 		return nil, 0, err
 	}

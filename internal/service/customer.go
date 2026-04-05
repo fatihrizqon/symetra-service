@@ -13,12 +13,12 @@ import (
 )
 
 type ICustomerService interface {
-	Create(companyId uuid.UUID, req request.CustomerCreateRequest) (response.CustomerResponse, error)
-	FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]response.CustomerResponse, int, error)
-	FindById(companyId, id uuid.UUID) (response.CustomerResponse, error)
-	Update(companyId uuid.UUID, req request.CustomerUpdateRequest) (response.CustomerResponse, error)
-	Delete(companyId, id uuid.UUID) error
-	SelectDropdownList(companyId uuid.UUID, qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error)
+	Create(companyID uuid.UUID, req request.CustomerCreateRequest) (response.CustomerResponse, error)
+	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]response.CustomerResponse, int, error)
+	FindById(companyID, id uuid.UUID) (response.CustomerResponse, error)
+	Update(companyID uuid.UUID, req request.CustomerUpdateRequest) (response.CustomerResponse, error)
+	Delete(companyID, id uuid.UUID) error
+	SelectDropdownList(companyID uuid.UUID, qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error)
 }
 
 type CustomerService struct {
@@ -50,12 +50,12 @@ func toCustomerResponse(c entity.Customer) response.CustomerResponse {
 	return r
 }
 
-func (s *CustomerService) Create(companyId uuid.UUID, req request.CustomerCreateRequest) (response.CustomerResponse, error) {
+func (s *CustomerService) Create(companyID uuid.UUID, req request.CustomerCreateRequest) (response.CustomerResponse, error) {
 	if err := s.validate.Struct(req); err != nil {
 		return response.CustomerResponse{}, err
 	}
 	c := entity.Customer{
-		CompanyId: companyId,
+		CompanyId: companyID,
 		Code:      req.Code,
 		Name:      req.Name,
 		Email:     req.Email,
@@ -71,8 +71,8 @@ func (s *CustomerService) Create(companyId uuid.UUID, req request.CustomerCreate
 	return toCustomerResponse(created), nil
 }
 
-func (s *CustomerService) FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]response.CustomerResponse, int, error) {
-	entities, total, err := s.repo.FindAll(companyId, qp)
+func (s *CustomerService) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]response.CustomerResponse, int, error) {
+	entities, total, err := s.repo.FindAll(companyID, qp)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -86,16 +86,16 @@ func (s *CustomerService) FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]
 	return resps, total, nil
 }
 
-func (s *CustomerService) FindById(companyId, id uuid.UUID) (response.CustomerResponse, error) {
-	c, err := s.repo.FindById(companyId, id)
+func (s *CustomerService) FindById(companyID, id uuid.UUID) (response.CustomerResponse, error) {
+	c, err := s.repo.FindById(companyID, id)
 	if err != nil {
 		return response.CustomerResponse{}, errors.New("customer not found")
 	}
 	return toCustomerResponse(c), nil
 }
 
-func (s *CustomerService) Update(companyId uuid.UUID, req request.CustomerUpdateRequest) (response.CustomerResponse, error) {
-	c, err := s.repo.FindById(companyId, req.Id)
+func (s *CustomerService) Update(companyID uuid.UUID, req request.CustomerUpdateRequest) (response.CustomerResponse, error) {
+	c, err := s.repo.FindById(companyID, req.Id)
 	if err != nil {
 		return response.CustomerResponse{}, errors.New("customer not found")
 	}
@@ -111,23 +111,23 @@ func (s *CustomerService) Update(companyId uuid.UUID, req request.CustomerUpdate
 	if err := s.repo.Update(c); err != nil {
 		return response.CustomerResponse{}, err
 	}
-	updated, err := s.repo.FindById(companyId, req.Id)
+	updated, err := s.repo.FindById(companyID, req.Id)
 	if err != nil {
 		return response.CustomerResponse{}, err
 	}
 	return toCustomerResponse(updated), nil
 }
 
-func (s *CustomerService) Delete(companyId, id uuid.UUID) error {
-	_, err := s.repo.FindById(companyId, id)
+func (s *CustomerService) Delete(companyID, id uuid.UUID) error {
+	_, err := s.repo.FindById(companyID, id)
 	if err != nil {
 		return errors.New("customer not found")
 	}
-	return s.repo.Delete(companyId, id)
+	return s.repo.Delete(companyID, id)
 }
 
-func (s *CustomerService) SelectDropdownList(companyId uuid.UUID, qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error) {
-	entities, total, err := s.repo.FindAll(companyId, qp)
+func (s *CustomerService) SelectDropdownList(companyID uuid.UUID, qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error) {
+	entities, total, err := s.repo.FindAll(companyID, qp)
 	if err != nil {
 		return nil, 0, err
 	}

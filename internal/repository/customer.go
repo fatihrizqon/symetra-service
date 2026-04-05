@@ -18,10 +18,10 @@ var customerSortColumns = map[string]string{
 
 type ICustomerRepository interface {
 	Create(c entity.Customer) (entity.Customer, error)
-	FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]entity.Customer, int, error)
-	FindById(companyId, id uuid.UUID) (entity.Customer, error)
+	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Customer, int, error)
+	FindById(companyID, id uuid.UUID) (entity.Customer, error)
 	Update(c entity.Customer) error
-	Delete(companyId, id uuid.UUID) error
+	Delete(companyID, id uuid.UUID) error
 }
 
 type CustomerRepository struct {
@@ -40,12 +40,12 @@ func (r *CustomerRepository) Create(c entity.Customer) (entity.Customer, error) 
 	return r.FindById(c.CompanyId, c.Id)
 }
 
-func (r *CustomerRepository) FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]entity.Customer, int, error) {
+func (r *CustomerRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Customer, int, error) {
 	var entities []entity.Customer
 	var totalCount int64
 
 	query := r.Db.Preload("COA").Model(&entity.Customer{}).
-		Where("customers.company_id = ?", companyId)
+		Where("customers.company_id = ?", companyID)
 	query = util.ApplySearch(query, qp)
 	query = entity.Customer{}.ApplyFilters(query, qp.Filters)
 
@@ -65,10 +65,10 @@ func (r *CustomerRepository) FindAll(companyId uuid.UUID, qp *util.QueryParams) 
 	return entities, int(totalCount), nil
 }
 
-func (r *CustomerRepository) FindById(companyId, id uuid.UUID) (entity.Customer, error) {
+func (r *CustomerRepository) FindById(companyID, id uuid.UUID) (entity.Customer, error) {
 	var c entity.Customer
 	if err := r.Db.Preload("COA").
-		Where("id = ? AND company_id = ?", id, companyId).
+		Where("id = ? AND company_id = ?", id, companyID).
 		First(&c).Error; err != nil {
 		return c, err
 	}
@@ -79,7 +79,7 @@ func (r *CustomerRepository) Update(c entity.Customer) error {
 	return r.Db.Save(&c).Error
 }
 
-func (r *CustomerRepository) Delete(companyId, id uuid.UUID) error {
-	return r.Db.Where("id = ? AND company_id = ?", id, companyId).
+func (r *CustomerRepository) Delete(companyID, id uuid.UUID) error {
+	return r.Db.Where("id = ? AND company_id = ?", id, companyID).
 		Delete(&entity.Customer{}).Error
 }

@@ -38,7 +38,7 @@ func getCallerID(ctx *fiber.Ctx) (uuid.UUID, error) {
 // @Success 201 {object} response.JSON
 // @Router /api/v1/fiscal/years [post]
 func (h *FiscalHandler) CreateFiscalYear(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -50,7 +50,7 @@ func (h *FiscalHandler) CreateFiscalYear(ctx *fiber.Ctx) error {
 	if err := ctx.BodyParser(&req); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
-	result, err := h.IFiscalService.CreateFiscalYear(companyId, req, callerID)
+	result, err := h.IFiscalService.CreateFiscalYear(companyID, req, callerID)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -62,12 +62,12 @@ func (h *FiscalHandler) CreateFiscalYear(ctx *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /api/v1/fiscal/years [get]
 func (h *FiscalHandler) FindAllFiscalYears(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
 	qp := util.ParseQueryParams(ctx, entity.FiscalYear{}.SearchableFields())
-	entities, totalCount, err := h.IFiscalService.FindAllFiscalYears(companyId, qp)
+	entities, totalCount, err := h.IFiscalService.FindAllFiscalYears(companyID, qp)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{Status: fiber.StatusInternalServerError, Message: err.Error()})
 	}
@@ -85,7 +85,7 @@ func (h *FiscalHandler) FindAllFiscalYears(ctx *fiber.Ctx) error {
 // @Param id path string true "Fiscal Year ID"
 // @Router /api/v1/fiscal/years/{id} [get]
 func (h *FiscalHandler) FindFiscalYearById(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -93,7 +93,7 @@ func (h *FiscalHandler) FindFiscalYearById(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: "invalid id"})
 	}
-	result, err := h.IFiscalService.FindFiscalYearById(companyId, id)
+	result, err := h.IFiscalService.FindFiscalYearById(companyID, id)
 	if err != nil {
 		return ctx.Status(fiber.StatusNotFound).JSON(response.JSON{Status: fiber.StatusNotFound, Message: err.Error()})
 	}
@@ -105,7 +105,7 @@ func (h *FiscalHandler) FindFiscalYearById(ctx *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /api/v1/fiscal/years/{id} [put]
 func (h *FiscalHandler) UpdateFiscalYear(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -118,7 +118,7 @@ func (h *FiscalHandler) UpdateFiscalYear(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
 	req.Id = id
-	result, err := h.IFiscalService.UpdateFiscalYear(companyId, req)
+	result, err := h.IFiscalService.UpdateFiscalYear(companyID, req)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -130,7 +130,7 @@ func (h *FiscalHandler) UpdateFiscalYear(ctx *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /api/v1/fiscal/years/{id}/activate [put]
 func (h *FiscalHandler) ActivateFiscalYear(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -138,7 +138,7 @@ func (h *FiscalHandler) ActivateFiscalYear(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: "invalid id"})
 	}
-	result, err := h.IFiscalService.ActivateFiscalYear(companyId, id)
+	result, err := h.IFiscalService.ActivateFiscalYear(companyID, id)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -150,7 +150,7 @@ func (h *FiscalHandler) ActivateFiscalYear(ctx *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /api/v1/fiscal/years/{id} [delete]
 func (h *FiscalHandler) DeleteFiscalYear(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -158,7 +158,7 @@ func (h *FiscalHandler) DeleteFiscalYear(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: "invalid id"})
 	}
-	if err := h.IFiscalService.DeleteFiscalYear(companyId, id); err != nil {
+	if err := h.IFiscalService.DeleteFiscalYear(companyID, id); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{Status: fiber.StatusOK, Message: "Fiscal year deleted."})
@@ -171,12 +171,12 @@ func (h *FiscalHandler) DeleteFiscalYear(ctx *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /api/v1/fiscal/periods [get]
 func (h *FiscalHandler) FindAllPeriods(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
 	qp := util.ParseQueryParams(ctx, entity.FiscalPeriod{}.SearchableFields())
-	entities, totalCount, err := h.IFiscalService.FindAllPeriods(companyId, qp)
+	entities, totalCount, err := h.IFiscalService.FindAllPeriods(companyID, qp)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{Status: fiber.StatusInternalServerError, Message: err.Error()})
 	}
@@ -193,7 +193,7 @@ func (h *FiscalHandler) FindAllPeriods(ctx *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /api/v1/fiscal/periods/{id} [get]
 func (h *FiscalHandler) FindPeriodById(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -201,7 +201,7 @@ func (h *FiscalHandler) FindPeriodById(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: "invalid id"})
 	}
-	result, err := h.IFiscalService.FindPeriodById(companyId, id)
+	result, err := h.IFiscalService.FindPeriodById(companyID, id)
 	if err != nil {
 		return ctx.Status(fiber.StatusNotFound).JSON(response.JSON{Status: fiber.StatusNotFound, Message: err.Error()})
 	}
@@ -213,7 +213,7 @@ func (h *FiscalHandler) FindPeriodById(ctx *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /api/v1/fiscal/periods/{id}/close [put]
 func (h *FiscalHandler) ClosePeriod(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -225,7 +225,7 @@ func (h *FiscalHandler) ClosePeriod(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: "invalid id"})
 	}
-	result, err := h.IFiscalService.ClosePeriod(companyId, id, callerID)
+	result, err := h.IFiscalService.ClosePeriod(companyID, id, callerID)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -237,7 +237,7 @@ func (h *FiscalHandler) ClosePeriod(ctx *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /api/v1/fiscal/periods/{id}/reopen [put]
 func (h *FiscalHandler) ReopenPeriod(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -254,7 +254,7 @@ func (h *FiscalHandler) ReopenPeriod(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
 	req.Id = id
-	result, err := h.IFiscalService.ReopenPeriod(companyId, req, callerID)
+	result, err := h.IFiscalService.ReopenPeriod(companyID, req, callerID)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -266,7 +266,7 @@ func (h *FiscalHandler) ReopenPeriod(ctx *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /api/v1/fiscal/periods/{id}/lock [put]
 func (h *FiscalHandler) LockPeriod(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -278,7 +278,7 @@ func (h *FiscalHandler) LockPeriod(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: "invalid id"})
 	}
-	result, err := h.IFiscalService.LockPeriod(companyId, id, callerID)
+	result, err := h.IFiscalService.LockPeriod(companyID, id, callerID)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}

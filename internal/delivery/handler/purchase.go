@@ -21,7 +21,7 @@ func NewPurchaseOrderHandler(svc service.IPurchaseOrderService) *PurchaseOrderHa
 }
 
 func (h *PurchaseOrderHandler) Create(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -30,7 +30,7 @@ func (h *PurchaseOrderHandler) Create(ctx *fiber.Ctx) error {
 	if err := ctx.BodyParser(&req); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
-	result, err := h.svc.Create(companyId, req, callerId)
+	result, err := h.svc.Create(companyID, req, callerId)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -38,12 +38,12 @@ func (h *PurchaseOrderHandler) Create(ctx *fiber.Ctx) error {
 }
 
 func (h *PurchaseOrderHandler) FindAll(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
 	qp := util.ParseQueryParams(ctx, entity.PurchaseOrder{}.SearchableFields())
-	entities, totalCount, err := h.svc.FindAllTyped(companyId, qp)
+	entities, totalCount, err := h.svc.FindAllTyped(companyID, qp)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{Status: fiber.StatusInternalServerError, Message: err.Error()})
 	}
@@ -56,7 +56,7 @@ func (h *PurchaseOrderHandler) FindAll(ctx *fiber.Ctx) error {
 }
 
 func (h *PurchaseOrderHandler) FindById(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -64,7 +64,7 @@ func (h *PurchaseOrderHandler) FindById(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: "invalid id"})
 	}
-	result, err := h.svc.FindById(companyId, id)
+	result, err := h.svc.FindById(companyID, id)
 	if err != nil {
 		return ctx.Status(fiber.StatusNotFound).JSON(response.JSON{Status: fiber.StatusNotFound, Message: err.Error()})
 	}
@@ -72,7 +72,7 @@ func (h *PurchaseOrderHandler) FindById(ctx *fiber.Ctx) error {
 }
 
 func (h *PurchaseOrderHandler) Update(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -85,7 +85,7 @@ func (h *PurchaseOrderHandler) Update(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
 	req.Id = id
-	result, err := h.svc.Update(companyId, req)
+	result, err := h.svc.Update(companyID, req)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -93,7 +93,7 @@ func (h *PurchaseOrderHandler) Update(ctx *fiber.Ctx) error {
 }
 
 func (h *PurchaseOrderHandler) Delete(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -101,14 +101,14 @@ func (h *PurchaseOrderHandler) Delete(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: "invalid id"})
 	}
-	if err := h.svc.Delete(companyId, id); err != nil {
+	if err := h.svc.Delete(companyID, id); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{Status: fiber.StatusOK, Message: "Purchase order deleted."})
 }
 
 func (h *PurchaseOrderHandler) Send(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -116,14 +116,14 @@ func (h *PurchaseOrderHandler) Send(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: "invalid id"})
 	}
-	if err := h.svc.Send(companyId, id); err != nil {
+	if err := h.svc.Send(companyID, id); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{Status: fiber.StatusOK, Message: "Purchase order sent."})
 }
 
 func (h *PurchaseOrderHandler) Approve(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -131,14 +131,14 @@ func (h *PurchaseOrderHandler) Approve(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: "invalid id"})
 	}
-	if err := h.svc.Approve(companyId, id); err != nil {
+	if err := h.svc.Approve(companyID, id); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{Status: fiber.StatusOK, Message: "Purchase order approved."})
 }
 
 func (h *PurchaseOrderHandler) Decline(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -146,7 +146,7 @@ func (h *PurchaseOrderHandler) Decline(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: "invalid id"})
 	}
-	if err := h.svc.Decline(companyId, id); err != nil {
+	if err := h.svc.Decline(companyID, id); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{Status: fiber.StatusOK, Message: "Purchase order declined."})
@@ -164,12 +164,12 @@ func (h *PurchaseOrderHandler) Decline(ctx *fiber.Ctx) error {
 // @Success 200 {object} response.SelectJSON "Successfully retrieved dropdown options"
 // @Router /api/v1/dropdown/purchase-orders [get]
 func (h *PurchaseOrderHandler) SelectDropdownList(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
 	qp := util.ParseQueryParams(ctx, entity.PurchaseOrder{}.SearchableFields())
-	items, totalCount, err := h.svc.SelectDropdownList(companyId, qp)
+	items, totalCount, err := h.svc.SelectDropdownList(companyID, qp)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{Status: fiber.StatusInternalServerError, Message: err.Error()})
 	}
@@ -190,7 +190,7 @@ func NewBillHandler(svc service.IBillService) *BillHandler {
 }
 
 func (h *BillHandler) Create(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -199,7 +199,7 @@ func (h *BillHandler) Create(ctx *fiber.Ctx) error {
 	if err := ctx.BodyParser(&req); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
-	result, err := h.svc.Create(companyId, req, callerId)
+	result, err := h.svc.Create(companyID, req, callerId)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -207,7 +207,7 @@ func (h *BillHandler) Create(ctx *fiber.Ctx) error {
 }
 
 func (h *BillHandler) CreateFromPO(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -216,7 +216,7 @@ func (h *BillHandler) CreateFromPO(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: "invalid po_id"})
 	}
-	result, err := h.svc.CreateFromPO(companyId, poId, callerId)
+	result, err := h.svc.CreateFromPO(companyID, poId, callerId)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -224,12 +224,12 @@ func (h *BillHandler) CreateFromPO(ctx *fiber.Ctx) error {
 }
 
 func (h *BillHandler) FindAll(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
 	qp := util.ParseQueryParams(ctx, entity.Bill{}.SearchableFields())
-	entities, totalCount, err := h.svc.FindAllTyped(companyId, qp)
+	entities, totalCount, err := h.svc.FindAllTyped(companyID, qp)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{Status: fiber.StatusInternalServerError, Message: err.Error()})
 	}
@@ -242,7 +242,7 @@ func (h *BillHandler) FindAll(ctx *fiber.Ctx) error {
 }
 
 func (h *BillHandler) FindById(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -250,7 +250,7 @@ func (h *BillHandler) FindById(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: "invalid id"})
 	}
-	result, err := h.svc.FindById(companyId, id)
+	result, err := h.svc.FindById(companyID, id)
 	if err != nil {
 		return ctx.Status(fiber.StatusNotFound).JSON(response.JSON{Status: fiber.StatusNotFound, Message: err.Error()})
 	}
@@ -258,7 +258,7 @@ func (h *BillHandler) FindById(ctx *fiber.Ctx) error {
 }
 
 func (h *BillHandler) Update(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -271,7 +271,7 @@ func (h *BillHandler) Update(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
 	req.Id = id
-	result, err := h.svc.Update(companyId, req)
+	result, err := h.svc.Update(companyID, req)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -279,7 +279,7 @@ func (h *BillHandler) Update(ctx *fiber.Ctx) error {
 }
 
 func (h *BillHandler) Delete(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -287,14 +287,14 @@ func (h *BillHandler) Delete(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: "invalid id"})
 	}
-	if err := h.svc.Delete(companyId, id); err != nil {
+	if err := h.svc.Delete(companyID, id); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{Status: fiber.StatusOK, Message: "Bill deleted."})
 }
 
 func (h *BillHandler) Confirm(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -303,7 +303,7 @@ func (h *BillHandler) Confirm(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: "invalid id"})
 	}
-	result, err := h.svc.Confirm(companyId, id, callerId)
+	result, err := h.svc.Confirm(companyID, id, callerId)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -311,7 +311,7 @@ func (h *BillHandler) Confirm(ctx *fiber.Ctx) error {
 }
 
 func (h *BillHandler) AddPayment(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -324,7 +324,7 @@ func (h *BillHandler) AddPayment(ctx *fiber.Ctx) error {
 	if err := ctx.BodyParser(&req); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
-	result, err := h.svc.AddPayment(companyId, id, req, callerId)
+	result, err := h.svc.AddPayment(companyID, id, req, callerId)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -332,7 +332,7 @@ func (h *BillHandler) AddPayment(ctx *fiber.Ctx) error {
 }
 
 func (h *BillHandler) Cancel(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -341,7 +341,7 @@ func (h *BillHandler) Cancel(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: "invalid id"})
 	}
-	result, err := h.svc.Cancel(companyId, id, callerId)
+	result, err := h.svc.Cancel(companyID, id, callerId)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -360,12 +360,12 @@ func (h *BillHandler) Cancel(ctx *fiber.Ctx) error {
 // @Success 200 {object} response.SelectJSON "Successfully retrieved dropdown options"
 // @Router /api/v1/dropdown/bills [get]
 func (h *BillHandler) SelectDropdownList(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
 	qp := util.ParseQueryParams(ctx, entity.Bill{}.SearchableFields())
-	items, totalCount, err := h.svc.SelectDropdownList(companyId, qp)
+	items, totalCount, err := h.svc.SelectDropdownList(companyID, qp)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{Status: fiber.StatusInternalServerError, Message: err.Error()})
 	}

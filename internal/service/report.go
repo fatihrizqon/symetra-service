@@ -33,13 +33,13 @@ func subgroupContains(name, keyword string) bool {
 }
 
 type IReportService interface {
-	TrialBalance(companyId uuid.UUID, start, end time.Time) (response.TrialBalanceResponse, error)
-	ProfitLoss(companyId uuid.UUID, start, end time.Time) (response.ProfitLossResponse, error)
-	BalanceSheet(companyId uuid.UUID, asOf time.Time) (response.BalanceSheetResponse, error)
-	CashFlow(companyId uuid.UUID, start, end time.Time) (response.CashFlowResponse, error)
-	EquityStatement(companyId uuid.UUID, start, end time.Time) (response.EquityStatementResponse, error)
-	GeneralLedger(companyId uuid.UUID, start, end time.Time, coaID string) (response.GeneralLedgerResponse, error)
-	JournalBook(companyId uuid.UUID, start, end time.Time) (response.JournalBookResponse, error)
+	TrialBalance(companyID uuid.UUID, start, end time.Time) (response.TrialBalanceResponse, error)
+	ProfitLoss(companyID uuid.UUID, start, end time.Time) (response.ProfitLossResponse, error)
+	BalanceSheet(companyID uuid.UUID, asOf time.Time) (response.BalanceSheetResponse, error)
+	CashFlow(companyID uuid.UUID, start, end time.Time) (response.CashFlowResponse, error)
+	EquityStatement(companyID uuid.UUID, start, end time.Time) (response.EquityStatementResponse, error)
+	GeneralLedger(companyID uuid.UUID, start, end time.Time, coaID string) (response.GeneralLedgerResponse, error)
+	JournalBook(companyID uuid.UUID, start, end time.Time) (response.JournalBookResponse, error)
 }
 
 type ReportService struct {
@@ -53,13 +53,13 @@ func NewReportService(repo repository.IReportRepository) IReportService {
 // ─── 1. Trial Balance ────────────────────────────────────────────────────────
 // Shows debit / credit totals per account for the given period.
 
-func (s *ReportService) TrialBalance(companyId uuid.UUID, start, end time.Time) (response.TrialBalanceResponse, error) {
-	rows, err := s.IReportRepository.GetLedger(companyId, start, end)
+func (s *ReportService) TrialBalance(companyID uuid.UUID, start, end time.Time) (response.TrialBalanceResponse, error) {
+	rows, err := s.IReportRepository.GetLedger(companyID, start, end)
 	if err != nil {
 		return response.TrialBalanceResponse{}, err
 	}
 
-	postedCount, _ := s.IReportRepository.GetPostedCount(companyId, start, end)
+	postedCount, _ := s.IReportRepository.GetPostedCount(companyID, start, end)
 
 	var lines []response.TrialBalanceLine
 	var totalDebit, totalCredit float64
@@ -99,21 +99,21 @@ func (s *ReportService) TrialBalance(companyId uuid.UUID, start, end time.Time) 
 // Laba Rugi: Pendapatan → HPP → Laba Kotor → Beban Operasional →
 //            Laba Operasional → Pendapatan/Beban Lain → Laba Bersih
 
-func (s *ReportService) ProfitLoss(companyId uuid.UUID, start, end time.Time) (response.ProfitLossResponse, error) {
-	rows, err := s.IReportRepository.GetLedger(companyId, start, end)
+func (s *ReportService) ProfitLoss(companyID uuid.UUID, start, end time.Time) (response.ProfitLossResponse, error) {
+	rows, err := s.IReportRepository.GetLedger(companyID, start, end)
 	if err != nil {
 		return response.ProfitLossResponse{}, err
 	}
 
 	operatingRevenue := response.ReportSection{Title: "Pendapatan Operasional"}
-	otherRevenue     := response.ReportSection{Title: "Pendapatan Lain-lain"}
-	cogs             := response.ReportSection{Title: "Harga Pokok Penjualan (HPP)"}
-	opex             := response.ReportSection{Title: "Beban Operasional"}
-	adminExp         := response.ReportSection{Title: "Beban Administrasi"}
-	finExp           := response.ReportSection{Title: "Beban Keuangan / Lain-lain"}
+	otherRevenue := response.ReportSection{Title: "Pendapatan Lain-lain"}
+	cogs := response.ReportSection{Title: "Harga Pokok Penjualan (HPP)"}
+	opex := response.ReportSection{Title: "Beban Operasional"}
+	adminExp := response.ReportSection{Title: "Beban Administrasi"}
+	finExp := response.ReportSection{Title: "Beban Keuangan / Lain-lain"}
 
 	for _, r := range rows {
-		g  := normalizeGroup(r.GroupName)
+		g := normalizeGroup(r.GroupName)
 		sg := strings.ToLower(r.SubgroupName)
 
 		switch {
@@ -159,40 +159,40 @@ func (s *ReportService) ProfitLoss(companyId uuid.UUID, start, end time.Time) (r
 		}
 	}
 
-	totalRevenue     := operatingRevenue.Subtotal + otherRevenue.Subtotal
-	grossProfit      := operatingRevenue.Subtotal - cogs.Subtotal
-	totalOpex        := opex.Subtotal + adminExp.Subtotal
-	operatingProfit  := grossProfit - totalOpex
-	netProfit        := operatingProfit + otherRevenue.Subtotal - finExp.Subtotal
+	totalRevenue := operatingRevenue.Subtotal + otherRevenue.Subtotal
+	grossProfit := operatingRevenue.Subtotal - cogs.Subtotal
+	totalOpex := opex.Subtotal + adminExp.Subtotal
+	operatingProfit := grossProfit - totalOpex
+	netProfit := operatingProfit + otherRevenue.Subtotal - finExp.Subtotal
 
 	return response.ProfitLossResponse{
-		GeneratedAt:      time.Now(),
-		StartDate:        start.Format("2006-01-02"),
-		EndDate:          end.Format("2006-01-02"),
-		OperatingRevenue: operatingRevenue,
-		OtherRevenue:     otherRevenue,
-		TotalRevenue:     totalRevenue,
-		COGS:             cogs,
-		GrossProfit:      grossProfit,
+		GeneratedAt:       time.Now(),
+		StartDate:         start.Format("2006-01-02"),
+		EndDate:           end.Format("2006-01-02"),
+		OperatingRevenue:  operatingRevenue,
+		OtherRevenue:      otherRevenue,
+		TotalRevenue:      totalRevenue,
+		COGS:              cogs,
+		GrossProfit:       grossProfit,
 		OperatingExpenses: opex,
-		AdminExpenses:    adminExp,
+		AdminExpenses:     adminExp,
 		FinancialExpenses: finExp,
-		OperatingProfit:  operatingProfit,
-		NetProfit:        netProfit,
+		OperatingProfit:   operatingProfit,
+		NetProfit:         netProfit,
 	}, nil
 }
 
 // ─── 3. Balance Sheet ────────────────────────────────────────────────────────
 // Neraca: kumulatif dari awal sampai asOf.
 
-func (s *ReportService) BalanceSheet(companyId uuid.UUID, asOf time.Time) (response.BalanceSheetResponse, error) {
+func (s *ReportService) BalanceSheet(companyID uuid.UUID, asOf time.Time) (response.BalanceSheetResponse, error) {
 	rows, err := s.IReportRepository.GetLedgerUpTo(asOf)
 	if err != nil {
 		return response.BalanceSheetResponse{}, err
 	}
 
-	assetSections  := map[string]*response.ReportSection{}
-	liabSections   := map[string]*response.ReportSection{}
+	assetSections := map[string]*response.ReportSection{}
+	liabSections := map[string]*response.ReportSection{}
 	equitySections := map[string]*response.ReportSection{}
 
 	var totalAssets, totalLiabilities, totalEquity float64
@@ -271,9 +271,9 @@ func (s *ReportService) BalanceSheet(companyId uuid.UUID, asOf time.Time) (respo
 // ─── 4. Cash Flow ────────────────────────────────────────────────────────────
 // Arus Kas: Indirect method — Operating (from P&L), Investing, Financing.
 
-func (s *ReportService) CashFlow(companyId uuid.UUID, start, end time.Time) (response.CashFlowResponse, error) {
+func (s *ReportService) CashFlow(companyID uuid.UUID, start, end time.Time) (response.CashFlowResponse, error) {
 	// Period rows
-	periodRows, err := s.IReportRepository.GetLedger(companyId, start, end)
+	periodRows, err := s.IReportRepository.GetLedger(companyID, start, end)
 	if err != nil {
 		return response.CashFlowResponse{}, err
 	}
@@ -286,11 +286,11 @@ func (s *ReportService) CashFlow(companyId uuid.UUID, start, end time.Time) (res
 	}
 
 	operating := response.ReportSection{Title: "Aktivitas Operasi"}
-	investing  := response.ReportSection{Title: "Aktivitas Investasi"}
-	financing  := response.ReportSection{Title: "Aktivitas Pendanaan"}
+	investing := response.ReportSection{Title: "Aktivitas Investasi"}
+	financing := response.ReportSection{Title: "Aktivitas Pendanaan"}
 
 	for _, r := range periodRows {
-		g  := normalizeGroup(r.GroupName)
+		g := normalizeGroup(r.GroupName)
 		sg := strings.ToLower(r.SubgroupName)
 
 		item := response.ReportLineItem{
@@ -332,7 +332,7 @@ func (s *ReportService) CashFlow(companyId uuid.UUID, start, end time.Time) (res
 	for _, r := range openingRows {
 		if isGroup(normalizeGroup(r.GroupName), groupAssets) {
 			name := strings.ToLower(r.AccountName)
-			sg   := strings.ToLower(r.SubgroupName)
+			sg := strings.ToLower(r.SubgroupName)
 			if strings.Contains(name, "cash") || strings.Contains(name, "bank") ||
 				strings.Contains(sg, "cash") || strings.Contains(sg, "current") {
 				openingCash += r.TotalDebit - r.TotalCredit
@@ -340,7 +340,7 @@ func (s *ReportService) CashFlow(companyId uuid.UUID, start, end time.Time) (res
 		}
 	}
 
-	netChange   := operating.Subtotal + investing.Subtotal + financing.Subtotal
+	netChange := operating.Subtotal + investing.Subtotal + financing.Subtotal
 	closingCash := openingCash + netChange
 
 	return response.CashFlowResponse{
@@ -361,7 +361,7 @@ func (s *ReportService) CashFlow(companyId uuid.UUID, start, end time.Time) (res
 
 // ─── 5. Equity Statement ─────────────────────────────────────────────────────
 
-func (s *ReportService) EquityStatement(companyId uuid.UUID, start, end time.Time) (response.EquityStatementResponse, error) {
+func (s *ReportService) EquityStatement(companyID uuid.UUID, start, end time.Time) (response.EquityStatementResponse, error) {
 	// Opening equity: cumulative up to day before start
 	openingEnd := start.Add(-24 * time.Hour)
 	openRows, err := s.IReportRepository.GetLedgerUpTo(openingEnd)
@@ -377,7 +377,7 @@ func (s *ReportService) EquityStatement(companyId uuid.UUID, start, end time.Tim
 	}
 
 	// Period equity movements
-	periodRows, err := s.IReportRepository.GetLedger(companyId, start, end)
+	periodRows, err := s.IReportRepository.GetLedger(companyID, start, end)
 	if err != nil {
 		return response.EquityStatementResponse{}, err
 	}
@@ -454,8 +454,8 @@ func sectionsToSlice(m map[string]*response.ReportSection) []response.ReportSect
 // Per-account transaction history with running balance.
 // coaID = "" → all accounts; coaID = "<uuid>" → single account.
 
-func (s *ReportService) GeneralLedger(companyId uuid.UUID, start, end time.Time, coaID string) (response.GeneralLedgerResponse, error) {
-	rows, err := s.IReportRepository.GetGeneralLedger(companyId, start, end, coaID)
+func (s *ReportService) GeneralLedger(companyID uuid.UUID, start, end time.Time, coaID string) (response.GeneralLedgerResponse, error) {
+	rows, err := s.IReportRepository.GetGeneralLedger(companyID, start, end, coaID)
 	if err != nil {
 		return response.GeneralLedgerResponse{}, err
 	}
@@ -470,7 +470,7 @@ func (s *ReportService) GeneralLedger(companyId uuid.UUID, start, end time.Time,
 	}
 
 	orderMap := []accountKey{}
-	buckets  := map[accountKey]*accBucket{}
+	buckets := map[accountKey]*accBucket{}
 
 	for _, r := range rows {
 		k := accountKey{r.AccountCode, r.AccountName, r.GroupName, r.SubgroupName}
@@ -553,8 +553,8 @@ func (s *ReportService) GeneralLedger(companyId uuid.UUID, start, end time.Time,
 // ─── 7. Journal Book (Jurnal Umum) ───────────────────────────────────────────
 // All posted journal entries for the period, grouped by entry with their lines.
 
-func (s *ReportService) JournalBook(companyId uuid.UUID, start, end time.Time) (response.JournalBookResponse, error) {
-	rows, err := s.IReportRepository.GetJournalBook(companyId, start, end)
+func (s *ReportService) JournalBook(companyID uuid.UUID, start, end time.Time) (response.JournalBookResponse, error) {
+	rows, err := s.IReportRepository.GetJournalBook(companyID, start, end)
 	if err != nil {
 		return response.JournalBookResponse{}, err
 	}
@@ -562,7 +562,7 @@ func (s *ReportService) JournalBook(companyId uuid.UUID, start, end time.Time) (
 	// Group lines by journal number
 	type entryKey struct{ date, number, jtype, desc string }
 	orderSlice := []entryKey{}
-	entryMap   := map[entryKey]*response.JournalBookEntry{}
+	entryMap := map[entryKey]*response.JournalBookEntry{}
 
 	for _, r := range rows {
 		k := entryKey{r.Date, r.JournalNumber, r.JournalType, r.Description}
@@ -590,7 +590,7 @@ func (s *ReportService) JournalBook(companyId uuid.UUID, start, end time.Time) (
 	for _, k := range orderSlice {
 		e := entryMap[k]
 		entries = append(entries, *e)
-		grandDebit  += e.TotalDebit
+		grandDebit += e.TotalDebit
 		grandCredit += e.TotalCredit
 	}
 

@@ -18,7 +18,7 @@ func NewDashboardHandler(service service.IDashboardService) *DashboardHandler {
 }
 
 func (h *DashboardHandler) Overview(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -35,7 +35,7 @@ func (h *DashboardHandler) Overview(ctx *fiber.Ctx) error {
 
 	result, err := h.IDashboardService.Overview(
 		ctx.Context(),
-		companyId,
+		companyID,
 		module,
 		period,
 	)
@@ -45,7 +45,7 @@ func (h *DashboardHandler) Overview(ctx *fiber.Ctx) error {
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
-		Status: fiber.StatusOK,
+		Status:  fiber.StatusOK,
 		Message: "Successfully retrieved all records.",
 		Data:    result,
 		Meta:    nil,

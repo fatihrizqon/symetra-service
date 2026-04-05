@@ -22,11 +22,11 @@ type OverviewResults struct {
 }
 
 type IDashboardService interface {
-	Overview(ctx context.Context, companyId uuid.UUID, module string, period string) (response.DashboardOverviewResponse, error)
+	Overview(ctx context.Context, companyID uuid.UUID, module string, period string) (response.DashboardOverviewResponse, error)
 }
 
 type DashboardService struct {
-	IUserRepository         repository.IUserRepository
+	IUserRepository          repository.IUserRepository
 	ICompanyMemberRepository repository.ICompanyMemberRepository
 }
 
@@ -35,21 +35,21 @@ func NewDashboardService(
 	memberRepo repository.ICompanyMemberRepository,
 ) IDashboardService {
 	return &DashboardService{
-		IUserRepository:         repo,
+		IUserRepository:          repo,
 		ICompanyMemberRepository: memberRepo,
 	}
 }
 
 func (s *DashboardService) Overview(
 	ctx context.Context,
-	companyId uuid.UUID,
+	companyID uuid.UUID,
 	module string,
 	period string,
 ) (response.DashboardOverviewResponse, error) {
 
 	switch module {
 	case "users":
-		results, err := s.usersOverview(ctx, companyId, period)
+		results, err := s.usersOverview(ctx, companyID, period)
 		if err != nil {
 			return response.DashboardOverviewResponse{}, err
 		}
@@ -68,7 +68,7 @@ func (s *DashboardService) Overview(
 
 func (s *DashboardService) usersOverview(
 	ctx context.Context,
-	companyId uuid.UUID,
+	companyID uuid.UUID,
 	period string,
 ) (OverviewResults, error) {
 
@@ -79,7 +79,7 @@ func (s *DashboardService) usersOverview(
 	previousEnd := start
 
 	// Total members in this company
-	members, err := s.ICompanyMemberRepository.FindMembersByCompany(companyId)
+	members, err := s.ICompanyMemberRepository.FindMembersByCompany(companyID)
 	if err != nil {
 		return OverviewResults{}, err
 	}

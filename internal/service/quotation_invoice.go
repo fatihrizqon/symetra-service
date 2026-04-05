@@ -71,8 +71,8 @@ func calculateTotals(items []itemInput, taxRate float64, enableTax bool) calcRes
 // ─── Company Configuration Service ───────────────────────────────────────────
 
 type ICompanyConfigurationService interface {
-	Get(companyId uuid.UUID) (response.CompanyConfigurationResponse, error)
-	Upsert(companyId uuid.UUID, req request.CompanyConfigurationRequest) (response.CompanyConfigurationResponse, error)
+	Get(companyID uuid.UUID) (response.CompanyConfigurationResponse, error)
+	Upsert(companyID uuid.UUID, req request.CompanyConfigurationRequest) (response.CompanyConfigurationResponse, error)
 }
 
 type CompanyConfigurationService struct {
@@ -138,15 +138,15 @@ func toConfigResponse(cfg entity.CompanyConfiguration) response.CompanyConfigura
 	return r
 }
 
-func (s *CompanyConfigurationService) Get(companyId uuid.UUID) (response.CompanyConfigurationResponse, error) {
-	cfg, err := s.repo.FindByCompanyId(companyId)
+func (s *CompanyConfigurationService) Get(companyID uuid.UUID) (response.CompanyConfigurationResponse, error) {
+	cfg, err := s.repo.FindByCompanyId(companyID)
 	if err != nil {
 		return response.CompanyConfigurationResponse{}, err
 	}
 	return toConfigResponse(cfg), nil
 }
 
-func (s *CompanyConfigurationService) Upsert(companyId uuid.UUID, req request.CompanyConfigurationRequest) (response.CompanyConfigurationResponse, error) {
+func (s *CompanyConfigurationService) Upsert(companyID uuid.UUID, req request.CompanyConfigurationRequest) (response.CompanyConfigurationResponse, error) {
 	prefix := req.InvoicePrefix
 	if prefix == "" {
 		prefix = "INV"
@@ -176,7 +176,7 @@ func (s *CompanyConfigurationService) Upsert(companyId uuid.UUID, req request.Co
 		billDueDays = 30
 	}
 	cfg := entity.CompanyConfiguration{
-		CompanyId:               companyId,
+		CompanyId:               companyID,
 		EnableTax:               req.EnableTax,
 		TaxRate:                 taxRate,
 		ArAccountId:             req.ArAccountId,
@@ -205,14 +205,14 @@ func (s *CompanyConfigurationService) Upsert(companyId uuid.UUID, req request.Co
 // ─── Quotation Service ────────────────────────────────────────────────────────
 
 type IQuotationService interface {
-	Create(companyId uuid.UUID, req request.QuotationCreateRequest, createdBy uuid.UUID) (response.QuotationResponse, error)
-	FindAllTyped(companyId uuid.UUID, qp *util.QueryParams) ([]response.QuotationResponse, int, error)
-	FindById(companyId, id uuid.UUID) (response.QuotationResponse, error)
-	Update(companyId uuid.UUID, req request.QuotationUpdateRequest) (response.QuotationResponse, error)
-	Delete(companyId, id uuid.UUID) error
-	Send(companyId, id uuid.UUID) error
-	Accept(companyId, id uuid.UUID) error
-	Decline(companyId, id uuid.UUID) error
+	Create(companyID uuid.UUID, req request.QuotationCreateRequest, createdBy uuid.UUID) (response.QuotationResponse, error)
+	FindAllTyped(companyID uuid.UUID, qp *util.QueryParams) ([]response.QuotationResponse, int, error)
+	FindById(companyID, id uuid.UUID) (response.QuotationResponse, error)
+	Update(companyID uuid.UUID, req request.QuotationUpdateRequest) (response.QuotationResponse, error)
+	Delete(companyID, id uuid.UUID) error
+	Send(companyID, id uuid.UUID) error
+	Accept(companyID, id uuid.UUID) error
+	Decline(companyID, id uuid.UUID) error
 }
 
 type QuotationService struct {
@@ -255,7 +255,7 @@ func toQuotationResponse(q entity.Quotation) response.QuotationResponse {
 	}
 }
 
-func (s *QuotationService) Create(companyId uuid.UUID, req request.QuotationCreateRequest, createdBy uuid.UUID) (response.QuotationResponse, error) {
+func (s *QuotationService) Create(companyID uuid.UUID, req request.QuotationCreateRequest, createdBy uuid.UUID) (response.QuotationResponse, error) {
 	if err := s.validate.Struct(req); err != nil {
 		return response.QuotationResponse{}, err
 	}
@@ -272,14 +272,14 @@ func (s *QuotationService) Create(companyId uuid.UUID, req request.QuotationCrea
 		expiryDate = &t
 	}
 
-	cfg, _ := s.cfgRepo.FindByCompanyId(companyId)
+	cfg, _ := s.cfgRepo.FindByCompanyId(companyID)
 	inputs := make([]itemInput, len(req.Items))
 	for i, it := range req.Items {
 		inputs[i] = itemInput{it.Description, it.Qty, it.Price, it.Discount, it.TaxApplicable}
 	}
 	totals := calculateTotals(inputs, cfg.TaxRate, cfg.EnableTax)
 
-	quotationNumber, err := s.repo.GenerateQuotationNumber(companyId, cfg.QuotationPrefix)
+	quotationNumber, err := s.repo.GenerateQuotationNumber(companyID, cfg.QuotationPrefix)
 	if err != nil {
 		return response.QuotationResponse{}, err
 	}
@@ -294,7 +294,7 @@ func (s *QuotationService) Create(companyId uuid.UUID, req request.QuotationCrea
 	}
 
 	q := entity.Quotation{
-		CompanyId: companyId, QuotationNumber: quotationNumber,
+		CompanyId: companyID, QuotationNumber: quotationNumber,
 		CustomerId: req.CustomerId, QuotationDate: qDate, ExpiryDate: expiryDate,
 		Subtotal: totals.Subtotal, DiscountTotal: totals.DiscountTotal,
 		Dpp: totals.Dpp, TaxRate: cfg.TaxRate, TaxAmount: totals.TaxAmount,
@@ -308,8 +308,8 @@ func (s *QuotationService) Create(companyId uuid.UUID, req request.QuotationCrea
 	return toQuotationResponse(created), nil
 }
 
-func (s *QuotationService) FindAllTyped(companyId uuid.UUID, qp *util.QueryParams) ([]response.QuotationResponse, int, error) {
-	entities, totalCount, err := s.repo.FindAll(companyId, qp)
+func (s *QuotationService) FindAllTyped(companyID uuid.UUID, qp *util.QueryParams) ([]response.QuotationResponse, int, error) {
+	entities, totalCount, err := s.repo.FindAll(companyID, qp)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -320,16 +320,16 @@ func (s *QuotationService) FindAllTyped(companyId uuid.UUID, qp *util.QueryParam
 	return resps, totalCount, nil
 }
 
-func (s *QuotationService) FindById(companyId, id uuid.UUID) (response.QuotationResponse, error) {
-	q, err := s.repo.FindById(companyId, id)
+func (s *QuotationService) FindById(companyID, id uuid.UUID) (response.QuotationResponse, error) {
+	q, err := s.repo.FindById(companyID, id)
 	if err != nil {
 		return response.QuotationResponse{}, err
 	}
 	return toQuotationResponse(q), nil
 }
 
-func (s *QuotationService) Update(companyId uuid.UUID, req request.QuotationUpdateRequest) (response.QuotationResponse, error) {
-	existing, err := s.repo.FindById(companyId, req.Id)
+func (s *QuotationService) Update(companyID uuid.UUID, req request.QuotationUpdateRequest) (response.QuotationResponse, error) {
+	existing, err := s.repo.FindById(companyID, req.Id)
 	if err != nil {
 		return response.QuotationResponse{}, err
 	}
@@ -352,7 +352,7 @@ func (s *QuotationService) Update(companyId uuid.UUID, req request.QuotationUpda
 		expiryDate = &t
 	}
 
-	cfg, _ := s.cfgRepo.FindByCompanyId(companyId)
+	cfg, _ := s.cfgRepo.FindByCompanyId(companyID)
 	inputs := make([]itemInput, len(req.Items))
 	for i, it := range req.Items {
 		inputs[i] = itemInput{it.Description, it.Qty, it.Price, it.Discount, it.TaxApplicable}
@@ -386,62 +386,62 @@ func (s *QuotationService) Update(companyId uuid.UUID, req request.QuotationUpda
 	return toQuotationResponse(updated), nil
 }
 
-func (s *QuotationService) Delete(companyId, id uuid.UUID) error {
-	existing, err := s.repo.FindById(companyId, id)
+func (s *QuotationService) Delete(companyID, id uuid.UUID) error {
+	existing, err := s.repo.FindById(companyID, id)
 	if err != nil {
 		return err
 	}
 	if existing.Status != entity.QuotationStatusDraft {
 		return errors.New("only draft quotations can be deleted")
 	}
-	return s.repo.Delete(companyId, id)
+	return s.repo.Delete(companyID, id)
 }
 
-func (s *QuotationService) Send(companyId, id uuid.UUID) error {
-	existing, err := s.repo.FindById(companyId, id)
+func (s *QuotationService) Send(companyID, id uuid.UUID) error {
+	existing, err := s.repo.FindById(companyID, id)
 	if err != nil {
 		return err
 	}
 	if existing.Status != entity.QuotationStatusDraft {
 		return errors.New("only draft quotations can be sent")
 	}
-	return s.repo.UpdateStatus(companyId, id, entity.QuotationStatusSent)
+	return s.repo.UpdateStatus(companyID, id, entity.QuotationStatusSent)
 }
 
-func (s *QuotationService) Accept(companyId, id uuid.UUID) error {
-	existing, err := s.repo.FindById(companyId, id)
+func (s *QuotationService) Accept(companyID, id uuid.UUID) error {
+	existing, err := s.repo.FindById(companyID, id)
 	if err != nil {
 		return err
 	}
 	if existing.Status != entity.QuotationStatusSent {
 		return errors.New("only sent quotations can be accepted")
 	}
-	return s.repo.UpdateStatus(companyId, id, entity.QuotationStatusAccepted)
+	return s.repo.UpdateStatus(companyID, id, entity.QuotationStatusAccepted)
 }
 
-func (s *QuotationService) Decline(companyId, id uuid.UUID) error {
-	existing, err := s.repo.FindById(companyId, id)
+func (s *QuotationService) Decline(companyID, id uuid.UUID) error {
+	existing, err := s.repo.FindById(companyID, id)
 	if err != nil {
 		return err
 	}
 	if existing.Status == entity.QuotationStatusConverted || existing.Status == entity.QuotationStatusDeclined {
 		return errors.New("quotation already declined or converted")
 	}
-	return s.repo.UpdateStatus(companyId, id, entity.QuotationStatusDeclined)
+	return s.repo.UpdateStatus(companyID, id, entity.QuotationStatusDeclined)
 }
 
 // ─── Invoice Service ──────────────────────────────────────────────────────────
 
 type IInvoiceService interface {
-	Create(companyId uuid.UUID, req request.InvoiceCreateRequest, createdBy uuid.UUID) (response.InvoiceResponse, error)
-	CreateFromQuotation(companyId, quotationId uuid.UUID, createdBy uuid.UUID) (response.InvoiceResponse, error)
-	FindAllTyped(companyId uuid.UUID, qp *util.QueryParams) ([]response.InvoiceResponse, int, error)
-	FindById(companyId, id uuid.UUID) (response.InvoiceResponse, error)
-	Update(companyId uuid.UUID, req request.InvoiceUpdateRequest) (response.InvoiceResponse, error)
-	Delete(companyId, id uuid.UUID) error
-	Confirm(companyId, id uuid.UUID, createdBy uuid.UUID) (response.InvoiceResponse, error)
-	MarkPaid(companyId, id uuid.UUID, req request.InvoiceMarkPaidRequest, createdBy uuid.UUID) (response.InvoiceResponse, error)
-	Cancel(companyId, id uuid.UUID, createdBy uuid.UUID) (response.InvoiceResponse, error)
+	Create(companyID uuid.UUID, req request.InvoiceCreateRequest, createdBy uuid.UUID) (response.InvoiceResponse, error)
+	CreateFromQuotation(companyID, quotationId uuid.UUID, createdBy uuid.UUID) (response.InvoiceResponse, error)
+	FindAllTyped(companyID uuid.UUID, qp *util.QueryParams) ([]response.InvoiceResponse, int, error)
+	FindById(companyID, id uuid.UUID) (response.InvoiceResponse, error)
+	Update(companyID uuid.UUID, req request.InvoiceUpdateRequest) (response.InvoiceResponse, error)
+	Delete(companyID, id uuid.UUID) error
+	Confirm(companyID, id uuid.UUID, createdBy uuid.UUID) (response.InvoiceResponse, error)
+	MarkPaid(companyID, id uuid.UUID, req request.InvoiceMarkPaidRequest, createdBy uuid.UUID) (response.InvoiceResponse, error)
+	Cancel(companyID, id uuid.UUID, createdBy uuid.UUID) (response.InvoiceResponse, error)
 }
 
 type InvoiceService struct {
@@ -500,14 +500,14 @@ func toInvoiceResponse(inv entity.Invoice) response.InvoiceResponse {
 }
 
 func (s *InvoiceService) buildInvoice(
-	companyId, customerId uuid.UUID,
+	companyID, customerId uuid.UUID,
 	invoiceDate, dueDate time.Time,
 	notes string,
 	reqItems []request.InvoiceItemRequest,
 	createdBy uuid.UUID,
 	quotationId *uuid.UUID,
 ) (entity.Invoice, []entity.InvoiceItem, entity.CompanyConfiguration, error) {
-	cfg, err := s.cfgRepo.FindByCompanyId(companyId)
+	cfg, err := s.cfgRepo.FindByCompanyId(companyID)
 	if err != nil {
 		return entity.Invoice{}, nil, cfg, err
 	}
@@ -517,7 +517,7 @@ func (s *InvoiceService) buildInvoice(
 	}
 	totals := calculateTotals(inputs, cfg.TaxRate, cfg.EnableTax)
 
-	invoiceNumber, err := s.invoiceRepo.GenerateInvoiceNumber(companyId, cfg.InvoicePrefix)
+	invoiceNumber, err := s.invoiceRepo.GenerateInvoiceNumber(companyID, cfg.InvoicePrefix)
 	if err != nil {
 		return entity.Invoice{}, nil, cfg, err
 	}
@@ -537,7 +537,7 @@ func (s *InvoiceService) buildInvoice(
 	}
 
 	inv := entity.Invoice{
-		CompanyId: companyId, InvoiceNumber: invoiceNumber,
+		CompanyId: companyID, InvoiceNumber: invoiceNumber,
 		QuotationId: quotationId, CustomerId: customerId,
 		InvoiceDate: invoiceDate, DueDate: dueDate,
 		Subtotal: totals.Subtotal, DiscountTotal: totals.DiscountTotal,
@@ -549,7 +549,7 @@ func (s *InvoiceService) buildInvoice(
 	return inv, items, cfg, nil
 }
 
-func (s *InvoiceService) Create(companyId uuid.UUID, req request.InvoiceCreateRequest, createdBy uuid.UUID) (response.InvoiceResponse, error) {
+func (s *InvoiceService) Create(companyID uuid.UUID, req request.InvoiceCreateRequest, createdBy uuid.UUID) (response.InvoiceResponse, error) {
 	if err := s.validate.Struct(req); err != nil {
 		return response.InvoiceResponse{}, err
 	}
@@ -561,7 +561,7 @@ func (s *InvoiceService) Create(companyId uuid.UUID, req request.InvoiceCreateRe
 	if err != nil {
 		return response.InvoiceResponse{}, err
 	}
-	inv, items, _, err := s.buildInvoice(companyId, req.CustomerId, invDate, dueDate, req.Notes, req.Items, createdBy, nil)
+	inv, items, _, err := s.buildInvoice(companyID, req.CustomerId, invDate, dueDate, req.Notes, req.Items, createdBy, nil)
 	if err != nil {
 		return response.InvoiceResponse{}, err
 	}
@@ -572,8 +572,8 @@ func (s *InvoiceService) Create(companyId uuid.UUID, req request.InvoiceCreateRe
 	return toInvoiceResponse(created), nil
 }
 
-func (s *InvoiceService) CreateFromQuotation(companyId, quotationId uuid.UUID, createdBy uuid.UUID) (response.InvoiceResponse, error) {
-	q, err := s.quotationRepo.FindById(companyId, quotationId)
+func (s *InvoiceService) CreateFromQuotation(companyID, quotationId uuid.UUID, createdBy uuid.UUID) (response.InvoiceResponse, error) {
+	q, err := s.quotationRepo.FindById(companyID, quotationId)
 	if err != nil {
 		return response.InvoiceResponse{}, err
 	}
@@ -584,8 +584,8 @@ func (s *InvoiceService) CreateFromQuotation(companyId, quotationId uuid.UUID, c
 		return response.InvoiceResponse{}, errors.New("cannot convert a declined or expired quotation")
 	}
 
-	cfg, _ := s.cfgRepo.FindByCompanyId(companyId)
-	invoiceNumber, err := s.invoiceRepo.GenerateInvoiceNumber(companyId, cfg.InvoicePrefix)
+	cfg, _ := s.cfgRepo.FindByCompanyId(companyID)
+	invoiceNumber, err := s.invoiceRepo.GenerateInvoiceNumber(companyID, cfg.InvoicePrefix)
 	if err != nil {
 		return response.InvoiceResponse{}, err
 	}
@@ -606,7 +606,7 @@ func (s *InvoiceService) CreateFromQuotation(companyId, quotationId uuid.UUID, c
 	}
 
 	inv := entity.Invoice{
-		CompanyId: companyId, InvoiceNumber: invoiceNumber,
+		CompanyId: companyID, InvoiceNumber: invoiceNumber,
 		QuotationId: &quotationId, CustomerId: q.CustomerId,
 		InvoiceDate: q.QuotationDate, DueDate: dueDate,
 		Subtotal: q.Subtotal, DiscountTotal: q.DiscountTotal,
@@ -630,8 +630,8 @@ func (s *InvoiceService) CreateFromQuotation(companyId, quotationId uuid.UUID, c
 	return toInvoiceResponse(created), nil
 }
 
-func (s *InvoiceService) FindAllTyped(companyId uuid.UUID, qp *util.QueryParams) ([]response.InvoiceResponse, int, error) {
-	entities, totalCount, err := s.invoiceRepo.FindAll(companyId, qp)
+func (s *InvoiceService) FindAllTyped(companyID uuid.UUID, qp *util.QueryParams) ([]response.InvoiceResponse, int, error) {
+	entities, totalCount, err := s.invoiceRepo.FindAll(companyID, qp)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -642,16 +642,16 @@ func (s *InvoiceService) FindAllTyped(companyId uuid.UUID, qp *util.QueryParams)
 	return resps, totalCount, nil
 }
 
-func (s *InvoiceService) FindById(companyId, id uuid.UUID) (response.InvoiceResponse, error) {
-	inv, err := s.invoiceRepo.FindById(companyId, id)
+func (s *InvoiceService) FindById(companyID, id uuid.UUID) (response.InvoiceResponse, error) {
+	inv, err := s.invoiceRepo.FindById(companyID, id)
 	if err != nil {
 		return response.InvoiceResponse{}, err
 	}
 	return toInvoiceResponse(inv), nil
 }
 
-func (s *InvoiceService) Update(companyId uuid.UUID, req request.InvoiceUpdateRequest) (response.InvoiceResponse, error) {
-	existing, err := s.invoiceRepo.FindById(companyId, req.Id)
+func (s *InvoiceService) Update(companyID uuid.UUID, req request.InvoiceUpdateRequest) (response.InvoiceResponse, error) {
+	existing, err := s.invoiceRepo.FindById(companyID, req.Id)
 	if err != nil {
 		return response.InvoiceResponse{}, err
 	}
@@ -670,7 +670,7 @@ func (s *InvoiceService) Update(companyId uuid.UUID, req request.InvoiceUpdateRe
 		return response.InvoiceResponse{}, err
 	}
 
-	cfg, _ := s.cfgRepo.FindByCompanyId(companyId)
+	cfg, _ := s.cfgRepo.FindByCompanyId(companyID)
 	inputs := make([]itemInput, len(req.Items))
 	for i, it := range req.Items {
 		inputs[i] = itemInput{it.Description, it.Qty, it.Price, it.Discount, it.TaxApplicable}
@@ -704,8 +704,8 @@ func (s *InvoiceService) Update(companyId uuid.UUID, req request.InvoiceUpdateRe
 	return toInvoiceResponse(updated), nil
 }
 
-func (s *InvoiceService) Delete(companyId, id uuid.UUID) error {
-	existing, err := s.invoiceRepo.FindById(companyId, id)
+func (s *InvoiceService) Delete(companyID, id uuid.UUID) error {
+	existing, err := s.invoiceRepo.FindById(companyID, id)
 	if err != nil {
 		return err
 	}
@@ -713,14 +713,14 @@ func (s *InvoiceService) Delete(companyId, id uuid.UUID) error {
 		return errors.New("only draft invoices can be deleted")
 	}
 
-	if err := s.invoiceRepo.Delete(companyId, id); err != nil {
+	if err := s.invoiceRepo.Delete(companyID, id); err != nil {
 		return err
 	}
 
 	// Kembalikan quotation ke accepted jika invoice ini hasil convert
 	if existing.QuotationId != nil {
-		s.quotationRepo.UpdateStatus(companyId, *existing.QuotationId, entity.QuotationStatusAccepted)
-		s.quotationRepo.ClearConvertedInvoice(companyId, *existing.QuotationId)
+		s.quotationRepo.UpdateStatus(companyID, *existing.QuotationId, entity.QuotationStatusAccepted)
+		s.quotationRepo.ClearConvertedInvoice(companyID, *existing.QuotationId)
 	}
 
 	return nil
@@ -731,8 +731,8 @@ func (s *InvoiceService) Delete(companyId, id uuid.UUID) error {
 //	Dr. Accounts Receivable   grand_total
 //	  Cr. Sales Revenue       dpp
 //	  Cr. Tax Payable (PPN)   tax_amount  (only if enable_tax && tax_amount > 0)
-func (s *InvoiceService) Confirm(companyId, id uuid.UUID, createdBy uuid.UUID) (response.InvoiceResponse, error) {
-	inv, err := s.invoiceRepo.FindById(companyId, id)
+func (s *InvoiceService) Confirm(companyID, id uuid.UUID, createdBy uuid.UUID) (response.InvoiceResponse, error) {
+	inv, err := s.invoiceRepo.FindById(companyID, id)
 	if err != nil {
 		return response.InvoiceResponse{}, err
 	}
@@ -740,7 +740,7 @@ func (s *InvoiceService) Confirm(companyId, id uuid.UUID, createdBy uuid.UUID) (
 		return response.InvoiceResponse{}, errors.New("only draft invoices can be confirmed")
 	}
 
-	cfg, err := s.cfgRepo.FindByCompanyId(companyId)
+	cfg, err := s.cfgRepo.FindByCompanyId(companyID)
 	if err != nil {
 		return response.InvoiceResponse{}, err
 	}
@@ -754,12 +754,12 @@ func (s *InvoiceService) Confirm(companyId, id uuid.UUID, createdBy uuid.UUID) (
 		return response.InvoiceResponse{}, errors.New("tax payable account not configured — set it in Company → Configuration")
 	}
 
-	period, err := s.fiscalRepo.FindByDate(companyId, inv.InvoiceDate)
+	period, err := s.fiscalRepo.FindByDate(companyID, inv.InvoiceDate)
 	if err != nil {
 		return response.InvoiceResponse{}, errors.New("no open fiscal period for invoice date: " + err.Error())
 	}
 
-	journalNumber, err := s.journalRepo.GenerateJournalNumber(companyId, entity.JournalTypeRevenue)
+	journalNumber, err := s.journalRepo.GenerateJournalNumber(companyID, entity.JournalTypeRevenue)
 	if err != nil {
 		return response.InvoiceResponse{}, err
 	}
@@ -792,7 +792,7 @@ func (s *InvoiceService) Confirm(companyId, id uuid.UUID, createdBy uuid.UUID) (
 
 	periodId := period.Id
 	journalEntry := entity.JournalEntry{
-		CompanyId:      companyId,
+		CompanyId:      companyID,
 		FiscalPeriodId: &periodId,
 		JournalNumber:  journalNumber,
 		Type:           entity.JournalTypeRevenue,
@@ -825,8 +825,8 @@ func (s *InvoiceService) Confirm(companyId, id uuid.UUID, createdBy uuid.UUID) (
 //
 //	Dr. Bank/Cash             grand_total
 //	  Cr. Accounts Receivable grand_total
-func (s *InvoiceService) MarkPaid(companyId, id uuid.UUID, req request.InvoiceMarkPaidRequest, createdBy uuid.UUID) (response.InvoiceResponse, error) {
-	inv, err := s.invoiceRepo.FindById(companyId, id)
+func (s *InvoiceService) MarkPaid(companyID, id uuid.UUID, req request.InvoiceMarkPaidRequest, createdBy uuid.UUID) (response.InvoiceResponse, error) {
+	inv, err := s.invoiceRepo.FindById(companyID, id)
 	if err != nil {
 		return response.InvoiceResponse{}, err
 	}
@@ -834,7 +834,7 @@ func (s *InvoiceService) MarkPaid(companyId, id uuid.UUID, req request.InvoiceMa
 		return response.InvoiceResponse{}, errors.New("only confirmed invoices can be marked as paid")
 	}
 
-	cfg, _ := s.cfgRepo.FindByCompanyId(companyId)
+	cfg, _ := s.cfgRepo.FindByCompanyId(companyID)
 	if cfg.ArAccountId == nil {
 		return response.InvoiceResponse{}, errors.New("accounts receivable account not configured")
 	}
@@ -844,12 +844,12 @@ func (s *InvoiceService) MarkPaid(companyId, id uuid.UUID, req request.InvoiceMa
 		return response.InvoiceResponse{}, err
 	}
 
-	period, err := s.fiscalRepo.FindByDate(companyId, paymentDate)
+	period, err := s.fiscalRepo.FindByDate(companyID, paymentDate)
 	if err != nil {
 		return response.InvoiceResponse{}, errors.New("no open fiscal period for payment date: " + err.Error())
 	}
 
-	journalNumber, err := s.journalRepo.GenerateJournalNumber(companyId, entity.JournalTypeRevenue)
+	journalNumber, err := s.journalRepo.GenerateJournalNumber(companyID, entity.JournalTypeRevenue)
 	if err != nil {
 		return response.InvoiceResponse{}, err
 	}
@@ -873,7 +873,7 @@ func (s *InvoiceService) MarkPaid(companyId, id uuid.UUID, req request.InvoiceMa
 
 	periodId := period.Id
 	journalEntry := entity.JournalEntry{
-		CompanyId:      companyId,
+		CompanyId:      companyID,
 		FiscalPeriodId: &periodId,
 		JournalNumber:  journalNumber,
 		Type:           entity.JournalTypeRevenue,
@@ -901,8 +901,8 @@ func (s *InvoiceService) MarkPaid(companyId, id uuid.UUID, req request.InvoiceMa
 
 // Cancel — creates reversal journal if invoice was confirmed, then sets status to cancelled.
 // Paid invoices cannot be cancelled.
-func (s *InvoiceService) Cancel(companyId, id uuid.UUID, createdBy uuid.UUID) (response.InvoiceResponse, error) {
-	inv, err := s.invoiceRepo.FindById(companyId, id)
+func (s *InvoiceService) Cancel(companyID, id uuid.UUID, createdBy uuid.UUID) (response.InvoiceResponse, error) {
+	inv, err := s.invoiceRepo.FindById(companyID, id)
 	if err != nil {
 		return response.InvoiceResponse{}, err
 	}
@@ -913,7 +913,7 @@ func (s *InvoiceService) Cancel(companyId, id uuid.UUID, createdBy uuid.UUID) (r
 		return response.InvoiceResponse{}, errors.New("invoice already cancelled")
 	}
 
-	cfg, _ := s.cfgRepo.FindByCompanyId(companyId)
+	cfg, _ := s.cfgRepo.FindByCompanyId(companyID)
 
 	// If confirmed, create reversal journal
 	if inv.InvoiceStatus == entity.InvoiceStatusConfirmed && inv.JournalEntryId != nil {
@@ -921,12 +921,12 @@ func (s *InvoiceService) Cancel(companyId, id uuid.UUID, createdBy uuid.UUID) (r
 			return response.InvoiceResponse{}, errors.New("COA accounts not configured for reversal")
 		}
 
-		period, err := s.fiscalRepo.FindByDate(companyId, time.Now())
+		period, err := s.fiscalRepo.FindByDate(companyID, time.Now())
 		if err != nil {
 			return response.InvoiceResponse{}, errors.New("no open fiscal period for reversal: " + err.Error())
 		}
 
-		journalNumber, _ := s.journalRepo.GenerateJournalNumber(companyId, entity.JournalTypeRevenue)
+		journalNumber, _ := s.journalRepo.GenerateJournalNumber(companyID, entity.JournalTypeRevenue)
 
 		lines := []entity.JournalLine{
 			{
@@ -956,7 +956,7 @@ func (s *InvoiceService) Cancel(companyId, id uuid.UUID, createdBy uuid.UUID) (r
 
 		periodId := period.Id
 		reversal := entity.JournalEntry{
-			CompanyId:      companyId,
+			CompanyId:      companyID,
 			FiscalPeriodId: &periodId,
 			JournalNumber:  journalNumber,
 			Type:           entity.JournalTypeRevenue,
@@ -976,9 +976,9 @@ func (s *InvoiceService) Cancel(companyId, id uuid.UUID, createdBy uuid.UUID) (r
 
 	// Kembalikan quotation ke accepted supaya bisa di-convert ulang atau di-decline secara eksplisit
 	if inv.QuotationId != nil {
-		s.quotationRepo.UpdateStatus(companyId, *inv.QuotationId, entity.QuotationStatusAccepted)
+		s.quotationRepo.UpdateStatus(companyID, *inv.QuotationId, entity.QuotationStatusAccepted)
 		// Reset ConvertedInvoiceId di quotation
-		s.quotationRepo.ClearConvertedInvoice(companyId, *inv.QuotationId)
+		s.quotationRepo.ClearConvertedInvoice(companyID, *inv.QuotationId)
 	}
 
 	return toInvoiceResponse(inv), nil

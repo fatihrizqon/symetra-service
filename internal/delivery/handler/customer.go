@@ -19,7 +19,7 @@ func NewCustomerHandler(svc service.ICustomerService) *CustomerHandler {
 }
 
 func (h *CustomerHandler) Create(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -27,7 +27,7 @@ func (h *CustomerHandler) Create(ctx *fiber.Ctx) error {
 	if err := ctx.BodyParser(&req); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
-	result, err := h.svc.Create(companyId, req)
+	result, err := h.svc.Create(companyID, req)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -35,12 +35,12 @@ func (h *CustomerHandler) Create(ctx *fiber.Ctx) error {
 }
 
 func (h *CustomerHandler) FindAll(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
 	qp := util.ParseQueryParams(ctx, entity.Customer{}.SearchableFields())
-	items, totalCount, err := h.svc.FindAll(companyId, qp)
+	items, totalCount, err := h.svc.FindAll(companyID, qp)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{Status: fiber.StatusInternalServerError, Message: err.Error()})
 	}
@@ -53,7 +53,7 @@ func (h *CustomerHandler) FindAll(ctx *fiber.Ctx) error {
 }
 
 func (h *CustomerHandler) FindById(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -61,7 +61,7 @@ func (h *CustomerHandler) FindById(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: "invalid id"})
 	}
-	result, err := h.svc.FindById(companyId, id)
+	result, err := h.svc.FindById(companyID, id)
 	if err != nil {
 		return ctx.Status(fiber.StatusNotFound).JSON(response.JSON{Status: fiber.StatusNotFound, Message: err.Error()})
 	}
@@ -69,7 +69,7 @@ func (h *CustomerHandler) FindById(ctx *fiber.Ctx) error {
 }
 
 func (h *CustomerHandler) Update(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -82,7 +82,7 @@ func (h *CustomerHandler) Update(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
 	req.Id = id
-	result, err := h.svc.Update(companyId, req)
+	result, err := h.svc.Update(companyID, req)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -90,7 +90,7 @@ func (h *CustomerHandler) Update(ctx *fiber.Ctx) error {
 }
 
 func (h *CustomerHandler) Delete(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -98,19 +98,19 @@ func (h *CustomerHandler) Delete(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: "invalid id"})
 	}
-	if err := h.svc.Delete(companyId, id); err != nil {
+	if err := h.svc.Delete(companyID, id); err != nil {
 		return ctx.Status(fiber.StatusNotFound).JSON(response.JSON{Status: fiber.StatusNotFound, Message: err.Error()})
 	}
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{Status: fiber.StatusOK, Message: "Selected record has been deleted."})
 }
 
 func (h *CustomerHandler) SelectDropdownList(ctx *fiber.Ctx) error {
-	companyId, err := util.GetCompanyID(ctx)
+	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
 	qp := util.ParseQueryParams(ctx, entity.Customer{}.SearchableFields())
-	items, totalCount, err := h.svc.SelectDropdownList(companyId, qp)
+	items, totalCount, err := h.svc.SelectDropdownList(companyID, qp)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{Status: fiber.StatusInternalServerError, Message: err.Error()})
 	}

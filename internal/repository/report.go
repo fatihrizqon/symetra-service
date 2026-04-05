@@ -19,12 +19,12 @@ type AccountLedgerRow struct {
 }
 
 type IReportRepository interface {
-	GetLedger(companyId uuid.UUID, start, end time.Time) ([]AccountLedgerRow, error)
-	GetLedgerUpTo(companyId uuid.UUID, end time.Time) ([]AccountLedgerRow, error)
-	GetPostedCount(companyId uuid.UUID, start, end time.Time) (int, error)
-	GetGeneralLedger(companyId uuid.UUID, start, end time.Time, coaID string) ([]GeneralLedgerRow, error)
-	GetOpeningBalance(companyId uuid.UUID, asOf time.Time, coaID string) (float64, error)
-	GetJournalBook(companyId uuid.UUID, start, end time.Time) ([]JournalBookRow, error)
+	GetLedger(companyID uuid.UUID, start, end time.Time) ([]AccountLedgerRow, error)
+	GetLedgerUpTo(companyID uuid.UUID, end time.Time) ([]AccountLedgerRow, error)
+	GetPostedCount(companyID uuid.UUID, start, end time.Time) (int, error)
+	GetGeneralLedger(companyID uuid.UUID, start, end time.Time, coaID string) ([]GeneralLedgerRow, error)
+	GetOpeningBalance(companyID uuid.UUID, asOf time.Time, coaID string) (float64, error)
+	GetJournalBook(companyID uuid.UUID, start, end time.Time) ([]JournalBookRow, error)
 }
 
 type ReportRepository struct {
@@ -35,7 +35,7 @@ func NewReportRepository(db *gorm.DB) IReportRepository {
 	return &ReportRepository{Db: db}
 }
 
-func (r *ReportRepository) GetLedger(companyId uuid.UUID, start, end time.Time) ([]AccountLedgerRow, error) {
+func (r *ReportRepository) GetLedger(companyID uuid.UUID, start, end time.Time) ([]AccountLedgerRow, error) {
 	var rows []AccountLedgerRow
 	err := r.Db.Raw(`
 		SELECT
@@ -57,11 +57,11 @@ func (r *ReportRepository) GetLedger(companyId uuid.UUID, start, end time.Time) 
 		  AND je.date <= ?
 		GROUP BY ca.code, ca.name, cg.name, cs.name
 		ORDER BY ca.code
-	`, companyId, start, end).Scan(&rows).Error
+	`, companyID, start, end).Scan(&rows).Error
 	return rows, err
 }
 
-func (r *ReportRepository) GetLedgerUpTo(companyId uuid.UUID, end time.Time) ([]AccountLedgerRow, error) {
+func (r *ReportRepository) GetLedgerUpTo(companyID uuid.UUID, end time.Time) ([]AccountLedgerRow, error) {
 	var rows []AccountLedgerRow
 	err := r.Db.Raw(`
 		SELECT
@@ -82,11 +82,11 @@ func (r *ReportRepository) GetLedgerUpTo(companyId uuid.UUID, end time.Time) ([]
 		  AND je.date <= ?
 		GROUP BY ca.code, ca.name, cg.name, cs.name
 		ORDER BY ca.code
-	`, companyId, end).Scan(&rows).Error
+	`, companyID, end).Scan(&rows).Error
 	return rows, err
 }
 
-func (r *ReportRepository) GetPostedCount(companyId uuid.UUID, start, end time.Time) (int, error) {
+func (r *ReportRepository) GetPostedCount(companyID uuid.UUID, start, end time.Time) (int, error) {
 	var count int64
 	err := r.Db.Raw(`
 		SELECT COUNT(*) FROM journal_entries
@@ -94,7 +94,7 @@ func (r *ReportRepository) GetPostedCount(companyId uuid.UUID, start, end time.T
 		  AND company_id = ?
 		  AND date >= ?
 		  AND date <= ?
-	`, companyId, start, end).Scan(&count).Error
+	`, companyID, start, end).Scan(&count).Error
 	return int(count), err
 }
 
@@ -125,7 +125,7 @@ type JournalBookRow struct {
 	TotalCredit   float64
 }
 
-func (r *ReportRepository) GetGeneralLedger(companyId uuid.UUID, start, end time.Time, coaID string) ([]GeneralLedgerRow, error) {
+func (r *ReportRepository) GetGeneralLedger(companyID uuid.UUID, start, end time.Time, coaID string) ([]GeneralLedgerRow, error) {
 	var rows []GeneralLedgerRow
 
 	query := `
@@ -149,7 +149,7 @@ func (r *ReportRepository) GetGeneralLedger(companyId uuid.UUID, start, end time
 		  AND je.date >= ?
 		  AND je.date <= ?`
 
-	args := []interface{}{companyId, start, end}
+	args := []interface{}{companyID, start, end}
 	if coaID != "" {
 		query += " AND ca.id = ?"
 		args = append(args, coaID)
@@ -160,7 +160,7 @@ func (r *ReportRepository) GetGeneralLedger(companyId uuid.UUID, start, end time
 	return rows, err
 }
 
-func (r *ReportRepository) GetOpeningBalance(companyId uuid.UUID, asOf time.Time, coaID string) (float64, error) {
+func (r *ReportRepository) GetOpeningBalance(companyID uuid.UUID, asOf time.Time, coaID string) (float64, error) {
 	type result struct{ Balance float64 }
 	var res result
 
@@ -173,7 +173,7 @@ func (r *ReportRepository) GetOpeningBalance(companyId uuid.UUID, asOf time.Time
 		  AND je.company_id = ?
 		  AND je.date < ?`
 
-	args := []interface{}{companyId, asOf}
+	args := []interface{}{companyID, asOf}
 	if coaID != "" {
 		query += " AND ca.id = ?"
 		args = append(args, coaID)
@@ -183,7 +183,7 @@ func (r *ReportRepository) GetOpeningBalance(companyId uuid.UUID, asOf time.Time
 	return res.Balance, err
 }
 
-func (r *ReportRepository) GetJournalBook(companyId uuid.UUID, start, end time.Time) ([]JournalBookRow, error) {
+func (r *ReportRepository) GetJournalBook(companyID uuid.UUID, start, end time.Time) ([]JournalBookRow, error) {
 	var rows []JournalBookRow
 	err := r.Db.Raw(`
 		SELECT
@@ -205,6 +205,6 @@ func (r *ReportRepository) GetJournalBook(companyId uuid.UUID, start, end time.T
 		  AND je.date >= ?
 		  AND je.date <= ?
 		ORDER BY je.date, je.journal_number, jl.id
-	`, companyId, start, end).Scan(&rows).Error
+	`, companyID, start, end).Scan(&rows).Error
 	return rows, err
 }

@@ -23,15 +23,15 @@ var poSortColumns = map[string]string{
 
 type IPurchaseOrderRepository interface {
 	Create(po entity.PurchaseOrder, items []entity.PurchaseOrderItem) (entity.PurchaseOrder, error)
-	FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]entity.PurchaseOrder, int, error)
-	FindById(companyId, id uuid.UUID) (entity.PurchaseOrder, error)
+	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.PurchaseOrder, int, error)
+	FindById(companyID, id uuid.UUID) (entity.PurchaseOrder, error)
 	Update(po entity.PurchaseOrder, items []entity.PurchaseOrderItem) (entity.PurchaseOrder, error)
-	Delete(companyId, id uuid.UUID) error
-	UpdateStatus(companyId, id uuid.UUID, status entity.PurchaseOrderStatus) error
+	Delete(companyID, id uuid.UUID) error
+	UpdateStatus(companyID, id uuid.UUID, status entity.PurchaseOrderStatus) error
 	Save(po entity.PurchaseOrder) error
-	GeneratePONumber(companyId uuid.UUID, prefix string) (string, error)
+	GeneratePONumber(companyID uuid.UUID, prefix string) (string, error)
 	// SelectDropdown untuk keperluan dropdown PO (bills/from-purchase-order)
-	SelectDropdown(companyId uuid.UUID, qp *util.QueryParams) ([]entity.PurchaseOrder, int, error)
+	SelectDropdown(companyID uuid.UUID, qp *util.QueryParams) ([]entity.PurchaseOrder, int, error)
 }
 
 type PurchaseOrderRepository struct {
@@ -42,12 +42,12 @@ func NewPurchaseOrderRepository(db *gorm.DB) IPurchaseOrderRepository {
 	return &PurchaseOrderRepository{Db: db}
 }
 
-func (r *PurchaseOrderRepository) GeneratePONumber(companyId uuid.UUID, prefix string) (string, error) {
+func (r *PurchaseOrderRepository) GeneratePONumber(companyID uuid.UUID, prefix string) (string, error) {
 	now := time.Now()
 	monthPrefix := fmt.Sprintf("%s-%d%02d", prefix, now.Year(), now.Month())
 	var count int64
 	if err := r.Db.Model(&entity.PurchaseOrder{}).
-		Where("company_id = ? AND po_number LIKE ?", companyId, monthPrefix+"%").
+		Where("company_id = ? AND po_number LIKE ?", companyID, monthPrefix+"%").
 		Count(&count).Error; err != nil {
 		return "", err
 	}
@@ -73,10 +73,10 @@ func (r *PurchaseOrderRepository) Create(po entity.PurchaseOrder, items []entity
 	return r.FindById(po.CompanyId, po.Id)
 }
 
-func (r *PurchaseOrderRepository) FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]entity.PurchaseOrder, int, error) {
+func (r *PurchaseOrderRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.PurchaseOrder, int, error) {
 	var entities []entity.PurchaseOrder
 	var totalCount int64
-	query := r.Db.Model(&entity.PurchaseOrder{}).Preload("Vendor").Where("purchase_orders.company_id = ?", companyId)
+	query := r.Db.Model(&entity.PurchaseOrder{}).Preload("Vendor").Where("purchase_orders.company_id = ?", companyID)
 	query = util.ApplySearch(query, qp)
 	query = entity.PurchaseOrder{}.ApplyFilters(query, qp.Filters)
 	if err := query.Count(&totalCount).Error; err != nil {
@@ -95,12 +95,12 @@ func (r *PurchaseOrderRepository) FindAll(companyId uuid.UUID, qp *util.QueryPar
 
 // SelectDropdown — hanya PO dengan status approved (belum converted), untuk keperluan
 // dropdown "Convert PO ke Bill"
-func (r *PurchaseOrderRepository) SelectDropdown(companyId uuid.UUID, qp *util.QueryParams) ([]entity.PurchaseOrder, int, error) {
+func (r *PurchaseOrderRepository) SelectDropdown(companyID uuid.UUID, qp *util.QueryParams) ([]entity.PurchaseOrder, int, error) {
 	var entities []entity.PurchaseOrder
 	var totalCount int64
 	query := r.Db.Model(&entity.PurchaseOrder{}).
 		Preload("Vendor").
-		Where("purchase_orders.company_id = ? AND purchase_orders.status = ?", companyId, entity.POStatusApproved)
+		Where("purchase_orders.company_id = ? AND purchase_orders.status = ?", companyID, entity.POStatusApproved)
 	query = util.ApplySearch(query, qp)
 	if err := query.Count(&totalCount).Error; err != nil {
 		return nil, 0, err
@@ -115,10 +115,10 @@ func (r *PurchaseOrderRepository) SelectDropdown(companyId uuid.UUID, qp *util.Q
 	return entities, int(totalCount), nil
 }
 
-func (r *PurchaseOrderRepository) FindById(companyId, id uuid.UUID) (entity.PurchaseOrder, error) {
+func (r *PurchaseOrderRepository) FindById(companyID, id uuid.UUID) (entity.PurchaseOrder, error) {
 	var po entity.PurchaseOrder
 	err := r.Db.Preload("Vendor").Preload("Items").
-		Where("id = ? AND company_id = ?", id, companyId).First(&po).Error
+		Where("id = ? AND company_id = ?", id, companyID).First(&po).Error
 	if err != nil {
 		return po, errors.New("purchase order not found")
 	}
@@ -147,13 +147,13 @@ func (r *PurchaseOrderRepository) Update(po entity.PurchaseOrder, items []entity
 	return r.FindById(po.CompanyId, po.Id)
 }
 
-func (r *PurchaseOrderRepository) Delete(companyId, id uuid.UUID) error {
-	return r.Db.Where("id = ? AND company_id = ?", id, companyId).Delete(&entity.PurchaseOrder{}).Error
+func (r *PurchaseOrderRepository) Delete(companyID, id uuid.UUID) error {
+	return r.Db.Where("id = ? AND company_id = ?", id, companyID).Delete(&entity.PurchaseOrder{}).Error
 }
 
-func (r *PurchaseOrderRepository) UpdateStatus(companyId, id uuid.UUID, status entity.PurchaseOrderStatus) error {
+func (r *PurchaseOrderRepository) UpdateStatus(companyID, id uuid.UUID, status entity.PurchaseOrderStatus) error {
 	return r.Db.Model(&entity.PurchaseOrder{}).
-		Where("id = ? AND company_id = ?", id, companyId).
+		Where("id = ? AND company_id = ?", id, companyID).
 		Update("status", status).Error
 }
 
@@ -175,17 +175,17 @@ var billSortColumns = map[string]string{
 
 type IBillRepository interface {
 	Create(bill entity.Bill, items []entity.BillItem) (entity.Bill, error)
-	FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]entity.Bill, int, error)
+	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Bill, int, error)
 	// FIX [BUG-06]: FindByIdForUpdate menggunakan SELECT FOR UPDATE untuk mencegah race condition
-	FindByIdForUpdate(tx *gorm.DB, companyId, id uuid.UUID) (entity.Bill, error)
-	FindById(companyId, id uuid.UUID) (entity.Bill, error)
+	FindByIdForUpdate(tx *gorm.DB, companyID, id uuid.UUID) (entity.Bill, error)
+	FindById(companyID, id uuid.UUID) (entity.Bill, error)
 	Update(bill entity.Bill, items []entity.BillItem) (entity.Bill, error)
-	Delete(companyId, id uuid.UUID) error
+	Delete(companyID, id uuid.UUID) error
 	Save(bill entity.Bill) error
 	SaveTx(tx *gorm.DB, bill entity.Bill) error
 	AddPayment(payment entity.BillPayment) (entity.BillPayment, error)
 	AddPaymentTx(tx *gorm.DB, payment entity.BillPayment) (entity.BillPayment, error)
-	GenerateBillNumber(companyId uuid.UUID, prefix string) (string, error)
+	GenerateBillNumber(companyID uuid.UUID, prefix string) (string, error)
 	// FIX [BUG-22]: IsLinkedToJournal kini juga cek BillPayment.JournalEntryId
 	IsLinkedToJournal(journalId uuid.UUID) bool
 	// DB() untuk mengakses raw *gorm.DB untuk transaksi di service layer
@@ -205,12 +205,12 @@ func (r *BillRepository) DB() *gorm.DB {
 	return r.Db
 }
 
-func (r *BillRepository) GenerateBillNumber(companyId uuid.UUID, prefix string) (string, error) {
+func (r *BillRepository) GenerateBillNumber(companyID uuid.UUID, prefix string) (string, error) {
 	now := time.Now()
 	monthPrefix := fmt.Sprintf("%s-%d%02d", prefix, now.Year(), now.Month())
 	var count int64
 	if err := r.Db.Model(&entity.Bill{}).
-		Where("company_id = ? AND bill_number LIKE ?", companyId, monthPrefix+"%").
+		Where("company_id = ? AND bill_number LIKE ?", companyID, monthPrefix+"%").
 		Count(&count).Error; err != nil {
 		return "", err
 	}
@@ -236,10 +236,10 @@ func (r *BillRepository) Create(bill entity.Bill, items []entity.BillItem) (enti
 	return r.FindById(bill.CompanyId, bill.Id)
 }
 
-func (r *BillRepository) FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]entity.Bill, int, error) {
+func (r *BillRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Bill, int, error) {
 	var entities []entity.Bill
 	var totalCount int64
-	query := r.Db.Model(&entity.Bill{}).Preload("Vendor").Where("bills.company_id = ?", companyId)
+	query := r.Db.Model(&entity.Bill{}).Preload("Vendor").Where("bills.company_id = ?", companyID)
 	query = util.ApplySearch(query, qp)
 	query = entity.Bill{}.ApplyFilters(query, qp.Filters)
 	if err := query.Count(&totalCount).Error; err != nil {
@@ -256,7 +256,7 @@ func (r *BillRepository) FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]e
 	return entities, int(totalCount), nil
 }
 
-func (r *BillRepository) FindById(companyId, id uuid.UUID) (entity.Bill, error) {
+func (r *BillRepository) FindById(companyID, id uuid.UUID) (entity.Bill, error) {
 	var bill entity.Bill
 	err := r.Db.
 		Preload("Vendor").
@@ -265,7 +265,7 @@ func (r *BillRepository) FindById(companyId, id uuid.UUID) (entity.Bill, error) 
 		Preload("Payments").
 		Preload("Payments.PaymentAccount").
 		Preload("PurchaseOrder").
-		Where("id = ? AND company_id = ?", id, companyId).First(&bill).Error
+		Where("id = ? AND company_id = ?", id, companyID).First(&bill).Error
 	if err != nil {
 		return bill, errors.New("bill not found")
 	}
@@ -274,10 +274,10 @@ func (r *BillRepository) FindById(companyId, id uuid.UUID) (entity.Bill, error) 
 
 // FIX [BUG-06]: FindByIdForUpdate — SELECT ... FOR UPDATE untuk mencegah race condition
 // pada AddPayment. Harus dipanggil dalam konteks transaksi yang sudah dimulai.
-func (r *BillRepository) FindByIdForUpdate(tx *gorm.DB, companyId, id uuid.UUID) (entity.Bill, error) {
+func (r *BillRepository) FindByIdForUpdate(tx *gorm.DB, companyID, id uuid.UUID) (entity.Bill, error) {
 	var bill entity.Bill
 	err := tx.Set("gorm:query_option", "FOR UPDATE").
-		Where("id = ? AND company_id = ?", id, companyId).
+		Where("id = ? AND company_id = ?", id, companyID).
 		First(&bill).Error
 	if err != nil {
 		return bill, errors.New("bill not found")
@@ -307,8 +307,8 @@ func (r *BillRepository) Update(bill entity.Bill, items []entity.BillItem) (enti
 	return r.FindById(bill.CompanyId, bill.Id)
 }
 
-func (r *BillRepository) Delete(companyId, id uuid.UUID) error {
-	return r.Db.Where("id = ? AND company_id = ?", id, companyId).Delete(&entity.Bill{}).Error
+func (r *BillRepository) Delete(companyID, id uuid.UUID) error {
+	return r.Db.Where("id = ? AND company_id = ?", id, companyID).Delete(&entity.Bill{}).Error
 }
 
 func (r *BillRepository) Save(bill entity.Bill) error {

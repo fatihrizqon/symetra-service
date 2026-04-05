@@ -18,10 +18,10 @@ var vendorSortColumns = map[string]string{
 
 type IVendorRepository interface {
 	Create(entity.Vendor) (entity.Vendor, error)
-	FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]entity.Vendor, int, error)
-	FindById(companyId, id uuid.UUID) (entity.Vendor, error)
+	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Vendor, int, error)
+	FindById(companyID, id uuid.UUID) (entity.Vendor, error)
 	Update(entity.Vendor) error
-	Delete(companyId, id uuid.UUID) error
+	Delete(companyID, id uuid.UUID) error
 }
 
 type VendorRepository struct {
@@ -40,12 +40,12 @@ func (r *VendorRepository) Create(v entity.Vendor) (entity.Vendor, error) {
 	return r.FindById(v.CompanyId, v.Id)
 }
 
-func (r *VendorRepository) FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]entity.Vendor, int, error) {
+func (r *VendorRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Vendor, int, error) {
 	var entities []entity.Vendor
 	var totalCount int64
 
 	query := r.Db.Preload("COA").Model(&entity.Vendor{}).
-		Where("vendors.company_id = ?", companyId)
+		Where("vendors.company_id = ?", companyID)
 	query = util.ApplySearch(query, qp)
 	query = entity.Vendor{}.ApplyFilters(query, qp.Filters)
 
@@ -65,10 +65,10 @@ func (r *VendorRepository) FindAll(companyId uuid.UUID, qp *util.QueryParams) ([
 	return entities, int(totalCount), nil
 }
 
-func (r *VendorRepository) FindById(companyId, id uuid.UUID) (entity.Vendor, error) {
+func (r *VendorRepository) FindById(companyID, id uuid.UUID) (entity.Vendor, error) {
 	var v entity.Vendor
 	if err := r.Db.Preload("COA").
-		Where("id = ? AND company_id = ?", id, companyId).
+		Where("id = ? AND company_id = ?", id, companyID).
 		First(&v).Error; err != nil {
 		return v, err
 	}
@@ -79,7 +79,7 @@ func (r *VendorRepository) Update(v entity.Vendor) error {
 	return r.Db.Save(&v).Error
 }
 
-func (r *VendorRepository) Delete(companyId, id uuid.UUID) error {
-	return r.Db.Where("id = ? AND company_id = ?", id, companyId).
+func (r *VendorRepository) Delete(companyID, id uuid.UUID) error {
+	return r.Db.Where("id = ? AND company_id = ?", id, companyID).
 		Delete(&entity.Vendor{}).Error
 }

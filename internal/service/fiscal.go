@@ -767,10 +767,6 @@ func periodName(t time.Time, pType entity.PeriodType) string {
 	}
 }
 
-func parseDate(s string) (time.Time, error) {
-	return time.Parse("2006-01-02", s)
-}
-
 func mapFiscalYear(fy entity.FiscalYear) response.FiscalYearResponse {
 	return response.FiscalYearResponse{
 		Id:          fy.Id,

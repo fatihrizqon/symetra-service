@@ -52,8 +52,8 @@ import (
 )
 
 type RouteConfig struct {
-	App            *fiber.App
-	AuthMiddleware fiber.Handler
+	App               *fiber.App
+	AuthMiddleware    fiber.Handler
 	CompanyMiddleware fiber.Handler
 
 	UserHandler          *handler.UserHandler

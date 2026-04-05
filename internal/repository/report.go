@@ -175,7 +175,7 @@ func (r *ReportRepository) GetOpeningBalance(companyID uuid.UUID, asOf time.Time
 
 	args := []interface{}{companyID, asOf}
 	if coaID != "" {
-		query += " AND ca.id = ?"
+		query += " AND ca.code = ?"
 		args = append(args, coaID)
 	}
 

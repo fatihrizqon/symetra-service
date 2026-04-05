@@ -11,13 +11,13 @@ import (
 )
 
 // ─── COA Group name constants ─────────────────────────────────────────────────
-// Must match coa_groups.name in seed data (case-insensitive contains check).
+// Must match coa_groups.name in seed data (Bahasa Indonesia).
 const (
-	groupAssets      = "assets"
-	groupLiabilities = "liabilities"
-	groupEquity      = "equity"
-	groupRevenue     = "revenue"
-	groupExpense     = "expense" // COA seed uses singular "Expense"
+	groupAssets      = "aset"
+	groupLiabilities = "liabilitas"
+	groupEquity      = "ekuitas"
+	groupRevenue     = "pendapatan"
+	groupExpense     = "beban"
 )
 
 func normalizeGroup(name string) string {
@@ -51,8 +51,6 @@ func NewReportService(repo repository.IReportRepository) IReportService {
 }
 
 // ─── 1. Trial Balance ────────────────────────────────────────────────────────
-// Shows debit / credit totals per account for the given period.
-
 func (s *ReportService) TrialBalance(companyID uuid.UUID, start, end time.Time) (response.TrialBalanceResponse, error) {
 	rows, err := s.IReportRepository.GetLedger(companyID, start, end)
 	if err != nil {
@@ -65,7 +63,6 @@ func (s *ReportService) TrialBalance(companyID uuid.UUID, start, end time.Time) 
 	var totalDebit, totalCredit float64
 
 	for _, r := range rows {
-		// Skip accounts with zero activity in the period
 		if r.TotalDebit == 0 && r.TotalCredit == 0 {
 			continue
 		}
@@ -96,9 +93,6 @@ func (s *ReportService) TrialBalance(companyID uuid.UUID, start, end time.Time) 
 }
 
 // ─── 2. Profit & Loss ────────────────────────────────────────────────────────
-// Laba Rugi: Pendapatan → HPP → Laba Kotor → Beban Operasional →
-//            Laba Operasional → Pendapatan/Beban Lain → Laba Bersih
-
 func (s *ReportService) ProfitLoss(companyID uuid.UUID, start, end time.Time) (response.ProfitLossResponse, error) {
 	rows, err := s.IReportRepository.GetLedger(companyID, start, end)
 	if err != nil {
@@ -117,15 +111,15 @@ func (s *ReportService) ProfitLoss(companyID uuid.UUID, start, end time.Time) (r
 		sg := strings.ToLower(r.SubgroupName)
 
 		switch {
-		// ── Revenue group ─────────────────────────────────────────────────
+		// ── Revenue / Pendapatan ───────────────────────────────────────────
 		case isGroup(g, groupRevenue):
 			item := response.ReportLineItem{
 				AccountCode: r.AccountCode,
 				AccountName: r.AccountName,
-				// Revenue normal balance = credit; positive = credit > debit
-				Amount: r.TotalCredit - r.TotalDebit,
+				Amount:      r.TotalCredit - r.TotalDebit,
 			}
-			if subgroupContains(sg, "other") {
+			// "Pendapatan Lain-lain" subgroup → other revenue
+			if subgroupContains(sg, "lain") {
 				otherRevenue.Items = append(otherRevenue.Items, item)
 				otherRevenue.Subtotal += item.Amount
 			} else {
@@ -133,26 +127,25 @@ func (s *ReportService) ProfitLoss(companyID uuid.UUID, start, end time.Time) (r
 				operatingRevenue.Subtotal += item.Amount
 			}
 
-		// ── Expense group ─────────────────────────────────────────────────
+		// ── Expense / Beban ───────────────────────────────────────────────
 		case isGroup(g, groupExpense):
 			item := response.ReportLineItem{
 				AccountCode: r.AccountCode,
 				AccountName: r.AccountName,
-				// Expense normal balance = debit; positive = debit > credit
-				Amount: r.TotalDebit - r.TotalCredit,
+				Amount:      r.TotalDebit - r.TotalCredit,
 			}
 			switch {
-			case subgroupContains(sg, "cost of goods") || subgroupContains(sg, "cogs") || subgroupContains(sg, "hpp"):
+			case subgroupContains(sg, "hpp") || subgroupContains(sg, "harga pokok"):
 				cogs.Items = append(cogs.Items, item)
 				cogs.Subtotal += item.Amount
-			case subgroupContains(sg, "operating"):
+			case subgroupContains(sg, "operasional"):
 				opex.Items = append(opex.Items, item)
 				opex.Subtotal += item.Amount
-			case subgroupContains(sg, "administrative") || subgroupContains(sg, "admin"):
+			case subgroupContains(sg, "administrasi") || subgroupContains(sg, "admin"):
 				adminExp.Items = append(adminExp.Items, item)
 				adminExp.Subtotal += item.Amount
 			default:
-				// Financial expense, other → goes to other/financial
+				// Beban Lain-lain, Beban Keuangan, dll
 				finExp.Items = append(finExp.Items, item)
 				finExp.Subtotal += item.Amount
 			}
@@ -183,8 +176,6 @@ func (s *ReportService) ProfitLoss(companyID uuid.UUID, start, end time.Time) (r
 }
 
 // ─── 3. Balance Sheet ────────────────────────────────────────────────────────
-// Neraca: kumulatif dari awal sampai asOf.
-
 func (s *ReportService) BalanceSheet(companyID uuid.UUID, asOf time.Time) (response.BalanceSheetResponse, error) {
 	rows, err := s.IReportRepository.GetLedgerUpTo(companyID, asOf)
 	if err != nil {
@@ -202,7 +193,6 @@ func (s *ReportService) BalanceSheet(companyID uuid.UUID, asOf time.Time) (respo
 
 		switch {
 		case isGroup(g, groupAssets):
-			// Asset normal balance = debit
 			amount := r.TotalDebit - r.TotalCredit
 			sec := ensureSection(assetSections, r.SubgroupName)
 			sec.Items = append(sec.Items, response.ReportLineItem{
@@ -214,7 +204,6 @@ func (s *ReportService) BalanceSheet(companyID uuid.UUID, asOf time.Time) (respo
 			totalAssets += amount
 
 		case isGroup(g, groupLiabilities):
-			// Liability normal balance = credit
 			amount := r.TotalCredit - r.TotalDebit
 			sec := ensureSection(liabSections, r.SubgroupName)
 			sec.Items = append(sec.Items, response.ReportLineItem{
@@ -226,7 +215,6 @@ func (s *ReportService) BalanceSheet(companyID uuid.UUID, asOf time.Time) (respo
 			totalLiabilities += amount
 
 		case isGroup(g, groupEquity):
-			// Equity normal balance = credit
 			amount := r.TotalCredit - r.TotalDebit
 			sec := ensureSection(equitySections, r.SubgroupName)
 			sec.Items = append(sec.Items, response.ReportLineItem{
@@ -239,10 +227,6 @@ func (s *ReportService) BalanceSheet(companyID uuid.UUID, asOf time.Time) (respo
 		}
 	}
 
-	// Retained earnings: net profit from all revenue/expense accounts up to asOf
-	// is embedded in the ledger via journal entries; no need to add separately
-	// as long as closing entries exist. If no closing entries (open-book),
-	// compute and inject current-period net profit into equity.
 	plResp, err := s.profitLossFromRows(rows)
 	if err == nil && plResp.NetProfit != 0 {
 		sec := ensureSection(equitySections, "Laba Periode Berjalan")
@@ -269,16 +253,12 @@ func (s *ReportService) BalanceSheet(companyID uuid.UUID, asOf time.Time) (respo
 }
 
 // ─── 4. Cash Flow ────────────────────────────────────────────────────────────
-// Arus Kas: Indirect method — Operating (from P&L), Investing, Financing.
-
 func (s *ReportService) CashFlow(companyID uuid.UUID, start, end time.Time) (response.CashFlowResponse, error) {
-	// Period rows
 	periodRows, err := s.IReportRepository.GetLedger(companyID, start, end)
 	if err != nil {
 		return response.CashFlowResponse{}, err
 	}
 
-	// Opening cash: cumulative balance of cash/bank accounts BEFORE start
 	openingEnd := start.Add(-24 * time.Hour)
 	openingRows, err := s.IReportRepository.GetLedgerUpTo(companyID, openingEnd)
 	if err != nil {
@@ -299,27 +279,25 @@ func (s *ReportService) CashFlow(companyID uuid.UUID, start, end time.Time) (res
 		}
 
 		switch {
-		// Revenue → cash inflow (positive)
 		case isGroup(g, groupRevenue):
 			item.Amount = r.TotalCredit - r.TotalDebit
 			operating.Items = append(operating.Items, item)
 			operating.Subtotal += item.Amount
 
-		// Expense → cash outflow (negative)
 		case isGroup(g, groupExpense):
 			item.Amount = -(r.TotalDebit - r.TotalCredit)
 			operating.Items = append(operating.Items, item)
 			operating.Subtotal += item.Amount
 
-		// Fixed / intangible assets → investing
+		// Aset Tidak Lancar → investasi
 		case isGroup(g, groupAssets) &&
-			(subgroupContains(sg, "fixed") || subgroupContains(sg, "intangible") ||
-				subgroupContains(sg, "equipment") || subgroupContains(sg, "vehicle")):
-			item.Amount = -(r.TotalDebit - r.TotalCredit) // purchase = outflow
+			(subgroupContains(sg, "tidak lancar") || subgroupContains(sg, "tetap") ||
+				subgroupContains(sg, "kendaraan") || subgroupContains(sg, "peralatan") ||
+				subgroupContains(sg, "inventaris")):
+			item.Amount = -(r.TotalDebit - r.TotalCredit)
 			investing.Items = append(investing.Items, item)
 			investing.Subtotal += item.Amount
 
-		// Liabilities & equity → financing
 		case isGroup(g, groupLiabilities) || isGroup(g, groupEquity):
 			item.Amount = r.TotalCredit - r.TotalDebit
 			financing.Items = append(financing.Items, item)
@@ -327,14 +305,14 @@ func (s *ReportService) CashFlow(companyID uuid.UUID, start, end time.Time) (res
 		}
 	}
 
-	// Compute opening cash balance (Cash + Bank accounts)
+	// Opening cash: akun Kas & Bank (Aset Lancar)
 	var openingCash float64
 	for _, r := range openingRows {
 		if isGroup(normalizeGroup(r.GroupName), groupAssets) {
 			name := strings.ToLower(r.AccountName)
 			sg := strings.ToLower(r.SubgroupName)
-			if strings.Contains(name, "cash") || strings.Contains(name, "bank") ||
-				strings.Contains(sg, "cash") || strings.Contains(sg, "current") {
+			if strings.Contains(name, "kas") || strings.Contains(name, "bank") ||
+				strings.Contains(sg, "kas") || strings.Contains(sg, "lancar") {
 				openingCash += r.TotalDebit - r.TotalCredit
 			}
 		}
@@ -360,9 +338,7 @@ func (s *ReportService) CashFlow(companyID uuid.UUID, start, end time.Time) (res
 }
 
 // ─── 5. Equity Statement ─────────────────────────────────────────────────────
-
 func (s *ReportService) EquityStatement(companyID uuid.UUID, start, end time.Time) (response.EquityStatementResponse, error) {
-	// Opening equity: cumulative up to day before start
 	openingEnd := start.Add(-24 * time.Hour)
 	openRows, err := s.IReportRepository.GetLedgerUpTo(companyID, openingEnd)
 	if err != nil {
@@ -376,7 +352,6 @@ func (s *ReportService) EquityStatement(companyID uuid.UUID, start, end time.Tim
 		}
 	}
 
-	// Period equity movements
 	periodRows, err := s.IReportRepository.GetLedger(companyID, start, end)
 	if err != nil {
 		return response.EquityStatementResponse{}, err
@@ -398,7 +373,6 @@ func (s *ReportService) EquityStatement(companyID uuid.UUID, start, end time.Tim
 		}
 	}
 
-	// Net profit for period
 	plResp, err := s.ProfitLoss(companyID, start, end)
 	if err != nil {
 		return response.EquityStatementResponse{}, err
@@ -419,8 +393,6 @@ func (s *ReportService) EquityStatement(companyID uuid.UUID, start, end time.Tim
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
 
-// profitLossFromRows computes net profit directly from a pre-fetched ledger slice.
-// Used by BalanceSheet to avoid a second DB round-trip.
 func (s *ReportService) profitLossFromRows(rows []repository.AccountLedgerRow) (response.ProfitLossResponse, error) {
 	var totalRevenue, totalExpense float64
 	for _, r := range rows {
@@ -451,16 +423,12 @@ func sectionsToSlice(m map[string]*response.ReportSection) []response.ReportSect
 }
 
 // ─── 6. General Ledger (Buku Besar) ──────────────────────────────────────────
-// Per-account transaction history with running balance.
-// coaID = "" → all accounts; coaID = "<uuid>" → single account.
-
 func (s *ReportService) GeneralLedger(companyID uuid.UUID, start, end time.Time, coaID string) (response.GeneralLedgerResponse, error) {
 	rows, err := s.IReportRepository.GetGeneralLedger(companyID, start, end, coaID)
 	if err != nil {
 		return response.GeneralLedgerResponse{}, err
 	}
 
-	// Group rows by account
 	type accountKey struct{ code, name, group, subgroup string }
 	type accBucket struct {
 		key   accountKey
@@ -485,7 +453,6 @@ func (s *ReportService) GeneralLedger(companyID uuid.UUID, start, end time.Time,
 			Description:   r.Description,
 			Debit:         r.Debit,
 			Credit:        r.Credit,
-			// Running balance computed below
 		})
 		b.td += r.Debit
 		b.tc += r.Credit
@@ -496,12 +463,10 @@ func (s *ReportService) GeneralLedger(companyID uuid.UUID, start, end time.Time,
 	for _, k := range orderMap {
 		b := buckets[k]
 
-		// Determine normal balance sign by group
 		g := normalizeGroup(k.group)
 		isDebitNormal := isGroup(g, groupAssets) || isGroup(g, groupExpense)
 
-		// Opening balance: cumulative net before period start for this account.
-		// Raw value is always (debit - credit); flip sign for credit-normal accounts.
+		// Opening balance: query pakai coa_id (UUID), bukan code
 		openRaw, _ := s.IReportRepository.GetOpeningBalance(companyID, start, k.code)
 		var opening float64
 		if isDebitNormal {
@@ -510,7 +475,6 @@ func (s *ReportService) GeneralLedger(companyID uuid.UUID, start, end time.Time,
 			opening = -openRaw
 		}
 
-		// Compute running balance
 		runningBalance := opening
 		for i := range b.lines {
 			ln := &b.lines[i]
@@ -551,15 +515,12 @@ func (s *ReportService) GeneralLedger(companyID uuid.UUID, start, end time.Time,
 }
 
 // ─── 7. Journal Book (Jurnal Umum) ───────────────────────────────────────────
-// All posted journal entries for the period, grouped by entry with their lines.
-
 func (s *ReportService) JournalBook(companyID uuid.UUID, start, end time.Time) (response.JournalBookResponse, error) {
 	rows, err := s.IReportRepository.GetJournalBook(companyID, start, end)
 	if err != nil {
 		return response.JournalBookResponse{}, err
 	}
 
-	// Group lines by journal number
 	type entryKey struct{ date, number, jtype, desc string }
 	orderSlice := []entryKey{}
 	entryMap := map[entryKey]*response.JournalBookEntry{}

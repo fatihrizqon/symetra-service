@@ -123,7 +123,10 @@ func (r *FiscalYearRepository) FindActive(companyID uuid.UUID) (entity.FiscalYea
 
 func (r *FiscalYearRepository) Update(fy entity.FiscalYear) error {
 	tx := r.Db.Begin()
-	if err := tx.Model(&fy).Updates(fy).Error; err != nil {
+	// Use Save() instead of Updates() so that nil pointer fields (e.g. OpeningJEId = nil
+	// when deleting an opening balance) are also persisted to the database.
+	// Updates() skips zero-value / nil fields by design in GORM.
+	if err := tx.Save(&fy).Error; err != nil {
 		tx.Rollback()
 		return err
 	}

@@ -656,7 +656,11 @@ func (s *FiscalService) GenerateOpeningBalance(companyID, fyID uuid.UUID, perfor
 	}
 
 	fy.OpeningJEId = &createdJE.Id
-	return fy, s.fyRepo.Update(fy)
+	if err := s.fyRepo.Update(fy); err != nil {
+		return fy, fmt.Errorf("failed to persist opening balance reference: %w", err)
+	}
+	// Return fresh entity from DB so caller gets the updated opening_je_id
+	return s.fyRepo.FindById(companyID, fyID)
 }
 
 // DeleteOpeningBalance removes the opening JE for regeneration.
@@ -677,7 +681,11 @@ func (s *FiscalService) DeleteOpeningBalance(companyID, fyID uuid.UUID) (entity.
 	}
 
 	fy.OpeningJEId = nil
-	return fy, s.fyRepo.Update(fy)
+	if err := s.fyRepo.Update(fy); err != nil {
+		return fy, fmt.Errorf("failed to persist opening balance removal: %w", err)
+	}
+	// Return fresh entity from DB so caller gets the cleared opening_je_id
+	return s.fyRepo.FindById(companyID, fyID)
 }
 
 // ─── Private helpers ──────────────────────────────────────────────────────────

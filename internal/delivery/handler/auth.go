@@ -16,12 +16,14 @@ type AuthHandler struct {
 	Cookie       helper.RefreshCookie
 }
 
-func NewAuthHandler(serv service.IAuthService) *AuthHandler {
+// FIX [BUG-03]: Terima flag `production` dari luar agar cookie Secure=true di HTTPS.
+// Sebelumnya Production: false di-hardcode sehingga refresh token tidak Secure di produksi.
+func NewAuthHandler(serv service.IAuthService, production bool) *AuthHandler {
 	return &AuthHandler{
 		IAuthService: serv,
 		Cookie: helper.RefreshCookie{
 			TTL:        7 * 24 * time.Hour,
-			Production: false,
+			Production: production,
 		},
 	}
 }

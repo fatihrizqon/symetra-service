@@ -26,13 +26,17 @@ type IJournalEntryService interface {
 type JournalEntryService struct {
 	IJournalEntryRepository repository.IJournalEntryRepository
 	IInvoiceRepository      repository.IInvoiceRepository
+	// FIX [BUG-02 & FLOW-06]: Inject IFiscalService untuk ValidatePeriodOpen dan resolusi FiscalPeriodId
+	IFiscalPeriodRepository repository.IFiscalPeriodRepository
 	validate                *validator.Validate
 }
 
-func NewJournalEntryService(repo repository.IJournalEntryRepository, invoiceRepo repository.IInvoiceRepository, validate *validator.Validate) IJournalEntryService {
+// FIX [BUG-02 & FLOW-06]: Tambah parameter fpRepo agar JE service bisa memvalidasi period dan meng-set fiscal_period_id
+func NewJournalEntryService(repo repository.IJournalEntryRepository, invoiceRepo repository.IInvoiceRepository, fpRepo repository.IFiscalPeriodRepository, validate *validator.Validate) IJournalEntryService {
 	return &JournalEntryService{
 		IJournalEntryRepository: repo,
 		IInvoiceRepository:      invoiceRepo,
+		IFiscalPeriodRepository: fpRepo,
 		validate:                validate,
 	}
 }
@@ -116,6 +120,19 @@ func (s *JournalEntryService) Create(companyID uuid.UUID, req request.JournalEnt
 		return response.JournalEntryResponse{}, err
 	}
 
+	// FIX [BUG-02]: Validasi bahwa fiscal period untuk tanggal JE masih open/tidak locked
+	// Sebelumnya transaksi bisa diposting ke period yang sudah di-lock/close
+	fp, err := s.IFiscalPeriodRepository.FindByDate(companyID, date)
+	if err != nil {
+		return response.JournalEntryResponse{}, err
+	}
+	switch fp.Status {
+	case entity.FiscalPeriodLocked:
+		return response.JournalEntryResponse{}, errors.New("fiscal period '" + fp.Name + "' is permanently locked — transactions cannot be posted")
+	case entity.FiscalPeriodClosed:
+		return response.JournalEntryResponse{}, errors.New("fiscal period '" + fp.Name + "' is closed — ask your administrator to reopen it")
+	}
+
 	if journalType != entity.JournalTypeGeneral &&
 		journalType != entity.JournalTypeRevenue &&
 		journalType != entity.JournalTypeExpense {
@@ -129,16 +146,18 @@ func (s *JournalEntryService) Create(companyID uuid.UUID, req request.JournalEnt
 
 	lines, totalDebit, totalCredit := buildLines(req.Lines)
 
+	// FIX [FLOW-06]: Set FiscalPeriodId pada JE sehingga JE terhubung ke period yang benar
 	entry := entity.JournalEntry{
-		CompanyId:     companyID,
-		JournalNumber: journalNumber,
-		Type:          journalType,
-		Date:          date,
-		Description:   req.Description,
-		Status:        entity.JournalStatusDraft,
-		TotalDebit:    totalDebit,
-		TotalCredit:   totalCredit,
-		CreatedBy:     createdBy,
+		CompanyId:      companyID,
+		JournalNumber:  journalNumber,
+		Type:           journalType,
+		Date:           date,
+		Description:    req.Description,
+		Status:         entity.JournalStatusDraft,
+		TotalDebit:     totalDebit,
+		TotalCredit:    totalCredit,
+		CreatedBy:      createdBy,
+		FiscalPeriodId: &fp.Id,
 	}
 
 	created, err := s.IJournalEntryRepository.Create(entry, lines)
@@ -227,6 +246,18 @@ func (s *JournalEntryService) Post(companyID, id uuid.UUID) error {
 	diff := math.Abs(existing.TotalDebit - existing.TotalCredit)
 	if diff > 0.001 {
 		return errors.New("cannot post an unbalanced journal entry")
+	}
+	// FIX [BUG-02]: Validasi period saat posting — bukan hanya saat create
+	// Mencegah posting ke period yang sudah di-lock/close setelah JE di-draft
+	fp, err := s.IFiscalPeriodRepository.FindByDate(companyID, existing.Date)
+	if err != nil {
+		return err
+	}
+	switch fp.Status {
+	case entity.FiscalPeriodLocked:
+		return errors.New("fiscal period '" + fp.Name + "' is permanently locked — cannot post")
+	case entity.FiscalPeriodClosed:
+		return errors.New("fiscal period '" + fp.Name + "' is closed — ask your administrator to reopen it before posting")
 	}
 	return s.IJournalEntryRepository.Post(companyID, id)
 }

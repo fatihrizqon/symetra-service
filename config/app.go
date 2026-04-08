@@ -66,7 +66,8 @@ func Bootstrap(config *BootstrapConfig) {
 	coaGroupService := service.NewCOAGroupService(coaGroupRepository, config.Validate)
 	coaSubGroupService := service.NewCOASubGroupService(coaSubGroupRepository, config.Validate)
 	coaService := service.NewCOAService(coaRepository, config.Validate)
-	journalEntryService := service.NewJournalEntryService(journalEntryRepository, invoiceRepository, config.Validate)
+	// FIX [BUG-02 & FLOW-06]: Pass fiscalPeriodRepository agar JE service bisa ValidatePeriodOpen dan set FiscalPeriodId
+	journalEntryService := service.NewJournalEntryService(journalEntryRepository, invoiceRepository, fiscalPeriodRepository, config.Validate)
 	reportService := service.NewReportService(reportRepository)
 	fiscalService := service.NewFiscalService(
 		fiscalYearRepository,
@@ -108,7 +109,10 @@ func Bootstrap(config *BootstrapConfig) {
 
 	// ── Handlers ──────────────────────────────────────────────────────────────
 	userHandler := handler.NewUserHandler(userService)
-	authHandler := handler.NewAuthHandler(authService)
+	// FIX [BUG-03]: Baca flag production dari config agar cookie Secure=true di HTTPS
+	// Tambahkan "app.production": true di config.json untuk environment produksi
+	isProduction := config.Config.GetBool("app.production")
+	authHandler := handler.NewAuthHandler(authService, isProduction)
 	dashboardHandler := handler.NewDashboardHandler(dashboardService)
 	coaGroupHandler := handler.NewCOAGroupHandler(coaGroupService)
 	coaSubGroupHandler := handler.NewCOASubGroupHandler(coaSubGroupService)

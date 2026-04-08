@@ -1,46 +1,3 @@
-// ── PATCH untuk file: internal/delivery/http/route/route.go ──────────────────
-//
-// Tambahkan 3 blok berikut ke dalam fungsi SetupAuthRoute() di route.go yang ada.
-// Letakkan setelah blok "── Customers (company-scoped) ───────────────────────────────────────────"
-//
-// ─────────────────────────────────────────────────────────────────────────────
-
-// ── Vendors (company-scoped) ──────────────────────────────────────────────────
-//
-// Tambahkan ke RouteConfig struct:
-//   VendorHandler *handler.VendorHandler
-//
-// Tambahkan ke Bootstrap() di config/app.go:
-//   vendorRepository := repository.NewVendorRepository(config.DB)
-//   vendorService    := service.NewVendorService(vendorRepository, config.Validate)
-//   vendorHandler    := handler.NewVendorHandler(vendorService)
-//
-// Lalu di routeConfig:
-//   VendorHandler: vendorHandler,
-//
-// Routes yang perlu ditambahkan di SetupAuthRoute():
-
-/*
-	// ── Vendors (company-scoped) ─────────────────────────────────────────────
-	rc.App.Post("/api/v1/vendors", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.VendorHandler.Create)
-	rc.App.Get("/api/v1/vendors", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.VendorHandler.FindAll)
-	rc.App.Get("/api/v1/vendors/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.VendorHandler.FindById)
-	rc.App.Put("/api/v1/vendors/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.VendorHandler.Update)
-	rc.App.Delete("/api/v1/vendors/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.VendorHandler.Delete)
-	// FIX [CFG-02/BUG-21]: Tambah route dropdown vendor yang sebelumnya hilang
-	rc.App.Get("/api/v1/dropdown/vendors", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.VendorHandler.SelectDropdownList)
-
-	// ── Purchase Orders — Dropdown ─────────────────────────────────────────────
-	// Dropdown PO: hanya mengembalikan PO berstatus "approved" yang belum converted
-	// Digunakan pada form Bills → pilih PO untuk di-convert
-	rc.App.Get("/api/v1/dropdown/purchase-orders", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.PurchaseOrderHandler.SelectDropdownList)
-
-	// ── Bills — Dropdown ──────────────────────────────────────────────────────
-	// Dropdown Bills: untuk referensi di laporan atau integrasi modul lain
-	rc.App.Get("/api/v1/dropdown/bills", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.BillHandler.SelectDropdownList)
-*/
-
-// ─── File route.go yang sudah diupdate (full replacement) ────────────────────
 package route
 
 import (
@@ -169,6 +126,9 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Get("/api/v1/reports/balance-sheet", rc.CompanyMiddleware, middleware.NewRequirePermission("reports:read"), rc.ReportHandler.BalanceSheet)
 	rc.App.Get("/api/v1/reports/cash-flow", rc.CompanyMiddleware, middleware.NewRequirePermission("reports:read"), rc.ReportHandler.CashFlow)
 	rc.App.Get("/api/v1/reports/equity-statement", rc.CompanyMiddleware, middleware.NewRequirePermission("reports:read"), rc.ReportHandler.EquityStatement)
+	// FIX [BUG-01]: Route General Ledger & Journal Book sebelumnya tidak terdaftar — menyebabkan 404 permanen
+	rc.App.Get("/api/v1/reports/general-ledger", rc.CompanyMiddleware, middleware.NewRequirePermission("reports:read"), rc.ReportHandler.GeneralLedger)
+	rc.App.Get("/api/v1/reports/journal-book", rc.CompanyMiddleware, middleware.NewRequirePermission("reports:read"), rc.ReportHandler.JournalBook)
 
 	// ── Fiscal ────────────────────────────────────────────────────────────────
 	rc.App.Post("/api/v1/fiscal/years", rc.CompanyMiddleware, middleware.NewRequirePermission("fiscal:manage"), rc.FiscalHandler.CreateFiscalYear)

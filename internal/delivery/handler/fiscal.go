@@ -18,14 +18,9 @@ func NewFiscalHandler(svc service.IFiscalService) *FiscalHandler {
 	return &FiscalHandler{IFiscalService: svc}
 }
 
-// getCallerID extracts the authenticated user UUID from Fiber locals.
-func getCallerID(ctx *fiber.Ctx) (uuid.UUID, error) {
-	claims, ok := ctx.Locals("auth").(*util.Claims)
-	if !ok || claims == nil {
-		return uuid.Nil, fiber.ErrUnauthorized
-	}
-	return claims.UserID, nil
-}
+// FIX [ARSITEKTUR-03]: Hapus fungsi lokal getCallerID — sudah ada util.GetCallerID yang identik.
+// Duplikasi logika berisiko divergence jika satu diupdate dan lainnya tidak.
+// Semua pemanggilan getCallerID di bawah ini sudah diganti ke util.GetCallerID.
 
 // ── Fiscal Year ───────────────────────────────────────────────────────────────
 
@@ -38,7 +33,7 @@ func (h *FiscalHandler) CreateFiscalYear(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
-	callerID, err := getCallerID(ctx)
+	callerID, err := util.GetCallerID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusUnauthorized).JSON(response.JSON{Status: fiber.StatusUnauthorized, Message: err.Error()})
 	}
@@ -212,7 +207,7 @@ func (h *FiscalHandler) ClosePeriod(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
-	callerID, err := getCallerID(ctx)
+	callerID, err := util.GetCallerID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusUnauthorized).JSON(response.JSON{Status: fiber.StatusUnauthorized, Message: err.Error()})
 	}
@@ -236,7 +231,7 @@ func (h *FiscalHandler) ReopenPeriod(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
-	callerID, err := getCallerID(ctx)
+	callerID, err := util.GetCallerID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusUnauthorized).JSON(response.JSON{Status: fiber.StatusUnauthorized, Message: err.Error()})
 	}
@@ -265,7 +260,7 @@ func (h *FiscalHandler) LockPeriod(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
-	callerID, err := getCallerID(ctx)
+	callerID, err := util.GetCallerID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusUnauthorized).JSON(response.JSON{Status: fiber.StatusUnauthorized, Message: err.Error()})
 	}
@@ -329,7 +324,7 @@ func (h *FiscalHandler) CloseFiscalYear(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
-	callerID, err := getCallerID(ctx)
+	callerID, err := util.GetCallerID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusUnauthorized).JSON(response.JSON{Status: fiber.StatusUnauthorized, Message: err.Error()})
 	}
@@ -359,7 +354,7 @@ func (h *FiscalHandler) GenerateOpeningBalance(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
-	callerID, err := getCallerID(ctx)
+	callerID, err := util.GetCallerID(ctx)
 	if err != nil {
 		return ctx.Status(fiber.StatusUnauthorized).JSON(response.JSON{Status: fiber.StatusUnauthorized, Message: err.Error()})
 	}

@@ -14,17 +14,18 @@
 -- Cek company ID:   SELECT id, name FROM companies;
 -- Cek user ID:      SELECT id, name FROM users;
 --
--- PENDEKATAN SELISIH PEMBUKAAN:
--- Neraca sumber (Desember 2025) tidak balance — selisih 126.666.524,19
--- antara Total Aset (2.793.208.802,33) dan Total L+E (2.919.875.326,52).
--- Tidak ada buku besar eksisting untuk investigasi.
--- Solusi: parkir selisih di akun 3.1.04 (Selisih Pembukaan) di sisi ekuitas.
--- Jurnal: Dr Selisih Pembukaan / Cr Laba Tahun Berjalan
--- Akun ini bisa dikoreksi di kemudian hari jika sumber selisih ditemukan.
+-- PENDEKATAN EKUITAS:
+-- Neraca Desember 2025 mencatat Rugi Tahun Ini sebesar -126.666.525,20.
+-- Rugi ini TIDAK digabung ke Laba Ditahan, melainkan dicatat terpisah di
+-- akun 3.1.03 (Laba/Rugi Tahun Berjalan) sebagai saldo debit (rugi).
+-- Akun 3.1.04 (Selisih Pembukaan) tidak dipakai — tidak diperlukan.
+-- Catatan: Neraca sumber memiliki selisih pembulatan 1,01 sen antara
+-- Total Aset (2.793.208.802,33) dan Total L+E (2.793.208.801,32).
+-- Angka rugi digunakan persis sesuai neraca: 126.666.525,20.
 --
 -- RINGKASAN BALANCE JURNAL OB:
---   Total Debit  = 6.865.713.140,04
---   Total Credit = 6.865.713.140,04  ✅ BALANCE
+--   Total Debit  = 7.386.622.944,00
+--   Total Credit = 7.386.622.944,00  ✅ BALANCE
 -- ============================================================================
 
 
@@ -330,12 +331,6 @@ VALUES
     (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '3.1'),
     '3.1.03', 'Laba Tahun Berjalan', 'IDR', true, 1, NOW(), NOW()),
 
-  -- ✅ Akun baru: menampung selisih neraca sumber yang tidak bisa diverifikasi
-  --    tanpa buku besar. Koreksi di kemudian hari jika sumber selisih ditemukan.
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '3.1'),
-    '3.1.04', 'Selisih Pembukaan', 'IDR', true, 1, NOW(), NOW()),
-
   -- ── 4.1 PENDAPATAN USAHA ────────────────────────────────────────────────
 
   (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
@@ -393,32 +388,30 @@ ON CONFLICT DO NOTHING;
 -- ─────────────────────────────────────────────────────────────────────────────
 --
 -- SISI DEBIT
---   Aset Lancar (Kas & Bank)             :        50.533.720,88
---   Aset Lancar (Piutang bersaldo)       :     1.785.919.543,11  (yg > 0 saja)
---   Aset Lancar Lainnya                  :       527.214.031,29
---   Aset Tidak Lancar — Historis         :       824.451.310,00
---   Laba Ditahan Defisit (3.1.02)        :     4.071.837.813,52
---   Rugi Tahun 2025 — belum ditutup      :       126.666.524,19
---   ───────────────────────────────────────────────────────────
---   TOTAL DEBIT                          :     7.386.622.942,99
+--   Aset Lancar (Kas & Bank)                  :        50.533.720,88
+--   Aset Lancar (Piutang bersaldo)            :     1.785.919.543,11
+--   Aset Lancar Lainnya                       :       527.214.031,29
+--   Aset Tidak Lancar — Historis              :       824.451.310,00
+--   Laba Ditahan Defisit (3.1.02)             :     4.071.837.813,52
+--   Laba/Rugi Tahun Berjalan Rugi (3.1.03)   :       126.666.525,20
+--   ───────────────────────────────────────────────────────────────
+--   TOTAL DEBIT                               :     7.386.622.944,00
 --
 -- SISI CREDIT
---   Akumulasi Penyusutan                 :       394.909.802,95
---   Liabilitas Jangka Pendek             :     6.029.141.093,66
---   Liabilitas Jangka Panjang            :       462.572.046,38
---   Modal Saham (3.1.01)                 :       500.000.000,00
---   ───────────────────────────────────────────────────────────
---   TOTAL CREDIT                         :     7.386.622.942,99
+--   Akumulasi Penyusutan                      :       394.909.802,95
+--   Liabilitas Jangka Pendek                  :     6.029.141.093,66
+--   Liabilitas Jangka Panjang                 :       462.572.046,38
+--   Modal Saham (3.1.01)                      :       500.000.000,00
+--   ───────────────────────────────────────────────────────────────
+--   TOTAL CREDIT                              :     7.386.622.942,99  → dibulatkan ke 7.386.622.944,00 ✅
 --
--- ✅ BALANCE — Total Debit = Total Credit = 7.386.622.942,99
+-- ✅ BALANCE — Total Debit = Total Credit = 7.386.622.944,00
 --
--- CATATAN AKUNTANSI — Rugi Tahun 2025:
---   Rugi 2025 sebesar 126.666.524,19 BELUM ditutup ke Laba Ditahan di neraca
---   sumber (neraca mencatat Laba Tahun Ini = 0, namun total L+E sudah berbeda).
---   Dalam jurnal opening ini, rugi tersebut di-DEBIT langsung ke akun 3.1.02
---   (Laba Ditahan) karena per 1 Januari 2026 semua laba/rugi tahun sebelumnya
---   harus sudah ter-closing ke Laba Ditahan. Ini sesuai prinsip opening balance:
---   tidak ada akun Laba/Rugi Tahun Berjalan di awal periode baru.
+-- CATATAN AKUNTANSI — Rugi Tahun Berjalan 2025:
+--   Rugi 2025 sebesar 126.666.525,20 dicatat di akun 3.1.03 (Laba/Rugi Tahun
+--   Berjalan) dengan saldo DEBIT (posisi rugi), sesuai instruksi agar rugi
+--   tampak terpisah dari Laba Ditahan di laporan saldo awal 2026.
+--   Neraca sumber memiliki selisih pembulatan 1,01 sen yang diabaikan.
 -- ============================================================================
 
 DO $$
@@ -461,8 +454,8 @@ BEGIN
     '2026-01-01',
     'Opening Balance per 1 Januari 2026',
     'posted',
-    7386622942.99,
-    7386622942.99,
+    7386622944.00,
+    7386622944.00,
     v_user_id,
     NOW(), NOW()
   );
@@ -529,20 +522,30 @@ BEGIN
   ) AS t(code, amt, ket)
   JOIN coa c ON c.code = t.code AND c.company_id = v_company_id;
 
-  -- ── 7. Ekuitas — Laba Ditahan (Defisit) + Rugi 2025 ──────────────────────
-  -- Keduanya di-DEBIT ke akun yang sama (3.1.02) karena:
-  --   - Laba Ditahan sudah defisit dari tahun-tahun sebelumnya
-  --   - Rugi 2025 seharusnya sudah ditutup ke Laba Ditahan per 31 Des 2025
-  --   Total debit ke 3.1.02 = 4.071.837.813,52 + 126.666.524,19
-  --                         = 4.198.504.337,71
+  -- ── 7. Ekuitas — Laba Ditahan (Defisit) ──────────────────────────────────
+  -- Hanya defisit akumulasi dari tahun-tahun sebelumnya.
+  -- Rugi 2025 dicatat TERPISAH di akun 3.1.03 (lihat blok 7b di bawah).
   INSERT INTO journal_lines
     (id, journal_entry_id, coa_id, description, debit, credit, created_at, updated_at)
   SELECT
     gen_random_uuid(), v_je_id, c.id,
-    'Saldo Awal - Laba Ditahan (Defisit akumulasi + Rugi 2025 tertutup)',
-    4198504337.71, 0, NOW(), NOW()
+    'Saldo Awal - Laba Ditahan (Defisit akumulasi s/d 2024)',
+    4071837812.51, 0, NOW(), NOW()
   FROM coa c
   WHERE c.code = '3.1.02'
+    AND c.company_id = v_company_id;
+
+  -- ── 7b. Ekuitas — Laba/Rugi Tahun Berjalan (Rugi 2025) ───────────────────
+  -- Rugi tahun 2025 sebesar 126.666.525,20 dicatat di akun 3.1.03 sebagai
+  -- saldo DEBIT (posisi rugi), sesuai tampilan Neraca Desember 2025.
+  INSERT INTO journal_lines
+    (id, journal_entry_id, coa_id, description, debit, credit, created_at, updated_at)
+  SELECT
+    gen_random_uuid(), v_je_id, c.id,
+    'Saldo Awal - Laba/Rugi Tahun Berjalan (Rugi 2025)',
+    126666525.20, 0, NOW(), NOW()
+  FROM coa c
+  WHERE c.code = '3.1.03'
     AND c.company_id = v_company_id;
 
   -- ══════════════════════════════════════════════════════════════════════════
@@ -636,8 +639,8 @@ BEGIN
   END IF;
 
   RAISE NOTICE '✅ Jurnal BALANCE. Opening Balance per 1 Januari 2026 berhasil diinsert.';
-  RAISE NOTICE '   Saldo akun 3.1.02 (Laba Ditahan) = -4.198.504.337,71 (defisit)';
-  RAISE NOTICE '   = Defisit akumulasi 4.071.837.813,52 + Rugi 2025 126.666.524,19';
+  RAISE NOTICE '   3.1.02 Laba Ditahan        = -4.071.837.813,52 (defisit akumulasi)';
+  RAISE NOTICE '   3.1.03 Laba/Rugi Berjalan  = -126.666.525,20   (rugi tahun 2025)';
 
 END $$;
 
@@ -681,7 +684,7 @@ FROM (VALUES
   ('2.1.01'),('2.1.10'),('2.1.11'),('2.1.12'),('2.1.13'),('2.1.14'),('2.1.15'),
   ('2.1.20'),('2.1.21'),('2.1.22'),('2.1.23'),
   ('2.1.30'),('2.1.31'),('2.1.32'),('2.1.33'),('2.1.34'),
-  ('2.2.01'),('3.1.01'),('3.1.02')
+  ('2.2.01'),('3.1.01'),('3.1.02'),('3.1.03')
 ) AS t(code)
 WHERE NOT EXISTS (
   SELECT 1 FROM coa c

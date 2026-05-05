@@ -18,8 +18,8 @@ type IUserService interface {
 	Create(req request.UserCreateRequest) (entity.User, error)
 	FindAll(qp *util.QueryParams) ([]response.UserResponse, int, error)
 	FindById(reqId uuid.UUID) (response.UserResponse, error)
-	Update(req request.UserUpdateRequest) (entity.User, error)
-	Delete(reqId uuid.UUID) (entity.User, error)
+	Update(req request.UserUpdateRequest) (response.UserResponse, error)
+	Delete(reqId uuid.UUID) (response.UserResponse, error)
 }
 
 type UserService struct {
@@ -99,10 +99,10 @@ func (s *UserService) FindById(reqId uuid.UUID) (response.UserResponse, error) {
 	}, nil
 }
 
-func (s *UserService) Update(req request.UserUpdateRequest) (entity.User, error) {
+func (s *UserService) Update(req request.UserUpdateRequest) (response.UserResponse, error) {
 	u, err := s.IUserRepository.FindById(req.Id)
 	if err != nil {
-		return u, err
+		return response.UserResponse{}, err
 	}
 
 	u.Username = strings.ToLower(req.Username)
@@ -112,23 +112,43 @@ func (s *UserService) Update(req request.UserUpdateRequest) (entity.User, error)
 	if req.Password != "" {
 		hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), 14)
 		if err != nil {
-			return u, errors.New("failed to generate password")
+			return response.UserResponse{}, errors.New("failed to generate password")
 		}
 		u.Password = string(hashed)
 	}
 
 	if err := s.IUserRepository.Update(u); err != nil {
-		return u, err
+		return response.UserResponse{}, err
 	}
 
-	u.Password = ""
-	return u, nil
+	return response.UserResponse{
+		Id:        u.Id,
+		Username:  u.Username,
+		Name:      u.Name,
+		Email:     u.Email,
+		Status:    u.Status,
+		CreatedAt: u.CreatedAt,
+		UpdatedAt: u.UpdatedAt,
+	}, nil
 }
 
-func (s *UserService) Delete(reqId uuid.UUID) (entity.User, error) {
+func (s *UserService) Delete(reqId uuid.UUID) (response.UserResponse, error) {
 	u, err := s.IUserRepository.FindById(reqId)
 	if err != nil {
-		return u, err
+		return response.UserResponse{}, err
 	}
-	return u, s.IUserRepository.Delete(reqId)
+
+	if err := s.IUserRepository.Delete(reqId); err != nil {
+		return response.UserResponse{}, err
+	}
+
+	return response.UserResponse{
+		Id:        u.Id,
+		Username:  u.Username,
+		Name:      u.Name,
+		Email:     u.Email,
+		Status:    u.Status,
+		CreatedAt: u.CreatedAt,
+		UpdatedAt: u.UpdatedAt,
+	}, nil
 }

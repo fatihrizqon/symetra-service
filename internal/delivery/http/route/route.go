@@ -9,10 +9,9 @@ import (
 )
 
 type RouteConfig struct {
-	App               *fiber.App
-	AuthMiddleware    fiber.Handler
-	CompanyMiddleware fiber.Handler
-
+	App                  *fiber.App
+	AuthMiddleware       fiber.Handler
+	CompanyMiddleware    fiber.Handler
 	UserHandler          *handler.UserHandler
 	AuthHandler          *handler.AuthHandler
 	DashboardHandler     *handler.DashboardHandler
@@ -27,7 +26,6 @@ type RouteConfig struct {
 	CompanyHandler       *handler.CompanyHandler
 	CompanyConfigHandler *handler.CompanyConfigurationHandler
 	CustomerHandler      *handler.CustomerHandler
-	// NEW: VendorHandler
 	VendorHandler        *handler.VendorHandler
 	QuotationHandler     *handler.QuotationHandler
 	InvoiceHandler       *handler.InvoiceHandler
@@ -68,8 +66,8 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Delete("/api/v1/companies/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("company:delete"), rc.CompanyHandler.DeleteCompany)
 	rc.App.Get("/api/v1/companies/:id/members", rc.CompanyMiddleware, middleware.NewRequirePermission("users:read"), rc.CompanyHandler.FindMembers)
 	rc.App.Post("/api/v1/companies/:id/members", rc.CompanyMiddleware, middleware.NewRequirePermission("users:manage"), rc.CompanyHandler.AssignMember)
-	rc.App.Put("/api/v1/companies/:id/members/:user_id/role", rc.CompanyMiddleware, middleware.NewRequirePermission("users:manage"), rc.CompanyHandler.UpdateMemberRole)
-	rc.App.Delete("/api/v1/companies/:id/members/:user_id", rc.CompanyMiddleware, middleware.NewRequirePermission("users:manage"), rc.CompanyHandler.RemoveMember)
+	rc.App.Put("/api/v1/companies/:id/members/:id/role", rc.CompanyMiddleware, middleware.NewRequirePermission("users:manage"), rc.CompanyHandler.UpdateMemberRole)
+	rc.App.Delete("/api/v1/companies/:id/members/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("users:manage"), rc.CompanyHandler.RemoveMember)
 
 	// ── COA ──────────────────────────────────────────────────────────────────
 	rc.App.Post("/api/v1/coa_groups", rc.CompanyMiddleware, middleware.NewRequirePermission("coa:manage"), rc.COAGroupHandler.Create)
@@ -149,8 +147,6 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Put("/api/v1/fiscal/periods/:id/lock", rc.CompanyMiddleware, middleware.NewRequirePermission("fiscal:manage"), rc.FiscalHandler.LockPeriod)
 	rc.App.Get("/api/v1/fiscal/periods/:id/logs", rc.CompanyMiddleware, middleware.NewRequirePermission("fiscal:read"), rc.FiscalHandler.FindPeriodLogs)
 
-
-
 	// ── Company Configuration ─────────────────────────────────────────────────
 	rc.App.Get("/api/v1/companies/:id/configuration", rc.CompanyMiddleware, middleware.NewRequirePermission("company:read"), rc.CompanyConfigHandler.Get)
 	rc.App.Put("/api/v1/companies/:id/configuration", rc.CompanyMiddleware, middleware.NewRequirePermission("company:update"), rc.CompanyConfigHandler.Upsert)
@@ -184,7 +180,7 @@ func (rc *RouteConfig) SetupAuthRoute() {
 
 	// ── Invoices ──────────────────────────────────────────────────────────────
 	rc.App.Post("/api/v1/invoices", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.InvoiceHandler.Create)
-	rc.App.Post("/api/v1/quotations/:quotation_id/convert", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.InvoiceHandler.CreateFromQuotation)
+	rc.App.Post("/api/v1/quotations/:id/convert", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.InvoiceHandler.CreateFromQuotation)
 	rc.App.Get("/api/v1/invoices", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.InvoiceHandler.FindAll)
 	rc.App.Get("/api/v1/invoices/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.InvoiceHandler.FindById)
 	rc.App.Put("/api/v1/invoices/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.InvoiceHandler.Update)
@@ -207,7 +203,7 @@ func (rc *RouteConfig) SetupAuthRoute() {
 
 	// ── Bills ─────────────────────────────────────────────────────────────────
 	rc.App.Post("/api/v1/bills", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.BillHandler.Create)
-	rc.App.Post("/api/v1/bills/from-purchase-order/:po_id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.BillHandler.CreateFromPO)
+	rc.App.Post("/api/v1/bills/from-purchase-order/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.BillHandler.CreateFromPO)
 	rc.App.Get("/api/v1/bills", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.BillHandler.FindAll)
 	rc.App.Get("/api/v1/bills/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:read"), rc.BillHandler.FindById)
 	rc.App.Put("/api/v1/bills/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("transactions:write"), rc.BillHandler.Update)

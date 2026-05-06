@@ -4,7 +4,7 @@
 --
 -- CARA PAKAI:
 -- 1. Ganti semua placeholder UUID sebelum menjalankan:
---    → Ganti: 'd389cf46-01ca-474a-bf1f-cc9f7351e02b'  dengan UUID company Anda
+--    → Ganti: '95ca6e39-320e-4787-9a0a-cab9e0c01f08'  dengan UUID company Anda
 --    → Ganti: '6462aa63-83ae-4cf9-abaa-11fedec08091'  dengan UUID user Anda
 --    Cara mudah: Ctrl+H (find & replace) di text editor Anda
 -- 2. Jalankan SECTION 1, 2, 3 secara urut
@@ -37,7 +37,7 @@
 
 DO $$
 DECLARE
-  v_company_id UUID := 'd389cf46-01ca-474a-bf1f-cc9f7351e02b';
+  v_company_id UUID := '95ca6e39-320e-4787-9a0a-cab9e0c01f08';
   v_deleted_lines    INT;
   v_deleted_journals INT;
   v_deleted_coa      INT;
@@ -78,11 +78,11 @@ END $$;
 
 INSERT INTO coa_groups (id, company_id, code, name, normal_balance, status, created_at, updated_at)
 VALUES
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b', '1', 'Aset',       'debit',  1, NOW(), NOW()),
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b', '2', 'Liabilitas', 'credit', 1, NOW(), NOW()),
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b', '3', 'Ekuitas',    'credit', 1, NOW(), NOW()),
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b', '4', 'Pendapatan', 'credit', 1, NOW(), NOW()),
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b', '5', 'Beban',      'debit',  1, NOW(), NOW())
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08', '1', 'Aset',       'debit',  1, NOW(), NOW()),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08', '2', 'Liabilitas', 'credit', 1, NOW(), NOW()),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08', '3', 'Ekuitas',    'credit', 1, NOW(), NOW()),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08', '4', 'Pendapatan', 'credit', 1, NOW(), NOW()),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08', '5', 'Beban',      'debit',  1, NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 
@@ -93,52 +93,52 @@ ON CONFLICT DO NOTHING;
 INSERT INTO coa_subgroups (id, company_id, group_id, code, name, status, created_at, updated_at)
 VALUES
   -- Aset
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_groups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_groups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '1'),
     '1.1', 'Aset Lancar', 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_groups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_groups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '1'),
     '1.2', 'Aset Tidak Lancar', 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_groups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_groups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '1'),
     '1.3', 'Aset Lainnya', 1, NOW(), NOW()),
 
   -- Liabilitas
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_groups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '2'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_groups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '2'),
     '2.1', 'Liabilitas Jangka Pendek', 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_groups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '2'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_groups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '2'),
     '2.2', 'Liabilitas Jangka Panjang', 1, NOW(), NOW()),
 
   -- Ekuitas
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_groups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '3'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_groups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '3'),
     '3.1', 'Modal', 1, NOW(), NOW()),
 
   -- Pendapatan
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_groups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '4'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_groups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '4'),
     '4.1', 'Pendapatan Usaha', 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_groups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '4'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_groups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '4'),
     '4.2', 'Pendapatan Lain-lain', 1, NOW(), NOW()),
 
   -- Beban
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_groups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '5'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_groups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '5'),
     '5.1', 'Beban Operasional', 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_groups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '5'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_groups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '5'),
     '5.2', 'Beban Administrasi', 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_groups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '5'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_groups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '5'),
     '5.3', 'Beban Lain-lain', 1, NOW(), NOW())
 
 ON CONFLICT DO NOTHING;
@@ -154,221 +154,221 @@ VALUES
   -- ── 1.1 ASET LANCAR ─────────────────────────────────────────────────────
 
   -- Kas & Bank
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '1.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '1.1'),
     '1.1.01', 'Kas Kecil Rizky', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '1.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '1.1'),
     '1.1.02', 'Bank Mandiri GPVS', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '1.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '1.1'),
     '1.1.03', 'Bank BSI', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '1.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '1.1'),
     '1.1.04', 'Bank Mandiri GPS', 'IDR', true, 1, NOW(), NOW()),
 
   -- Piutang Usaha
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '1.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '1.1'),
     '1.1.10', 'Piutang Usaha - Indosat Tbk', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '1.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '1.1'),
     '1.1.11', 'Piutang Usaha - Lintasarta', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '1.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '1.1'),
     '1.1.12', 'Piutang Usaha - Lintasarta GPVS', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '1.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '1.1'),
     '1.1.13', 'Piutang Usaha - Sier', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '1.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '1.1'),
     '1.1.14', 'Piutang Karyawan', 'IDR', true, 1, NOW(), NOW()),
 
   -- Piutang Afiliasi & Direksi
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '1.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '1.1'),
     '1.1.15', 'Piutang Afiliasi - PT Alifa Juara Andalan Kita', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '1.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '1.1'),
     '1.1.16', 'Piutang Direksi - Nanang Ranu', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '1.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '1.1'),
     '1.1.17', 'Piutang Direksi - Didik Setiawan', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '1.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '1.1'),
     '1.1.18', 'Piutang - Nur Anita Meikhawati', 'IDR', true, 1, NOW(), NOW()),
 
   -- Aset Lancar Lainnya
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '1.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '1.1'),
     '1.1.20', 'Sewa Gedung Dibayar Dimuka', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '1.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '1.1'),
     '1.1.21', 'Biaya Dibayar Dimuka', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '1.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '1.1'),
     '1.1.22', 'PPh 23 Penjualan', 'IDR', true, 1, NOW(), NOW()),
 
   -- ── 1.2 ASET TIDAK LANCAR ───────────────────────────────────────────────
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '1.2'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '1.2'),
     '1.2.01', 'Kendaraan', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '1.2'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '1.2'),
     '1.2.02', 'Peralatan Kantor', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '1.2'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '1.2'),
     '1.2.03', 'Inventaris Kantor', 'IDR', true, 1, NOW(), NOW()),
 
   -- Akumulasi Penyusutan (kontra aset — normal balance credit)
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '1.2'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '1.2'),
     '1.2.10', 'Akumulasi Penyusutan Kendaraan', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '1.2'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '1.2'),
     '1.2.11', 'Akumulasi Penyusutan Peralatan Kantor', 'IDR', true, 1, NOW(), NOW()),
 
   -- ── 2.1 LIABILITAS JANGKA PENDEK ────────────────────────────────────────
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '2.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '2.1'),
     '2.1.01', 'Utang Usaha', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '2.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '2.1'),
     '2.1.10', 'Utang Afiliasi - PBMT Ventura', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '2.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '2.1'),
     '2.1.11', 'Utang Afiliasi - PT Berkah Rekreasi Nusantara', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '2.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '2.1'),
     '2.1.12', 'Utang Afiliasi - PT Aset Berkah Bersama', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '2.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '2.1'),
     '2.1.13', 'Utang Afiliasi - Ramadhian Adam Lubis', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '2.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '2.1'),
     '2.1.14', 'Utang Afiliasi - PT Optik Jaringan Utama', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '2.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '2.1'),
     '2.1.15', 'Utang Afiliasi - PT Berkah Multi Ternak', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '2.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '2.1'),
     '2.1.20', 'Utang Relasi', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '2.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '2.1'),
     '2.1.21', 'Utang Lainnya', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '2.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '2.1'),
     '2.1.22', 'Hutang Gadai Kendaraan', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '2.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '2.1'),
     '2.1.23', 'Utang Kerjasama - Rofiq', 'IDR', true, 1, NOW(), NOW()),
 
   -- Kewajiban Jangka Pendek Lainnya
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '2.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '2.1'),
     '2.1.30', 'PPN Keluaran', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '2.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '2.1'),
     '2.1.31', 'Hutang PPN', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '2.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '2.1'),
     '2.1.32', 'KPPS Tamzis Bina Utama (1)', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '2.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '2.1'),
     '2.1.33', 'KPPS Tamzis Bina Utama (2)', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '2.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '2.1'),
     '2.1.34', 'Hutang Pajak Penghasilan', 'IDR', true, 1, NOW(), NOW()),
 
   -- ── 2.2 LIABILITAS JANGKA PANJANG ───────────────────────────────────────
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '2.2'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '2.2'),
     '2.2.01', 'Hutang Bank Syariah Indonesia', 'IDR', true, 1, NOW(), NOW()),
 
   -- ── 3.1 EKUITAS / MODAL ─────────────────────────────────────────────────
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '3.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '3.1'),
     '3.1.01', 'Modal Saham', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '3.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '3.1'),
     '3.1.02', 'Laba Ditahan', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '3.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '3.1'),
     '3.1.03', 'Laba Tahun Berjalan', 'IDR', true, 1, NOW(), NOW()),
 
   -- ── 4.1 PENDAPATAN USAHA ────────────────────────────────────────────────
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '4.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '4.1'),
     '4.1.01', 'Pendapatan Jasa', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '4.2'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '4.2'),
     '4.2.01', 'Pendapatan Lain-lain', 'IDR', true, 1, NOW(), NOW()),
 
   -- ── 5.1 BEBAN ───────────────────────────────────────────────────────────
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '5.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '5.1'),
     '5.1.01', 'Beban Gaji', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '5.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '5.1'),
     '5.1.02', 'Beban Sewa', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '5.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '5.1'),
     '5.1.03', 'Beban Penyusutan Kendaraan', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '5.1'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '5.1'),
     '5.1.04', 'Beban Penyusutan Peralatan', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '5.2'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '5.2'),
     '5.2.01', 'Beban Administrasi & Umum', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '5.2'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '5.2'),
     '5.2.02', 'Beban Pajak', 'IDR', true, 1, NOW(), NOW()),
 
-  (gen_random_uuid(), 'd389cf46-01ca-474a-bf1f-cc9f7351e02b',
-    (SELECT id FROM coa_subgroups WHERE company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b' AND code = '5.3'),
+  (gen_random_uuid(), '95ca6e39-320e-4787-9a0a-cab9e0c01f08',
+    (SELECT id FROM coa_subgroups WHERE company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08' AND code = '5.3'),
     '5.3.01', 'Beban Bunga & Keuangan', 'IDR', true, 1, NOW(), NOW())
 
 ON CONFLICT DO NOTHING;
@@ -417,7 +417,7 @@ ON CONFLICT DO NOTHING;
 DO $$
 DECLARE
   v_je_id      UUID    := gen_random_uuid();
-  v_company_id UUID    := 'd389cf46-01ca-474a-bf1f-cc9f7351e02b';  -- ← GANTI
+  v_company_id UUID    := '95ca6e39-320e-4787-9a0a-cab9e0c01f08';  -- ← GANTI
   v_user_id    UUID    := '6462aa63-83ae-4cf9-abaa-11fedec08091';  -- ← GANTI
   v_period_id  UUID;
   v_total_debit  NUMERIC;
@@ -658,7 +658,7 @@ SELECT
 FROM journal_lines jl
 JOIN journal_entries je ON je.id = jl.journal_entry_id
 WHERE je.journal_number = 'JE-OB-2026-001'
-  AND je.company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b';
+  AND je.company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08';
 
 -- B. Detail per baris
 SELECT
@@ -671,7 +671,7 @@ FROM journal_lines jl
 JOIN coa c ON c.id = jl.coa_id
 JOIN journal_entries je ON je.id = jl.journal_entry_id
 WHERE je.journal_number = 'JE-OB-2026-001'
-  AND je.company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b'
+  AND je.company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08'
 ORDER BY c.code;
 
 -- C. Cek kode COA yang tidak ditemukan (jika jurnal tidak balance / ada lines hilang)
@@ -689,7 +689,7 @@ FROM (VALUES
 WHERE NOT EXISTS (
   SELECT 1 FROM coa c
   WHERE c.code = t.code
-    AND c.company_id = 'd389cf46-01ca-474a-bf1f-cc9f7351e02b'
+    AND c.company_id = '95ca6e39-320e-4787-9a0a-cab9e0c01f08'
 );
 
 */

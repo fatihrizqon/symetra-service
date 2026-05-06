@@ -94,7 +94,7 @@ func (h *COAGroupHandler) Update(ctx *fiber.Ctx) error {
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
-	return ctx.Status(fiber.StatusOK).JSON(response.JSON{Status: fiber.StatusOK, Message: "Record updated.", Data: result})
+	return ctx.Status(fiber.StatusOK).JSON(response.JSON{Status: fiber.StatusOK, Message: "Selected record has been updated.", Data: result})
 }
 
 func (h *COAGroupHandler) Delete(ctx *fiber.Ctx) error {

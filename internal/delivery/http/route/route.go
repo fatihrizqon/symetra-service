@@ -67,7 +67,7 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Get("/api/v1/companies/:id/members", rc.CompanyMiddleware, middleware.NewRequirePermission("users:read"), rc.CompanyHandler.FindMembers)
 	rc.App.Post("/api/v1/companies/:id/members", rc.CompanyMiddleware, middleware.NewRequirePermission("users:manage"), rc.CompanyHandler.AssignMember)
 	rc.App.Put("/api/v1/companies/:id/members/:id/role", rc.CompanyMiddleware, middleware.NewRequirePermission("users:manage"), rc.CompanyHandler.UpdateMemberRole)
-	rc.App.Delete("/api/v1/companies/:id/members/:id", rc.CompanyMiddleware, middleware.NewRequirePermission("users:manage"), rc.CompanyHandler.RemoveMember)
+	rc.App.Delete("/api/v1/companies/:id/members/:user_id", rc.CompanyMiddleware, middleware.NewRequirePermission("users:manage"), rc.CompanyHandler.RemoveMember)
 
 	// ── COA ──────────────────────────────────────────────────────────────────
 	rc.App.Post("/api/v1/coa_groups", rc.CompanyMiddleware, middleware.NewRequirePermission("coa:manage"), rc.COAGroupHandler.Create)

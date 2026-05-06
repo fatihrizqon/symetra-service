@@ -45,13 +45,13 @@ func (h *CompanyHandler) CreateCompany(ctx *fiber.Ctx) error {
 	result, err := h.ICompanyService.Create(req, callerID)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{
-			Status: fiber.StatusBadRequest,
+			Status:  fiber.StatusBadRequest,
 			Message: err.Error(),
 		})
 	}
 
 	return ctx.Status(fiber.StatusCreated).JSON(response.JSON{
-		Status: fiber.StatusCreated,
+		Status:  fiber.StatusCreated,
 		Message: "Company created successfully.",
 		Data:    result,
 	})
@@ -72,7 +72,7 @@ func (h *CompanyHandler) FindAllCompanies(ctx *fiber.Ctx) error {
 
 	if err := h.ICompanyService.AssertSuperadmin(callerID); err != nil {
 		return ctx.Status(fiber.StatusForbidden).JSON(response.JSON{
-			Status: fiber.StatusForbidden,
+			Status:  fiber.StatusForbidden,
 			Message: "access denied: superadmin only",
 		})
 	}

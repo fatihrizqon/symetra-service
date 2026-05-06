@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"fmt"
+
 	"github.com/fatihrizqon/symetra-service/internal/delivery/http/request"
 	"github.com/fatihrizqon/symetra-service/internal/delivery/http/response"
 	"github.com/fatihrizqon/symetra-service/internal/entity"
@@ -212,9 +214,10 @@ func (h *BillHandler) CreateFromPO(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
 	callerId, _ := util.GetCallerID(ctx)
-	poId, err := uuid.Parse(ctx.Params("po_id"))
+	poId, err := uuid.Parse(ctx.Params("id"))
+	fmt.Println(ctx.Params("id"))
 	if err != nil {
-		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: "invalid po_id"})
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: "invalid purchase order id"})
 	}
 	result, err := h.svc.CreateFromPO(companyID, poId, callerId)
 	if err != nil {

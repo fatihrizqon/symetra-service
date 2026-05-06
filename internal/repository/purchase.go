@@ -44,7 +44,12 @@ func NewPurchaseOrderRepository(db *gorm.DB) IPurchaseOrderRepository {
 
 func (r *PurchaseOrderRepository) GeneratePONumber(companyID uuid.UUID, prefix string) (string, error) {
 	now := time.Now()
-	monthPrefix := fmt.Sprintf("%s-%d%02d", prefix, now.Year(), now.Month())
+
+	monthPrefix := fmt.Sprintf("%d%02d", now.Year(), now.Month())
+	if prefix != "" {
+		monthPrefix = fmt.Sprintf("%s-%s", prefix, monthPrefix)
+	}
+
 	var count int64
 	if err := r.Db.Model(&entity.PurchaseOrder{}).
 		Where("company_id = ? AND po_number LIKE ?", companyID, monthPrefix+"%").
@@ -207,7 +212,12 @@ func (r *BillRepository) DB() *gorm.DB {
 
 func (r *BillRepository) GenerateBillNumber(companyID uuid.UUID, prefix string) (string, error) {
 	now := time.Now()
-	monthPrefix := fmt.Sprintf("%s-%d%02d", prefix, now.Year(), now.Month())
+
+	monthPrefix := fmt.Sprintf("%d%02d", now.Year(), now.Month())
+	if prefix != "" {
+		monthPrefix = fmt.Sprintf("%s-%s", prefix, monthPrefix)
+	}
+
 	var count int64
 	if err := r.Db.Model(&entity.Bill{}).
 		Where("company_id = ? AND bill_number LIKE ?", companyID, monthPrefix+"%").

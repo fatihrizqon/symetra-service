@@ -23,10 +23,8 @@ const (
 )
 
 type PurchaseOrder struct {
-	Id        uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid();" json:"id"`
-	CompanyId uuid.UUID `gorm:"type:uuid;not null;index;" json:"company_id"`
-	// FIX [CFG-01]: Tambah uniqueIndex composite company_id+po_number untuk mencegah
-	// duplicate akibat race condition pada GeneratePONumber
+	Id              uuid.UUID           `gorm:"type:uuid;primaryKey;default:gen_random_uuid();" json:"id"`
+	CompanyId       uuid.UUID           `gorm:"type:uuid;not null;index;" json:"company_id"`
 	PONumber        string              `gorm:"type:character varying;not null;uniqueIndex:idx_company_po_number;" json:"po_number"`
 	VendorId        uuid.UUID           `gorm:"type:uuid;not null;index;" json:"vendor_id"`
 	Vendor          Vendor              `gorm:"foreignKey:VendorId;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;" json:"vendor,omitempty"`
@@ -96,8 +94,8 @@ const (
 )
 
 type Bill struct {
-	Id          uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid();" json:"id"`
-	CompanyId   uuid.UUID `gorm:"type:uuid;not null;index;" json:"company_id"`
+	Id        uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid();" json:"id"`
+	CompanyId uuid.UUID `gorm:"type:uuid;not null;index;" json:"company_id"`
 	// FIX [CFG-01]: Tambah uniqueIndex composite company_id+bill_number
 	BillNumber      string            `gorm:"type:character varying;not null;uniqueIndex:idx_company_bill_number;" json:"bill_number"`
 	PurchaseOrderId *uuid.UUID        `gorm:"type:uuid;" json:"purchase_order_id,omitempty"`

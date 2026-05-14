@@ -307,6 +307,7 @@ func mapCompany(c entity.Company) response.CompanyResponse {
 		CreatedBy: c.CreatedBy,
 		CreatedAt: c.CreatedAt,
 		UpdatedAt: c.UpdatedAt,
+		DeletedAt: c.DeletedAt,
 	}
 }
 

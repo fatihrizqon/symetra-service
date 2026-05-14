@@ -7,19 +7,20 @@ import (
 )
 
 type CompanyResponse struct {
-	Id        uuid.UUID `json:"id"`
-	Name      string    `json:"name"`
-	LegalName string    `json:"legal_name"`
-	TaxID     string    `json:"tax_id"`
-	Address   string    `json:"address"`
-	Phone     string    `json:"phone"`
-	Email     string    `json:"email"`
-	Industry  string    `json:"industry"`
-	Currency  string    `json:"currency"`
-	Status    int       `json:"status"`
-	CreatedBy uuid.UUID `json:"created_by"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	Id        uuid.UUID  `json:"id"`
+	Name      string     `json:"name"`
+	LegalName string     `json:"legal_name"`
+	TaxID     string     `json:"tax_id"`
+	Address   string     `json:"address"`
+	Phone     string     `json:"phone"`
+	Email     string     `json:"email"`
+	Industry  string     `json:"industry"`
+	Currency  string     `json:"currency"`
+	Status    int        `json:"status"`
+	CreatedBy uuid.UUID  `json:"created_by"`
+	CreatedAt time.Time  `json:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at"`
+	DeletedAt *time.Time `json:"deleted_at,omitempty"`
 }
 
 type CompanyMemberResponse struct {

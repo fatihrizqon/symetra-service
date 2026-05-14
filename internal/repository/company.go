@@ -189,11 +189,22 @@ func (r *CompanyMemberRepository) FindMembersByCompany(companyID uuid.UUID) ([]e
 
 func (r *CompanyMemberRepository) FindCompaniesByUser(userID uuid.UUID) ([]entity.CompanyMember, error) {
 	var members []entity.CompanyMember
-	err := r.Db.Preload("Company").
+	err := r.Db.Preload("Company", "deleted_at IS NULL").
 		Where("user_id = ?", userID).
 		Order("joined_at ASC").
 		Find(&members).Error
-	return members, err
+	if err != nil {
+		return nil, err
+	}
+
+	// Filter out members whose company was soft-deleted (Preload returns zero-value Company when condition not met)
+	active := members[:0]
+	for _, m := range members {
+		if m.Company.Id != (uuid.UUID{}) {
+			active = append(active, m)
+		}
+	}
+	return active, nil
 }
 
 func (r *CompanyMemberRepository) UpdateRole(userID, companyID uuid.UUID, role entity.CompanyRole) error {

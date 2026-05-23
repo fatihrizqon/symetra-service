@@ -204,7 +204,7 @@ func (r *ReportRepository) GetJournalBook(companyID uuid.UUID, start, end time.T
 		  AND je.company_id = ?
 		  AND je.date >= ?
 		  AND je.date <= ?
-		ORDER BY je.date, je.journal_number, jl.id
+		ORDER BY je.created_at, je.journal_number, jl.id
 	`, companyID, start, end).Scan(&rows).Error
 	return rows, err
 }

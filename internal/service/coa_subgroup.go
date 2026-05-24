@@ -16,7 +16,7 @@ type ICOASubGroupService interface {
 	FindById(companyID, reqId uuid.UUID) (response.COASubGroupResponse, error)
 	Update(companyID uuid.UUID, req request.COASubGroupUpdateRequest) (entity.COASubGroup, error)
 	Delete(companyID, reqId uuid.UUID) (entity.COASubGroup, error)
-	SelectDropdownList(companyID uuid.UUID) ([]response.SelectDropdownListResponse, error)
+	SelectDropdownList(companyID uuid.UUID, qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error)
 }
 
 type COASubGroupService struct {
@@ -82,16 +82,16 @@ func (s *COASubGroupService) Delete(companyID, reqId uuid.UUID) (entity.COASubGr
 	return sg, s.ICOASubGroupRepository.Delete(companyID, reqId)
 }
 
-func (s *COASubGroupService) SelectDropdownList(companyID uuid.UUID) ([]response.SelectDropdownListResponse, error) {
-	entities, err := s.ICOASubGroupRepository.SelectDropdownList(companyID)
+func (s *COASubGroupService) SelectDropdownList(companyID uuid.UUID, qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error) {
+	entities, total, err := s.ICOASubGroupRepository.SelectDropdownList(companyID, qp)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	resps := make([]response.SelectDropdownListResponse, 0, len(entities))
 	for _, v := range entities {
 		resps = append(resps, response.SelectDropdownListResponse{Value: v.Id, Label: v.Name})
 	}
-	return resps, nil
+	return resps, total, nil
 }
 
 func mapCOASubGroup(v entity.COASubGroup) response.COASubGroupResponse {

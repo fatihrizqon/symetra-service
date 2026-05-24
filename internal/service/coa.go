@@ -19,7 +19,7 @@ type ICOAService interface {
 	FindById(companyID, reqId uuid.UUID) (response.COAResponse, error)
 	Update(companyID uuid.UUID, req request.COAUpdateRequest) (entity.COA, error)
 	Delete(companyID, reqId uuid.UUID) (entity.COA, error)
-	SelectDropdownList(companyID uuid.UUID) ([]response.SelectDropdownListResponse, error)
+	SelectDropdownList(companyID uuid.UUID, qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error)
 }
 
 type COAService struct {
@@ -111,16 +111,16 @@ func (s *COAService) Delete(companyID, reqId uuid.UUID) (entity.COA, error) {
 	return c, s.ICOARepository.Delete(companyID, reqId)
 }
 
-func (s *COAService) SelectDropdownList(companyID uuid.UUID) ([]response.SelectDropdownListResponse, error) {
-	entities, err := s.ICOARepository.SelectDropdownList(companyID)
+func (s *COAService) SelectDropdownList(companyID uuid.UUID, qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error) {
+	entities, total, err := s.ICOARepository.SelectDropdownList(companyID, qp)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	resps := make([]response.SelectDropdownListResponse, 0, len(entities))
 	for _, v := range entities {
 		resps = append(resps, response.SelectDropdownListResponse{Value: v.Id, Label: fmt.Sprintf("%s - %s", v.Code, v.Name)})
 	}
-	return resps, nil
+	return resps, total, nil
 }
 
 func mapCOA(v entity.COA) response.COAResponse {
@@ -129,13 +129,9 @@ func mapCOA(v entity.COA) response.COAResponse {
 		SubgroupId: v.SubgroupId,
 		Code:       v.Code,
 		Name:       v.Name,
-		// BUG NOTE 06032026: Undefined CurrencyCode di COACreateRequest
-		// CurrencyCode: v.CurrencyCode,
-		// BUG NOTE 06032026: unknown field Active in struct literal of type response.COAResponse
-		// Active:    v.Active,
-		Status:    v.Status,
-		CreatedAt: v.CreatedAt,
-		UpdatedAt: v.UpdatedAt,
+		Status:     v.Status,
+		CreatedAt:  v.CreatedAt,
+		UpdatedAt:  v.UpdatedAt,
 	}
 	if v.SubGroup != nil {
 		r.SubGroup = &response.COASubGroupResponse{

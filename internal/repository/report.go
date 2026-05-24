@@ -12,6 +12,7 @@ type AccountLedgerRow struct {
 	AccountCode  string
 	AccountName  string
 	GroupName    string
+	GroupType    string // ← NEW: enum dari coa_groups.type, tidak bergantung nama
 	SubgroupName string
 	TotalDebit   float64
 	TotalCredit  float64
@@ -42,6 +43,7 @@ func (r *ReportRepository) GetLedger(companyID uuid.UUID, start, end time.Time) 
 			ca.code                      AS account_code,
 			ca.name                      AS account_name,
 			cg.name                      AS group_name,
+			cg.type                      AS group_type,
 			cs.name                      AS subgroup_name,
 			COALESCE(SUM(jl.debit),  0)  AS total_debit,
 			COALESCE(SUM(jl.credit), 0)  AS total_credit,
@@ -55,7 +57,7 @@ func (r *ReportRepository) GetLedger(companyID uuid.UUID, start, end time.Time) 
 		  AND je.company_id = ?
 		  AND je.date >= ?
 		  AND je.date <= ?
-		GROUP BY ca.code, ca.name, cg.name, cs.name
+		GROUP BY ca.code, ca.name, cg.name, cg.type, cs.name
 		ORDER BY ca.code
 	`, companyID, start, end).Scan(&rows).Error
 	return rows, err
@@ -68,6 +70,7 @@ func (r *ReportRepository) GetLedgerUpTo(companyID uuid.UUID, end time.Time) ([]
 			ca.code                      AS account_code,
 			ca.name                      AS account_name,
 			cg.name                      AS group_name,
+			cg.type                      AS group_type,
 			cs.name                      AS subgroup_name,
 			COALESCE(SUM(jl.debit),  0)  AS total_debit,
 			COALESCE(SUM(jl.credit), 0)  AS total_credit,
@@ -80,7 +83,7 @@ func (r *ReportRepository) GetLedgerUpTo(companyID uuid.UUID, end time.Time) ([]
 		WHERE je.status = 'posted'
 		  AND je.company_id = ?
 		  AND je.date <= ?
-		GROUP BY ca.code, ca.name, cg.name, cs.name
+		GROUP BY ca.code, ca.name, cg.name, cg.type, cs.name
 		ORDER BY ca.code
 	`, companyID, end).Scan(&rows).Error
 	return rows, err
@@ -103,6 +106,7 @@ type GeneralLedgerRow struct {
 	AccountCode   string
 	AccountName   string
 	GroupName     string
+	GroupType     string // ← NEW
 	SubgroupName  string
 	Date          string
 	JournalNumber string
@@ -133,6 +137,7 @@ func (r *ReportRepository) GetGeneralLedger(companyID uuid.UUID, start, end time
 			ca.code                             AS account_code,
 			ca.name                             AS account_name,
 			cg.name                             AS group_name,
+			cg.type                             AS group_type,
 			cs.name                             AS subgroup_name,
 			TO_CHAR(je.date, 'YYYY-MM-DD')      AS date,
 			je.journal_number                   AS journal_number,
@@ -164,6 +169,7 @@ func (r *ReportRepository) GetOpeningBalance(companyID uuid.UUID, asOf time.Time
 	type result struct{ Balance float64 }
 	var res result
 
+	// Gunakan ca.id (UUID) bukan ca.code (string) untuk akurasi
 	query := `
 		SELECT COALESCE(SUM(jl.debit) - SUM(jl.credit), 0) AS balance
 		FROM journal_lines jl
@@ -175,7 +181,7 @@ func (r *ReportRepository) GetOpeningBalance(companyID uuid.UUID, asOf time.Time
 
 	args := []interface{}{companyID, asOf}
 	if coaID != "" {
-		query += " AND ca.code = ?"
+		query += " AND ca.id = ?"
 		args = append(args, coaID)
 	}
 

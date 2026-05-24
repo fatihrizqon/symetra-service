@@ -118,12 +118,15 @@ func (h *COAHandler) Delete(ctx *fiber.Ctx) error {
 func (h *COAHandler) SelectDropdownList(ctx *fiber.Ctx) error {
 	companyID, err := util.GetCompanyID(ctx)
 	if err != nil {
-		util.HandleError(ctx, fiber.StatusBadRequest, err)
-		return nil
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
-	result, err := h.ICOAService.SelectDropdownList(companyID)
+	qp := util.ParseQueryParams(ctx, entity.COA{}.SearchableFields())
+	items, totalCount, err := h.ICOAService.SelectDropdownList(companyID, qp)
 	if err != nil {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{Status: fiber.StatusInternalServerError, Message: err.Error()})
+		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{Status: fiber.StatusInternalServerError, Message: "Failed to retrieve records", Errors: err.Error()})
 	}
-	return ctx.Status(fiber.StatusOK).JSON(response.JSON{Status: fiber.StatusOK, Message: "Dropdown list retrieved.", Data: result})
+	if totalCount == 0 {
+		return ctx.Status(fiber.StatusOK).JSON(response.SelectJSON{Data: []response.SelectDropdownListResponse{}})
+	}
+	return ctx.Status(fiber.StatusOK).JSON(response.SelectJSON{Data: items})
 }

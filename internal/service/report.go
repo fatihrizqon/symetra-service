@@ -6,28 +6,23 @@ import (
 	"time"
 
 	"github.com/fatihrizqon/symetra-service/internal/delivery/http/response"
+	"github.com/fatihrizqon/symetra-service/internal/entity"
 	"github.com/fatihrizqon/symetra-service/internal/repository"
 	"github.com/google/uuid"
 )
 
-// ─── COA Group name constants ─────────────────────────────────────────────────
-// Must match coa_groups.name in seed data (Bahasa Indonesia).
-const (
-	groupAssets      = "aset"
-	groupLiabilities = "liabilitas"
-	groupEquity      = "ekuitas"
-	groupRevenue     = "pendapatan"
-	groupExpense     = "beban"
-)
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-func normalizeGroup(name string) string {
-	return strings.ToLower(strings.TrimSpace(name))
+func groupType(r repository.AccountLedgerRow) entity.COAGroupType {
+	return entity.COAGroupType(r.GroupType)
 }
 
-func isGroup(groupName, target string) bool {
-	return strings.Contains(normalizeGroup(groupName), target)
+func groupTypeFromGL(r repository.GeneralLedgerRow) entity.COAGroupType {
+	return entity.COAGroupType(r.GroupType)
 }
 
+// subgroupContains masih dipakai untuk memisahkan sub-kategori dalam satu group type
+// (misal: memisahkan "Pendapatan Lain-lain" dari "Pendapatan Usaha" dalam group revenue).
 func subgroupContains(name, keyword string) bool {
 	return strings.Contains(strings.ToLower(name), strings.ToLower(keyword))
 }
@@ -107,18 +102,17 @@ func (s *ReportService) ProfitLoss(companyID uuid.UUID, start, end time.Time) (r
 	finExp := response.ReportSection{Title: "Beban Keuangan / Lain-lain"}
 
 	for _, r := range rows {
-		g := normalizeGroup(r.GroupName)
+		gt := groupType(r)
 		sg := strings.ToLower(r.SubgroupName)
 
-		switch {
-		// ── Revenue / Pendapatan ───────────────────────────────────────────
-		case isGroup(g, groupRevenue):
+		switch gt {
+		// ── Revenue ───────────────────────────────────────────────────────────
+		case entity.COAGroupTypeRevenue:
 			item := response.ReportLineItem{
 				AccountCode: r.AccountCode,
 				AccountName: r.AccountName,
 				Amount:      r.TotalCredit - r.TotalDebit,
 			}
-			// "Pendapatan Lain-lain" subgroup → other revenue
 			if subgroupContains(sg, "lain") {
 				otherRevenue.Items = append(otherRevenue.Items, item)
 				otherRevenue.Subtotal += item.Amount
@@ -127,25 +121,31 @@ func (s *ReportService) ProfitLoss(companyID uuid.UUID, start, end time.Time) (r
 				operatingRevenue.Subtotal += item.Amount
 			}
 
-		// ── Expense / Beban ───────────────────────────────────────────────
-		case isGroup(g, groupExpense):
+		// ── COGS / HPP ────────────────────────────────────────────────────────
+		case entity.COAGroupTypeCOGS:
+			item := response.ReportLineItem{
+				AccountCode: r.AccountCode,
+				AccountName: r.AccountName,
+				Amount:      r.TotalDebit - r.TotalCredit,
+			}
+			cogs.Items = append(cogs.Items, item)
+			cogs.Subtotal += item.Amount
+
+		// ── Expense / Beban ───────────────────────────────────────────────────
+		case entity.COAGroupTypeExpense:
 			item := response.ReportLineItem{
 				AccountCode: r.AccountCode,
 				AccountName: r.AccountName,
 				Amount:      r.TotalDebit - r.TotalCredit,
 			}
 			switch {
-			case subgroupContains(sg, "hpp") || subgroupContains(sg, "harga pokok"):
-				cogs.Items = append(cogs.Items, item)
-				cogs.Subtotal += item.Amount
-			case subgroupContains(sg, "operasional"):
+			case subgroupContains(sg, "operasional") || subgroupContains(sg, "operating"):
 				opex.Items = append(opex.Items, item)
 				opex.Subtotal += item.Amount
 			case subgroupContains(sg, "administrasi") || subgroupContains(sg, "admin"):
 				adminExp.Items = append(adminExp.Items, item)
 				adminExp.Subtotal += item.Amount
 			default:
-				// Beban Lain-lain, Beban Keuangan, dll
 				finExp.Items = append(finExp.Items, item)
 				finExp.Subtotal += item.Amount
 			}
@@ -189,10 +189,10 @@ func (s *ReportService) BalanceSheet(companyID uuid.UUID, asOf time.Time) (respo
 	var totalAssets, totalLiabilities, totalEquity float64
 
 	for _, r := range rows {
-		g := normalizeGroup(r.GroupName)
+		gt := groupType(r)
 
-		switch {
-		case isGroup(g, groupAssets):
+		switch gt {
+		case entity.COAGroupTypeAsset:
 			amount := r.TotalDebit - r.TotalCredit
 			sec := ensureSection(assetSections, r.SubgroupName)
 			sec.Items = append(sec.Items, response.ReportLineItem{
@@ -203,7 +203,7 @@ func (s *ReportService) BalanceSheet(companyID uuid.UUID, asOf time.Time) (respo
 			sec.Subtotal += amount
 			totalAssets += amount
 
-		case isGroup(g, groupLiabilities):
+		case entity.COAGroupTypeLiability:
 			amount := r.TotalCredit - r.TotalDebit
 			sec := ensureSection(liabSections, r.SubgroupName)
 			sec.Items = append(sec.Items, response.ReportLineItem{
@@ -214,7 +214,7 @@ func (s *ReportService) BalanceSheet(companyID uuid.UUID, asOf time.Time) (respo
 			sec.Subtotal += amount
 			totalLiabilities += amount
 
-		case isGroup(g, groupEquity):
+		case entity.COAGroupTypeEquity:
 			amount := r.TotalCredit - r.TotalDebit
 			sec := ensureSection(equitySections, r.SubgroupName)
 			sec.Items = append(sec.Items, response.ReportLineItem{
@@ -270,7 +270,7 @@ func (s *ReportService) CashFlow(companyID uuid.UUID, start, end time.Time) (res
 	financing := response.ReportSection{Title: "Aktivitas Pendanaan"}
 
 	for _, r := range periodRows {
-		g := normalizeGroup(r.GroupName)
+		gt := groupType(r)
 		sg := strings.ToLower(r.SubgroupName)
 
 		item := response.ReportLineItem{
@@ -278,41 +278,45 @@ func (s *ReportService) CashFlow(companyID uuid.UUID, start, end time.Time) (res
 			AccountName: r.AccountName,
 		}
 
-		switch {
-		case isGroup(g, groupRevenue):
+		switch gt {
+		case entity.COAGroupTypeRevenue:
 			item.Amount = r.TotalCredit - r.TotalDebit
 			operating.Items = append(operating.Items, item)
 			operating.Subtotal += item.Amount
 
-		case isGroup(g, groupExpense):
+		case entity.COAGroupTypeCOGS, entity.COAGroupTypeExpense:
 			item.Amount = -(r.TotalDebit - r.TotalCredit)
 			operating.Items = append(operating.Items, item)
 			operating.Subtotal += item.Amount
 
-		// Aset Tidak Lancar → investasi
-		case isGroup(g, groupAssets) &&
-			(subgroupContains(sg, "tidak lancar") || subgroupContains(sg, "tetap") ||
-				subgroupContains(sg, "kendaraan") || subgroupContains(sg, "peralatan") ||
-				subgroupContains(sg, "inventaris")):
-			item.Amount = -(r.TotalDebit - r.TotalCredit)
-			investing.Items = append(investing.Items, item)
-			investing.Subtotal += item.Amount
+		case entity.COAGroupTypeAsset:
+			// Aset Tidak Lancar / Fixed Assets → Aktivitas Investasi
+			if subgroupContains(sg, "tidak lancar") || subgroupContains(sg, "tetap") ||
+				subgroupContains(sg, "fixed") || subgroupContains(sg, "kendaraan") ||
+				subgroupContains(sg, "peralatan") || subgroupContains(sg, "inventaris") {
+				item.Amount = -(r.TotalDebit - r.TotalCredit)
+				investing.Items = append(investing.Items, item)
+				investing.Subtotal += item.Amount
+			}
+			// Aset Lancar (kas/bank) tidak dimasukkan langsung ke cashflow,
+			// dihitung sebagai opening/closing cash di bawah.
 
-		case isGroup(g, groupLiabilities) || isGroup(g, groupEquity):
+		case entity.COAGroupTypeLiability, entity.COAGroupTypeEquity:
 			item.Amount = r.TotalCredit - r.TotalDebit
 			financing.Items = append(financing.Items, item)
 			financing.Subtotal += item.Amount
 		}
 	}
 
-	// Opening cash: akun Kas & Bank (Aset Lancar)
+	// Opening cash: akun Asset Lancar (kas & bank)
 	var openingCash float64
 	for _, r := range openingRows {
-		if isGroup(normalizeGroup(r.GroupName), groupAssets) {
+		if groupType(r) == entity.COAGroupTypeAsset {
 			name := strings.ToLower(r.AccountName)
 			sg := strings.ToLower(r.SubgroupName)
-			if strings.Contains(name, "kas") || strings.Contains(name, "bank") ||
-				strings.Contains(sg, "kas") || strings.Contains(sg, "lancar") {
+			if strings.Contains(name, "kas") || strings.Contains(name, "cash") ||
+				strings.Contains(name, "bank") || strings.Contains(sg, "lancar") ||
+				strings.Contains(sg, "current") {
 				openingCash += r.TotalDebit - r.TotalCredit
 			}
 		}
@@ -347,7 +351,7 @@ func (s *ReportService) EquityStatement(companyID uuid.UUID, start, end time.Tim
 
 	var openingEquity float64
 	for _, r := range openRows {
-		if isGroup(normalizeGroup(r.GroupName), groupEquity) {
+		if groupType(r) == entity.COAGroupTypeEquity {
 			openingEquity += r.TotalCredit - r.TotalDebit
 		}
 	}
@@ -360,7 +364,7 @@ func (s *ReportService) EquityStatement(companyID uuid.UUID, start, end time.Tim
 	var movements []response.EquityMovement
 	var equityMovementTotal float64
 	for _, r := range periodRows {
-		if isGroup(normalizeGroup(r.GroupName), groupEquity) {
+		if groupType(r) == entity.COAGroupTypeEquity {
 			amount := r.TotalCredit - r.TotalDebit
 			if amount != 0 {
 				movements = append(movements, response.EquityMovement{
@@ -396,11 +400,11 @@ func (s *ReportService) EquityStatement(companyID uuid.UUID, start, end time.Tim
 func (s *ReportService) profitLossFromRows(rows []repository.AccountLedgerRow) (response.ProfitLossResponse, error) {
 	var totalRevenue, totalExpense float64
 	for _, r := range rows {
-		g := normalizeGroup(r.GroupName)
-		switch {
-		case isGroup(g, groupRevenue):
+		gt := groupType(r)
+		switch gt {
+		case entity.COAGroupTypeRevenue:
 			totalRevenue += r.TotalCredit - r.TotalDebit
-		case isGroup(g, groupExpense):
+		case entity.COAGroupTypeCOGS, entity.COAGroupTypeExpense:
 			totalExpense += r.TotalDebit - r.TotalCredit
 		}
 	}
@@ -431,10 +435,11 @@ func (s *ReportService) GeneralLedger(companyID uuid.UUID, start, end time.Time,
 
 	type accountKey struct{ code, name, group, subgroup string }
 	type accBucket struct {
-		key   accountKey
-		lines []response.GeneralLedgerLine
-		td    float64
-		tc    float64
+		key       accountKey
+		groupType entity.COAGroupType
+		lines     []response.GeneralLedgerLine
+		td        float64
+		tc        float64
 	}
 
 	orderMap := []accountKey{}
@@ -443,7 +448,7 @@ func (s *ReportService) GeneralLedger(companyID uuid.UUID, start, end time.Time,
 	for _, r := range rows {
 		k := accountKey{r.AccountCode, r.AccountName, r.GroupName, r.SubgroupName}
 		if _, ok := buckets[k]; !ok {
-			buckets[k] = &accBucket{key: k}
+			buckets[k] = &accBucket{key: k, groupType: groupTypeFromGL(r)}
 			orderMap = append(orderMap, k)
 		}
 		b := buckets[k]
@@ -463,10 +468,9 @@ func (s *ReportService) GeneralLedger(companyID uuid.UUID, start, end time.Time,
 	for _, k := range orderMap {
 		b := buckets[k]
 
-		g := normalizeGroup(k.group)
-		isDebitNormal := isGroup(g, groupAssets) || isGroup(g, groupExpense)
+		// Gunakan IsDebitNormal() dari entity — tidak ada string matching
+		isDebitNormal := b.groupType.IsDebitNormal()
 
-		// Opening balance: query pakai coa_id (UUID), bukan code
 		openRaw, _ := s.IReportRepository.GetOpeningBalance(companyID, start, k.code)
 		var opening float64
 		if isDebitNormal {

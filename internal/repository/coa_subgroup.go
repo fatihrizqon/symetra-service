@@ -23,7 +23,7 @@ type ICOASubGroupRepository interface {
 	FindById(companyID, entityId uuid.UUID) (entity.COASubGroup, error)
 	Update(entity.COASubGroup) error
 	Delete(companyID, entityId uuid.UUID) error
-	SelectDropdownList(companyID uuid.UUID) ([]entity.COASubGroup, error)
+	SelectDropdownList(companyID uuid.UUID, qp *util.QueryParams) ([]entity.COASubGroup, int, error)
 }
 
 type COASubGroupRepository struct {
@@ -109,13 +109,25 @@ func (r *COASubGroupRepository) Delete(companyID, entityId uuid.UUID) error {
 	return nil
 }
 
-func (r *COASubGroupRepository) SelectDropdownList(companyID uuid.UUID) ([]entity.COASubGroup, error) {
+func (r *COASubGroupRepository) SelectDropdownList(companyID uuid.UUID, qp *util.QueryParams) ([]entity.COASubGroup, int, error) {
 	var entities []entity.COASubGroup
-	if err := r.Db.Preload("Group").
-		Where("coa_subgroups.company_id = ? AND coa_subgroups.status = 1", companyID).
-		Order("coa_subgroups.code ASC").
-		Find(&entities).Error; err != nil {
-		return nil, err
+	var totalCount int64
+
+	query := r.Db.Model(&entity.COASubGroup{}).Where("coa_subgroups.company_id = ? AND coa_subgroups.status = 1", companyID)
+	query = util.ApplySearch(query, qp)
+
+	if err := query.Count(&totalCount).Error; err != nil {
+		return nil, 0, err
 	}
-	return entities, nil
+	if totalCount == 0 {
+		return entities, 0, nil
+	}
+
+	query = util.ApplySort(query, qp, coaSubGroupSortColumns, "coa_subgroups.code")
+	query = util.ApplyPagination(query, qp)
+
+	if err := query.Preload("Group").Find(&entities).Error; err != nil {
+		return nil, 0, err
+	}
+	return entities, int(totalCount), nil
 }

@@ -2,6 +2,7 @@ package util
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -56,12 +57,15 @@ func ParseQueryParams(ctx *fiber.Ctx, fields []string) *QueryParams {
 		qp.SortDir = "asc"
 	}
 
-	// FIXED: handle multi-value filters
 	args := ctx.Context().QueryArgs()
 	args.VisitAll(func(key, value []byte) {
 		k := string(key)
 		if !reservedKeys[k] {
-			qp.Filters[k] = append(qp.Filters[k], string(value))
+			for _, part := range strings.Split(string(value), ",") {
+				if p := strings.TrimSpace(part); p != "" {
+					qp.Filters[k] = append(qp.Filters[k], p)
+				}
+			}
 		}
 	})
 

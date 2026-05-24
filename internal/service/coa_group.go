@@ -1,6 +1,8 @@
 package service
 
 import (
+	"fmt"
+
 	"github.com/fatihrizqon/symetra-service/internal/delivery/http/request"
 	"github.com/fatihrizqon/symetra-service/internal/delivery/http/response"
 	"github.com/fatihrizqon/symetra-service/internal/entity"
@@ -16,7 +18,7 @@ type ICOAGroupService interface {
 	FindById(companyID, reqId uuid.UUID) (response.COAGroupResponse, error)
 	Update(companyID uuid.UUID, req request.COAGroupUpdateRequest) (entity.COAGroup, error)
 	Delete(companyID, reqId uuid.UUID) (entity.COAGroup, error)
-	SelectDropdownList(companyID uuid.UUID) ([]response.SelectDropdownListResponse, error)
+	SelectDropdownList(companyID uuid.UUID, qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error)
 }
 
 type COAGroupService struct {
@@ -32,7 +34,17 @@ func (s *COAGroupService) Create(companyID uuid.UUID, req request.COAGroupCreate
 	if err := s.validate.Struct(req); err != nil {
 		return entity.COAGroup{}, err
 	}
-	g := entity.COAGroup{CompanyId: companyID, Code: req.Code, Name: req.Name, NormalBalance: req.NormalBalance}
+	groupType := entity.COAGroupType(req.Type)
+	if !entity.ValidCOAGroupTypes[groupType] {
+		return entity.COAGroup{}, fmt.Errorf("invalid type: %s", req.Type)
+	}
+	g := entity.COAGroup{
+		CompanyId:     companyID,
+		Code:          req.Code,
+		Name:          req.Name,
+		Type:          groupType,
+		NormalBalance: req.NormalBalance,
+	}
 	return s.ICOAGroupRepository.Create(g)
 }
 
@@ -68,8 +80,13 @@ func (s *COAGroupService) Update(companyID uuid.UUID, req request.COAGroupUpdate
 	if err != nil {
 		return g, err
 	}
+	groupType := entity.COAGroupType(req.Type)
+	if !entity.ValidCOAGroupTypes[groupType] {
+		return entity.COAGroup{}, fmt.Errorf("invalid type: %s", req.Type)
+	}
 	g.Code = req.Code
 	g.Name = req.Name
+	g.Type = groupType
 	g.NormalBalance = req.NormalBalance
 	return g, s.ICOAGroupRepository.Update(g)
 }
@@ -82,16 +99,16 @@ func (s *COAGroupService) Delete(companyID, reqId uuid.UUID) (entity.COAGroup, e
 	return g, s.ICOAGroupRepository.Delete(companyID, reqId)
 }
 
-func (s *COAGroupService) SelectDropdownList(companyID uuid.UUID) ([]response.SelectDropdownListResponse, error) {
-	entities, err := s.ICOAGroupRepository.SelectDropdownList(companyID)
+func (s *COAGroupService) SelectDropdownList(companyID uuid.UUID, qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error) {
+	entities, total, err := s.ICOAGroupRepository.SelectDropdownList(companyID, qp)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	resps := make([]response.SelectDropdownListResponse, 0, len(entities))
 	for _, v := range entities {
 		resps = append(resps, response.SelectDropdownListResponse{Value: v.Id, Label: v.Name})
 	}
-	return resps, nil
+	return resps, total, nil
 }
 
 func mapCOAGroup(v entity.COAGroup) response.COAGroupResponse {
@@ -99,6 +116,7 @@ func mapCOAGroup(v entity.COAGroup) response.COAGroupResponse {
 		Id:            v.Id,
 		Code:          v.Code,
 		Name:          v.Name,
+		Type:          string(v.Type),
 		NormalBalance: v.NormalBalance,
 		Status:        v.Status,
 		CreatedAt:     v.CreatedAt,

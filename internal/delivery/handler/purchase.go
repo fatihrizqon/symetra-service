@@ -303,10 +303,17 @@ func (h *BillHandler) Confirm(ctx *fiber.Ctx) error {
 	}
 	callerId, _ := util.GetCallerID(ctx)
 	id, err := uuid.Parse(ctx.Params("id"))
+
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: "invalid id"})
 	}
-	result, err := h.svc.Confirm(companyID, id, callerId)
+
+	fmt.Println("Confirming bill with ID:", id)
+	// Parse optional body — jika body kosong/tidak ada, req tetap zero-value (ExpenseAccountId = nil)
+	var req request.BillConfirmRequest
+	_ = ctx.BodyParser(&req) // intentionally ignore parse error — body opsional
+	result, err := h.svc.Confirm(companyID, id, req, callerId)
+
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}

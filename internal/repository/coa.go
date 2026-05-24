@@ -25,7 +25,7 @@ type ICOARepository interface {
 	FindByCode(companyID uuid.UUID, code string) (entity.COA, error)
 	Update(entity.COA) error
 	Delete(companyID, entityId uuid.UUID) error
-	SelectDropdownList(companyID uuid.UUID) ([]entity.COA, error)
+	SelectDropdownList(companyID uuid.UUID, qp *util.QueryParams) ([]entity.COA, int, error)
 }
 
 type COARepository struct {
@@ -77,7 +77,7 @@ func (r *COARepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]en
 
 func (r *COARepository) FindById(companyID, entityId uuid.UUID) (entity.COA, error) {
 	var c entity.COA
-	if err := r.Db.Preload("SubGroup").Where("id = ? AND company_id = ?", entityId, companyID).First(&c).Error; err != nil {
+	if err := r.Db.Preload("SubGroup").Preload("SubGroup.Group").Where("id = ? AND company_id = ?", entityId, companyID).First(&c).Error; err != nil {
 		return c, errors.New("coa not found")
 	}
 	return c, nil
@@ -103,15 +103,28 @@ func (r *COARepository) Delete(companyID, entityId uuid.UUID) error {
 	return nil
 }
 
-func (r *COARepository) SelectDropdownList(companyID uuid.UUID) ([]entity.COA, error) {
+func (r *COARepository) SelectDropdownList(companyID uuid.UUID, qp *util.QueryParams) ([]entity.COA, int, error) {
 	var entities []entity.COA
-	if err := r.Db.Preload("SubGroup").
-		Where("coa.company_id = ? AND coa.status = 1 AND coa.active = true", companyID).
-		Order("coa.code ASC").
-		Find(&entities).Error; err != nil {
-		return nil, err
+	var totalCount int64
+
+	query := r.Db.Model(&entity.COA{}).Where("coa.company_id = ? AND coa.status = 1 AND coa.active = true", companyID)
+	query = util.ApplySearch(query, qp)
+	query = entity.COA{}.ApplyFilters(query, qp.Filters)
+
+	if err := query.Count(&totalCount).Error; err != nil {
+		return nil, 0, err
 	}
-	return entities, nil
+	if totalCount == 0 {
+		return entities, 0, nil
+	}
+
+	query = util.ApplySort(query, qp, coaSortColumns, "coa.code")
+	query = util.ApplyPagination(query, qp)
+
+	if err := query.Preload("SubGroup").Find(&entities).Error; err != nil {
+		return nil, 0, err
+	}
+	return entities, int(totalCount), nil
 }
 
 func (r *COARepository) FindByCode(companyID uuid.UUID, code string) (entity.COA, error) {

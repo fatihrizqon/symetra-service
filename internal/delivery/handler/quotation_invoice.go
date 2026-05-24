@@ -306,6 +306,7 @@ func (h *InvoiceHandler) Delete(ctx *fiber.Ctx) error {
 
 func (h *InvoiceHandler) Confirm(ctx *fiber.Ctx) error {
 	companyID, err := util.GetCompanyID(ctx)
+
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}

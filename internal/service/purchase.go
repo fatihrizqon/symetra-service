@@ -29,9 +29,8 @@ type IPurchaseOrderService interface {
 }
 
 type PurchaseOrderService struct {
-	repo    repository.IPurchaseOrderRepository
-	cfgRepo repository.ICompanyConfigurationRepository
-	// FIX [FRAUD-02]: butuh vendorRepo untuk validasi vendor milik company
+	repo       repository.IPurchaseOrderRepository
+	cfgRepo    repository.ICompanyConfigurationRepository
 	vendorRepo repository.IVendorRepository
 	validate   *validator.Validate
 }
@@ -331,18 +330,18 @@ type IBillService interface {
 	FindById(companyID, id uuid.UUID) (response.BillResponse, error)
 	Update(companyID uuid.UUID, req request.BillUpdateRequest) (response.BillResponse, error)
 	Delete(companyID, id uuid.UUID) error
-	Confirm(companyID, id uuid.UUID, callerId uuid.UUID) (response.BillResponse, error)
+	Confirm(companyID, id uuid.UUID, req request.BillConfirmRequest, callerId uuid.UUID) (response.BillResponse, error)
 	AddPayment(companyID, id uuid.UUID, req request.BillPaymentRequest, callerId uuid.UUID) (response.BillResponse, error)
 	Cancel(companyID, id uuid.UUID, callerId uuid.UUID) (response.BillResponse, error)
 	SelectDropdownList(companyID uuid.UUID, qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error)
 }
 
 type BillService struct {
-	billRepo repository.IBillRepository
-	poRepo   repository.IPurchaseOrderRepository
-	cfgRepo  repository.ICompanyConfigurationRepository
-	// FIX [FRAUD-02/03]: vendorRepo dan coaRepo untuk validasi kepemilikan
+	billRepo    repository.IBillRepository
+	poRepo      repository.IPurchaseOrderRepository
+	cfgRepo     repository.ICompanyConfigurationRepository
 	vendorRepo  repository.IVendorRepository
+	coaRepo     repository.ICOARepository
 	journalRepo repository.IJournalEntryRepository
 	fiscalRepo  repository.IFiscalPeriodRepository
 	validate    *validator.Validate
@@ -353,6 +352,7 @@ func NewBillService(
 	poRepo repository.IPurchaseOrderRepository,
 	cfgRepo repository.ICompanyConfigurationRepository,
 	vendorRepo repository.IVendorRepository,
+	coaRepo repository.ICOARepository,
 	journalRepo repository.IJournalEntryRepository,
 	fiscalRepo repository.IFiscalPeriodRepository,
 	validate *validator.Validate,
@@ -362,6 +362,7 @@ func NewBillService(
 		poRepo:      poRepo,
 		cfgRepo:     cfgRepo,
 		vendorRepo:  vendorRepo,
+		coaRepo:     coaRepo,
 		journalRepo: journalRepo,
 		fiscalRepo:  fiscalRepo,
 		validate:    validate,
@@ -696,7 +697,7 @@ func (s *BillService) Delete(companyID, id uuid.UUID) error {
 
 // Confirm — Draft → Confirmed. Creates expense Journal Entry (auto-posted).
 // FIX [BUG-01]: Semua operasi dalam satu database transaction agar tidak ada journal orphan
-func (s *BillService) Confirm(companyID, id uuid.UUID, callerId uuid.UUID) (response.BillResponse, error) {
+func (s *BillService) Confirm(companyID, id uuid.UUID, req request.BillConfirmRequest, callerId uuid.UUID) (response.BillResponse, error) {
 	bill, err := s.billRepo.FindById(companyID, id)
 	if err != nil {
 		return response.BillResponse{}, err
@@ -713,9 +714,29 @@ func (s *BillService) Confirm(companyID, id uuid.UUID, callerId uuid.UUID) (resp
 		return response.BillResponse{}, errors.New("accounts payable account not configured — set it in Company → Configuration")
 	}
 
+	// Tentukan akun expense yang akan dipakai:
+	// Prioritas: req.ExpenseAccountId > cfg.DefaultExpenseAccountId
+	overrideAccountId := cfg.DefaultExpenseAccountId
+	if req.ExpenseAccountId != nil {
+		overrideAccountId = req.ExpenseAccountId
+	}
+
+	// Validasi bahwa akun override adalah tipe expense atau cogs
+	if overrideAccountId != nil {
+		coa, err := s.coaRepo.FindById(companyID, *overrideAccountId)
+		if err != nil {
+			return response.BillResponse{}, errors.New("expense account not found")
+		}
+		groupType := entity.COAGroupType(coa.SubGroup.Group.Type)
+		if groupType != entity.COAGroupTypeExpense && groupType != entity.COAGroupTypeCOGS {
+			return response.BillResponse{}, errors.New("selected account must be of type 'expense' or 'cogs'")
+		}
+	}
+
 	hasTaxableItem := false
 	for _, it := range bill.Items {
-		if it.AccountId == nil && cfg.DefaultExpenseAccountId == nil {
+		// item bisa pakai account_id-nya sendiri, atau fallback ke overrideAccountId
+		if it.AccountId == nil && overrideAccountId == nil {
 			return response.BillResponse{}, errors.New("item '" + it.Description + "' has no expense account and no default expense account is configured")
 		}
 		if it.TaxApplicable {
@@ -738,9 +759,10 @@ func (s *BillService) Confirm(companyID, id uuid.UUID, callerId uuid.UUID) (resp
 
 	var lines []entity.JournalLine
 	for _, it := range bill.Items {
+		// Per-item account_id lebih prioritas dari override
 		acctId := it.AccountId
 		if acctId == nil {
-			acctId = cfg.DefaultExpenseAccountId
+			acctId = overrideAccountId
 		}
 		lines = append(lines, entity.JournalLine{
 			Id:          uuid.New(),
@@ -781,8 +803,6 @@ func (s *BillService) Confirm(companyID, id uuid.UUID, callerId uuid.UUID) (resp
 		CreatedBy:      callerId,
 	}
 
-	// FIX [BUG-01]: Bungkus journalRepo.Create + billRepo.Save dalam satu transaksi
-	// menggunakan raw DB transaction agar tidak ada journal orphan
 	db := s.billRepo.DB()
 	tx := db.Begin()
 	defer func() {

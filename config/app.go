@@ -82,26 +82,27 @@ func Bootstrap(config *BootstrapConfig) {
 	companyService := service.NewCompanyService(companyRepository, companyMemberRepository, userRepository, config.Validate)
 	companyConfigService := service.NewCompanyConfigurationService(companyConfigRepository, config.Validate)
 	customerService := service.NewCustomerService(customerRepository, config.Validate)
-	// NEW: vendorService
+
 	vendorService := service.NewVendorService(vendorRepository, config.Validate)
 	quotationService := service.NewQuotationService(quotationRepository, companyConfigRepository, config.Validate)
 	invoiceService := service.NewInvoiceService(
 		invoiceRepository, quotationRepository, companyConfigRepository,
 		journalEntryRepository, fiscalPeriodRepository, config.Validate,
 	)
-	// FIX [FRAUD-02]: NewPurchaseOrderService sekarang menerima vendorRepository
+
 	purchaseOrderService := service.NewPurchaseOrderService(
 		purchaseOrderRepository,
 		companyConfigRepository,
-		vendorRepository, // ← tambahan untuk validasi vendor cross-company
+		vendorRepository,
 		config.Validate,
 	)
-	// FIX [FRAUD-02/03]: NewBillService sekarang menerima vendorRepository
+
 	billService := service.NewBillService(
 		billRepository,
 		purchaseOrderRepository,
 		companyConfigRepository,
-		vendorRepository, // ← tambahan untuk validasi vendor cross-company
+		vendorRepository,
+		coaRepository,
 		journalEntryRepository,
 		fiscalPeriodRepository,
 		config.Validate,
